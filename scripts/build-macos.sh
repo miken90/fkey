@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Source rustup environment
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+fi
+
 echo "🍎 Building macOS app..."
 
 # Build core first

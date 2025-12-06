@@ -3,12 +3,18 @@ set -e
 
 echo "🚀 Setting up GoNhanh development environment..."
 
+# Source rustup if available
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+fi
+
 # Check Rust
 if ! command -v cargo &> /dev/null; then
     echo "❌ Rust not found. Please install: https://rustup.rs"
     exit 1
 fi
 echo "✅ Rust found: $(rustc --version)"
+echo "📍 Cargo location: $(which cargo)"
 
 # Install Rust targets for macOS
 echo "📦 Installing Rust targets..."

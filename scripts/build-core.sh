@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Source rustup environment
+if [ -f "$HOME/.cargo/env" ]; then
+    source "$HOME/.cargo/env"
+fi
+
 echo "🦀 Building Rust core..."
 
 cd "$(dirname "$0")/../core"

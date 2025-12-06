@@ -1,5 +1,7 @@
 .PHONY: help build clean test core macos setup install
 
+.DEFAULT_GOAL := help
+
 help:
 	@echo "GoNhanh - Makefile commands:"
 	@echo "  make build       - Build everything (core + macOS app)"
@@ -13,17 +15,14 @@ help:
 build: core macos
 
 core:
-	@echo "🦀 Building Rust core..."
-	cd core && cargo build --release
-	@echo "✅ Core built successfully!"
+	@./scripts/build-core.sh
 
-macos: core
-	@echo "🍎 Building macOS app..."
-	./scripts/build-macos.sh
+macos:
+	@./scripts/build-macos.sh
 
 test:
 	@echo "🧪 Running tests..."
-	cd core && cargo test
+	@if [ -f "$$HOME/.cargo/env" ]; then source "$$HOME/.cargo/env"; fi && cd core && cargo test
 
 clean:
 	@echo "🧹 Cleaning..."
