@@ -5,7 +5,6 @@ Cargo.lock
 
 # macOS
 *.xcuserstate
-*.xcworkspace
 xcuserdata/
 DerivedData/
 *.ipa
@@ -14,6 +13,9 @@ DerivedData/
 .DS_Store
 platforms/macos/*.a
 platforms/macos/*.dylib
+platforms/macos/build/
+*.xcworkspace/
+project.xcworkspace/
 
 # Windows
 bin/
