@@ -1,16 +1,17 @@
 import Foundation
 import Carbon
 
-// MARK: - FFI Result Struct (must match Rust #[repr(C, packed)])
+// MARK: - FFI Result Struct (must match Rust #[repr(C)])
 
 struct ImeResult {
-    var action: UInt8      // 0=None, 1=Send, 2=Restore
-    var backspace: UInt8
     var chars: (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32,
                 UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32,
                 UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32,
                 UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
+    var action: UInt8      // 0=None, 1=Send, 2=Restore
+    var backspace: UInt8
     var count: UInt8
+    var _pad: UInt8
 }
 
 // MARK: - C Function Declarations
@@ -195,6 +196,8 @@ private func keyboardCallback(
 
     // Process key through Rust engine
     if let (backspace, chars) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl) {
+        print("[KeyboardHook] Processing: backspace=\(backspace), chars=\(chars)")
+
         // Send backspaces
         for _ in 0..<backspace {
             sendBackspace(proxy: proxy)
@@ -208,7 +211,7 @@ private func keyboardCallback(
     }
 
     // Pass through
-    return Unmanaged.passRetained(event)
+    return Unmanaged.passUnretained(event)
 }
 
 // MARK: - Send Keys

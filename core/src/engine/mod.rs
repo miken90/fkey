@@ -15,31 +15,34 @@ pub enum Action {
     Restore = 2, // Invalid, restore original
 }
 
-/// Result for FFI - MUST match Swift ImeResult exactly
-#[repr(C, packed)]
+/// Result for FFI - fields ordered for alignment
+#[repr(C)]
 pub struct Result {
-    pub action: u8,      // Action as u8
+    pub chars: [u32; MAX],  // 128 bytes (32 x 4)
+    pub action: u8,
     pub backspace: u8,
-    pub chars: [u32; MAX],
     pub count: u8,
+    pub _pad: u8,           // padding to align
 }
 
 impl Result {
     pub fn none() -> Self {
         Self {
+            chars: [0; MAX],
             action: Action::None as u8,
             backspace: 0,
-            chars: [0; MAX],
             count: 0,
+            _pad: 0,
         }
     }
 
     pub fn send(backspace: u8, chars: &[char]) -> Self {
         let mut result = Self {
+            chars: [0; MAX],
             action: Action::Send as u8,
             backspace,
-            chars: [0; MAX],
             count: chars.len() as u8,
+            _pad: 0,
         };
         for (i, &c) in chars.iter().enumerate() {
             if i < MAX {
