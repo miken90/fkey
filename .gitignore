@@ -37,3 +37,6 @@ obj/
 
 # Config
 config.toml
+
+# Reference repositories (symlinks)
+.reference-*
