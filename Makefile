@@ -12,7 +12,7 @@ help:
 	@echo "  make setup       - Setup development environment"
 	@echo "  make install     - Install the app"
 
-build: core macos
+build: test core macos
 
 core:
 	@./scripts/build-core.sh

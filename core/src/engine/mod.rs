@@ -7,18 +7,18 @@ use crate::data::{chars, keys};
 use crate::input;
 
 /// Engine action result
-#[repr(C)]
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Action {
-    None,    // Pass through
-    Send,    // Delete + send new chars
-    Restore, // Invalid, restore original
+    None = 0,    // Pass through
+    Send = 1,    // Delete + send new chars
+    Restore = 2, // Invalid, restore original
 }
 
-/// Result for FFI
-#[repr(C)]
+/// Result for FFI - MUST match Swift ImeResult exactly
+#[repr(C, packed)]
 pub struct Result {
-    pub action: Action,
+    pub action: u8,      // Action as u8
     pub backspace: u8,
     pub chars: [u32; MAX],
     pub count: u8,
@@ -27,7 +27,7 @@ pub struct Result {
 impl Result {
     pub fn none() -> Self {
         Self {
-            action: Action::None,
+            action: Action::None as u8,
             backspace: 0,
             chars: [0; MAX],
             count: 0,
@@ -36,7 +36,7 @@ impl Result {
 
     pub fn send(backspace: u8, chars: &[char]) -> Self {
         let mut result = Self {
-            action: Action::Send,
+            action: Action::Send as u8,
             backspace,
             chars: [0; MAX],
             count: chars.len() as u8,
@@ -269,11 +269,11 @@ mod tests {
 
         // Type 'a'
         let r = e.on_key(keys::A, false, false);
-        assert_eq!(r.action, Action::None);
+        assert_eq!(r.action, Action::None as u8);
 
         // Type 's' -> á
         let r = e.on_key(keys::S, false, false);
-        assert_eq!(r.action, Action::Send);
+        assert_eq!(r.action, Action::Send as u8);
         assert_eq!(r.chars[0], 'á' as u32);
     }
 
@@ -284,11 +284,11 @@ mod tests {
 
         // Type 'a'
         let r = e.on_key(keys::A, false, false);
-        assert_eq!(r.action, Action::None);
+        assert_eq!(r.action, Action::None as u8);
 
         // Type '1' -> á
         let r = e.on_key(keys::N1, false, false);
-        assert_eq!(r.action, Action::Send);
+        assert_eq!(r.action, Action::Send as u8);
         assert_eq!(r.chars[0], 'á' as u32);
     }
 }
