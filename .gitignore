@@ -1,0 +1,37 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# macOS
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+.DS_Store
+platforms/macos/*.a
+platforms/macos/*.dylib
+
+# Windows
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+
+# Build artifacts
+*.o
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Config
+config.toml
