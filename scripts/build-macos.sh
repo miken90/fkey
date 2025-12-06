@@ -8,19 +8,16 @@ fi
 
 echo "🍎 Building macOS app..."
 
-# Build core first
-./scripts/build-core.sh
-
 # Build macOS app with xcodebuild
 cd "$(dirname "$0")/../platforms/macos"
 
 if [ -d "GoNhanh.xcodeproj" ]; then
     echo "Building with Xcode..."
-    xcodebuild -scheme GoNhanh -configuration Release
+    xcodebuild -scheme GoNhanh -configuration Release -destination 'platform=macOS,arch=arm64' -destination 'platform=macOS,arch=x86_64' 2>&1 | grep -v "Using the first of multiple matching destinations"
 
     # Copy app from DerivedData to local build directory
     echo "Copying app to build directory..."
-    DERIVED_DATA=$(xcodebuild -scheme GoNhanh -configuration Release -showBuildSettings | grep -m 1 "BUILD_DIR" | sed 's/.*= //')
+    DERIVED_DATA=$(xcodebuild -scheme GoNhanh -configuration Release -destination 'platform=macOS,arch=arm64' -showBuildSettings 2>&1 | grep -v "Using the first of multiple matching destinations" | grep -m 1 "BUILD_DIR" | sed 's/.*= //')
     mkdir -p build/Release
     cp -R "${DERIVED_DATA}/Release/GoNhanh.app" build/Release/
 
