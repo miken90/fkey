@@ -50,23 +50,45 @@ Tài liệu này tổng hợp các vấn đề phổ biến nhất mà người 
 
 ---
 
-## 2. Lỗi trên Trình duyệt (Chrome/Edge/Safari)
+## 2. Lỗi trên Trình duyệt (Chrome/Edge/Safari/Firefox)
 
-### 2.1. Mất chữ trên thanh địa chỉ (Omnibox)
+### 2.1. Mất chữ trên thanh địa chỉ (Omnibox) - Chrome/Edge Chromium
 
-- **Hiện tượng**: Gõ `tiếng việt` -> `tiêng viêt` (mất dấu) hoặc `t iếng việt` (nhảy cách).
-- **Nguyên nhân**: Cơ chế "Gợi ý thông minh" (Autocomplete) của trình duyệt xung đột với cơ chế bỏ dấu của bộ gõ.
+- **Hiện tượng**: Gõ `tiếng việt` -> `tiêng viêt` (mất dấu) hoặc `t iếng việt` (nhảy cách/lặp chữ cái đầu).
+- **Nguyên nhân**: Cơ chế **Suggestion/Autocomplete** của trình duyệt xung đột với bộ gõ khi đang bỏ dấu.
 - **Khắc phục**:
   - **Cách 1 (Khuyên dùng)**: Dùng phím tắt `Ctrl+K` (hoặc `Cmd+L` rồi `Tab`) để tìm kiếm bằng Google Search thay vì gõ trực tiếp URL.
-  - **Cách 2**: Tắt gợi ý tìm kiếm trong Settings trình duyệt (Không khuyến khích vì mất tiện lợi).
-  - **Cách 3**: Dùng bộ gõ có tính năng sửa lỗi này (EVKey, GoNhanh).
+  - **Cách 2**: Tắt gợi ý trong Settings:
+    - Chrome: `Settings` -> `You and Google` -> `Sync and Google services` -> tắt **Autocomplete searches and URLs**.
+    - Edge: `Settings` -> `Privacy, search, and services` -> `Address bar and search` -> tắt **Search and site suggestions**.
+  - **Cách 3**: Dùng **GoNhanh** hoặc **EVKey** (có tính năng "Sửa lỗi Chrome/Excel").
+  - **Cách 4**: Xóa lịch sử duyệt web để loại bỏ các gợi ý cũ gây lỗi.
 
-### 2.2. Gõ sai trên Google Docs/Sheets
+### 2.2. Lỗi gõ trên Facebook Messenger (Safari macOS)
 
-- **Nguyên nhân**: Google Docs tự xử lý input event, đôi khi không nhận được sự kiện "update marked text" từ bộ gõ.
+- **Hiện tượng**: Gõ xong Enter bị mất chữ, hoặc nhảy ký tự lung tung khi chat.
+- **Nguyên nhân**: Safari xử lý `ContentEditable` khác với Chrome, cộng thêm cơ chế Text Replacement của macOS.
 - **Khắc phục**:
-  - Restart bộ gõ (Chọn chế độ gõ lại hoặc khởi động lại app).
-  - Với EVKey/OpenKey: Tích chọn "Sửa lỗi Google Docs".
+  - Khởi động lại Safari.
+  - Tắt **Auto-correct**: `System Settings` -> `Keyboard` -> `Text Input` -> `Edit` -> tắt **Correct spelling automatically**.
+  - Dùng trình duyệt khác (Chrome/Firefox) cho Facebook nếu lỗi quá nặng.
+
+### 2.3. Lỗi mất chữ trên Firefox
+
+- **Hiện tượng**: Gõ chữ có dấu bị biến mất hoặc hiển thị ô vuông.
+- **Nguyên nhân**: Cấu hình font hoặc Hardware Acceleration.
+- **Khắc phục**:
+  - Tắt **Hardware Acceleration**: `Settings` -> `General` -> `Performance` -> bỏ chọn `Use recommended performance settings` & `Use hardware acceleration`.
+  - Chỉnh font: `Settings` -> `General` -> `Fonts` -> `Advanced` -> chọn **Other Writing Systems** -> Fallback Text Encoding là **Vietnamese**.
+
+### 2.4. Google Docs/Sheets bị lặp chữ, mất dấu
+
+- **Hiện tượng**: Gõ `được` -> `đđược`, hoặc gõ `trường` -> `trương`.
+- **Nguyên nhân**: Google Docs dùng cơ chế Canvas hoặc xử lý input riêng, không đồng bộ kịp với IME.
+- **Khắc phục**:
+  - Tắt các Extension (Tiện ích) không cần thiết (chúng có thể làm chậm DOM).
+  - Với **EVKey/OpenKey**: Bật tính năng "Sửa lỗi Google Docs".
+  - Trong Google Docs: `File` -> `Language` -> Chọn **Tiếng Việt**.
 
 ---
 
