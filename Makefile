@@ -55,16 +55,28 @@ install: build
 	@cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
 	@echo "✅ Installed to /Applications/GoNhanh.app"
 
-# Release: make release v=1.0.0
-release:
-ifndef v
-	@echo "❌ Usage: make release v=1.0.0"
-	@exit 1
-endif
-	@echo "🚀 Releasing v$(v)..."
+# Get current and next versions
+CURRENT_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+CURRENT := $(shell echo $(CURRENT_TAG) | sed 's/v//')
+MAJOR := $(shell echo $(CURRENT) | cut -d. -f1)
+MINOR := $(shell echo $(CURRENT) | cut -d. -f2)
+PATCH := $(shell echo $(CURRENT) | cut -d. -f3)
+
+# Release commands
+release-patch:
+	@$(MAKE) _release NEW_V="$(MAJOR).$(MINOR).$(shell echo $$(($(PATCH)+1)))"
+
+release-minor:
+	@$(MAKE) _release NEW_V="$(MAJOR).$(shell echo $$(($(MINOR)+1))).0"
+
+release-major:
+	@$(MAKE) _release NEW_V="$(shell echo $$(($(MAJOR)+1))).0.0"
+
+_release:
+	@echo "🚀 Releasing v$(NEW_V)... (was $(CURRENT_TAG))"
 	@git add -A
-	@git commit -m "chore: release v$(v)" --allow-empty
-	@git tag -a v$(v) -m "Release v$(v)"
-	@git push origin main v$(v)
-	@echo "✅ Released v$(v)!"
-	@echo "👉 https://github.com/khaphanspace/gonhanh.org/releases/tag/v$(v)"
+	@git commit -m "chore: release v$(NEW_V)" --allow-empty
+	@git tag -a v$(NEW_V) -m "Release v$(NEW_V)"
+	@git push origin main v$(NEW_V)
+	@echo "✅ Released v$(NEW_V)!"
+	@echo "👉 https://github.com/khaphanspace/gonhanh.org/releases/tag/v$(NEW_V)"
