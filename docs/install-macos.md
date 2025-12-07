@@ -9,7 +9,7 @@
 
 ### 1. Tải ứng dụng
 
-Tải xuống file `.dmg` phiên bản mới nhất tại: **[Tải GoNhanh mới nhất](https://github.com/khaphanspace/gonhanh.org/releases/latest)**
+Tải xuống file `.dmg` phiên bản mới nhất tại: **[Tải GoNhanh mới nhất](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg)**
 
 _(Nếu bạn muốn chọn phiên bản cũ hơn, hãy truy cập [Danh sách Releases](https://github.com/khaphanspace/gonhanh.org/releases))_
 
