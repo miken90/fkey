@@ -9,18 +9,18 @@ NEXT := $(shell echo $(VER) | awk -F. '{print $$1"."$$2"."$$3+1}')
 .DEFAULT_GOAL := help
 
 help: ## Show this help
-	@echo "GoNhanh - Vietnamese Input Method Engine"
+	@echo "🚀 GoNhanh - Vietnamese Input Method Engine"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
-	@echo "Development:"
-	@grep -E '^(test|format|build|clean):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@echo "\033[1;34mDevelopment:\033[0m"
+	@grep -E '^(test|format|build|clean):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[1;32m%-12s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Setup & Install:"
-	@grep -E '^(setup|install):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@echo "\033[1;33mSetup & Install:\033[0m"
+	@grep -E '^(setup|install):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[1;32m%-12s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Release:"
-	@grep -E '^(release|all):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@echo "\033[1;31mRelease:\033[0m"
+	@grep -E '^(release|all):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[1;32m%-12s\033[0m %s\n", $$1, $$2}'
 
 all: test build ## Run test + build
 
