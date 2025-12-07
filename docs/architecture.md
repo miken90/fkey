@@ -2,110 +2,138 @@
 
 ## Overview
 
-GoNhanh uses a **hybrid architecture** with a shared Rust core and platform-native UIs.
+GoNhanh uses a **Rust core + native UI** architecture:
 
 ```
 ┌─────────────────────────────────────┐
-│        Platform UI Layer            │
+│         Platform UI Layer           │
 │  ┌──────────┐      ┌──────────┐    │
 │  │  macOS   │      │ Windows  │    │
 │  │ SwiftUI  │      │   WPF    │    │
 │  └─────┬────┘      └────┬─────┘    │
-└────────┼──────────────────┼─────────┘
-         │                  │
-         │  FFI (C ABI)     │
-         │                  │
-┌────────▼──────────────────▼─────────┐
-│       Rust Core Library             │
-│  ┌─────────┐  ┌──────────┐         │
-│  │ Engine  │  │ Keyboard │         │
-│  └─────────┘  └──────────┘         │
-└─────────────────────────────────────┘
+└────────┼────────────────┼──────────┘
+         │    FFI (C ABI) │
+┌────────▼────────────────▼──────────┐
+│         Rust Core Library          │
+│  ┌─────────────────────────────┐   │
+│  │  Engine (Telex/VNI)         │   │
+│  │  - Buffer management        │   │
+│  │  - Phonology-based rules    │   │
+│  │  - Unicode output           │   │
+│  └─────────────────────────────┘   │
+└────────────────────────────────────┘
 ```
 
-## Components
+## Core Library (`core/`)
 
-### Rust Core (`core/`)
-
-**Responsibilities:**
-- Vietnamese text conversion (Telex/VNI)
-- Keyboard event listening
-- Configuration management
-- Business logic
-
-**Key modules:**
-- `engine.rs` - Vietnamese conversion algorithms
-- `keyboard.rs` - Cross-platform keyboard hooks
-- `config.rs` - Configuration storage
-- `lib.rs` - FFI exports
-
-**Build artifacts:**
-- macOS: `libgonhanh_core.a` (static library)
-- Windows: `gonhanh_core.lib` (static library)
-
-### macOS Platform (`platforms/macos/`)
-
-**Technology:** SwiftUI + Cocoa
-
-**Components:**
-- `App.swift` - Application entry point
-- `MenuBar.swift` - System tray controller
-- `SettingsView.swift` - Settings window (SwiftUI)
-- `RustBridge.swift` - FFI bridge to Rust
-
-**Features:**
-- Native macOS UI
-- Menu bar integration
-- System-native settings window
-- Auto-start support
-
-### Windows Platform (`platforms/windows/`)
-
-**Technology:** WPF/WinUI3 (planned)
-
-**Components:**
-- `App.xaml` - Application entry
-- `MainWindow.xaml` - Settings window
-- `RustInterop.cs` - P/Invoke bridge
-
-## Data Flow
-
-### Keyboard Input Processing
+### Modules
 
 ```
-1. User types key
-   ↓
-2. Rust keyboard hook captures event
-   ↓
-3. Engine processes input (Telex/VNI)
-   ↓
-4. Send Vietnamese character to OS
-   ↓
-5. OS displays character
+core/src/
+├── lib.rs              # FFI exports (ime_*)
+├── data/
+│   ├── keys.rs         # Key code constants
+│   ├── chars.rs        # Unicode character mappings
+│   └── vowel.rs        # Phonology system
+├── engine/
+│   ├── mod.rs          # Main engine logic
+│   └── buffer.rs       # Typing buffer
+└── input/
+    ├── mod.rs          # Method trait
+    ├── telex.rs        # Telex rules
+    └── vni.rs          # VNI rules
 ```
 
-### Configuration
+### FFI Interface
+
+```c
+// Initialize/cleanup
+void ime_init();
+void ime_clear();
+void ime_free(Result* r);
+
+// Configuration
+void ime_method(uint8_t method);  // 0=Telex, 1=VNI
+void ime_enabled(bool enabled);
+void ime_modern(bool modern);     // true=oà, false=òa
+
+// Key processing
+Result* ime_key(uint16_t key, bool caps, bool ctrl);
+```
+
+### Result Structure
+
+```rust
+#[repr(C)]
+pub struct Result {
+    pub chars: [u32; 32],  // Unicode output
+    pub action: u8,        // 0=None, 1=Send, 2=Restore
+    pub backspace: u8,     // Chars to delete
+    pub count: u8,         // Chars to send
+}
+```
+
+## Engine Flow
 
 ```
-1. User changes settings in UI
+1. Key press captured by platform
    ↓
-2. UI calls Rust FFI
+2. Platform calls ime_key(key, caps, ctrl)
    ↓
-3. Rust saves to TOML file
+3. Engine processes:
+   - Add to buffer
+   - Check for modifiers (tone, mark, đ)
+   - Apply phonology rules for mark placement
    ↓
-4. Changes applied immediately
+4. Return Result with:
+   - backspace: how many chars to delete
+   - chars[]: new Unicode chars to insert
+   ↓
+5. Platform sends backspaces + new text
 ```
 
-## Performance Optimizations
+## Platform: macOS (`platforms/macos/`)
 
-- **Static linking**: No runtime dependencies
-- **Zero-copy FFI**: Minimal overhead between Rust and native
-- **Lazy loading**: Settings window only created when needed
-- **Release optimizations**: LTO, size optimization
+### Components
+
+| File | Purpose |
+|------|---------|
+| `App.swift` | Entry point, app lifecycle |
+| `MenuBar.swift` | System tray, keyboard hooks |
+| `SettingsView.swift` | SwiftUI settings UI |
+| `RustBridge.swift` | FFI bridge to Rust |
+
+### Key Hook Flow
+
+```
+CGEventTap (Accessibility)
+    ↓
+RustBridge.processKey()
+    ↓
+ime_key() → Result
+    ↓
+CGEvent.post() backspaces
+    ↓
+CGEvent.post() new chars
+```
+
+## Build Artifacts
+
+| Platform | Output |
+|----------|--------|
+| macOS | `libgonhanh_core.a` (universal: arm64 + x86_64) |
+| Windows | `gonhanh_core.lib` (planned) |
+
+## Performance
+
+- **Memory**: ~25 MB RAM
+- **Binary**: ~3 MB
+- **Startup**: ~200ms
+- **Latency**: <1ms per keystroke
 
 ## Security
 
-- **Memory safety**: Rust prevents memory bugs
-- **Minimal permissions**: Only keyboard access needed
-- **No network**: Fully offline
+- **Memory safe**: Rust prevents buffer overflows
+- **Minimal permissions**: Only keyboard access (Accessibility)
+- **Offline**: No network, no telemetry
 - **Open source**: Auditable code
