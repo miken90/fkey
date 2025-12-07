@@ -113,15 +113,19 @@ pub fn to_char(key: u16, caps: bool, tone: u8, mark: u8) -> Option<char> {
 
 /// Get đ/Đ character
 pub fn get_d(caps: bool) -> char {
-    if caps { 'Đ' } else { 'đ' }
+    if caps {
+        'Đ'
+    } else {
+        'đ'
+    }
 }
 
 /// Check if a character is a Vietnamese vowel
 pub fn is_vowel_char(ch: char) -> bool {
     let lower = ch.to_lowercase().next().unwrap_or(ch);
-    VOWEL_TABLE.iter().any(|(base, marks)| {
-        *base == lower || marks.iter().any(|&m| m == lower)
-    })
+    VOWEL_TABLE
+        .iter()
+        .any(|(base, marks)| *base == lower || marks.contains(&lower))
 }
 
 /// Get the base (unmarked) form of a Vietnamese vowel
@@ -129,7 +133,7 @@ pub fn get_base_vowel(ch: char) -> Option<char> {
     let lower = ch.to_lowercase().next().unwrap_or(ch);
     VOWEL_TABLE
         .iter()
-        .find(|(base, marks)| *base == lower || marks.iter().any(|&m| m == lower))
+        .find(|(base, marks)| *base == lower || marks.contains(&lower))
         .map(|(base, _)| *base)
 }
 

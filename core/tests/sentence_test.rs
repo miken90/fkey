@@ -7,16 +7,42 @@ use gonhanh_core::engine::{Action, Engine};
 
 fn char_to_key(c: char) -> u16 {
     match c.to_ascii_lowercase() {
-        'a' => keys::A, 'b' => keys::B, 'c' => keys::C, 'd' => keys::D,
-        'e' => keys::E, 'f' => keys::F, 'g' => keys::G, 'h' => keys::H,
-        'i' => keys::I, 'j' => keys::J, 'k' => keys::K, 'l' => keys::L,
-        'm' => keys::M, 'n' => keys::N, 'o' => keys::O, 'p' => keys::P,
-        'q' => keys::Q, 'r' => keys::R, 's' => keys::S, 't' => keys::T,
-        'u' => keys::U, 'v' => keys::V, 'w' => keys::W, 'x' => keys::X,
-        'y' => keys::Y, 'z' => keys::Z,
-        '0' => keys::N0, '1' => keys::N1, '2' => keys::N2, '3' => keys::N3,
-        '4' => keys::N4, '5' => keys::N5, '6' => keys::N6, '7' => keys::N7,
-        '8' => keys::N8, '9' => keys::N9,
+        'a' => keys::A,
+        'b' => keys::B,
+        'c' => keys::C,
+        'd' => keys::D,
+        'e' => keys::E,
+        'f' => keys::F,
+        'g' => keys::G,
+        'h' => keys::H,
+        'i' => keys::I,
+        'j' => keys::J,
+        'k' => keys::K,
+        'l' => keys::L,
+        'm' => keys::M,
+        'n' => keys::N,
+        'o' => keys::O,
+        'p' => keys::P,
+        'q' => keys::Q,
+        'r' => keys::R,
+        's' => keys::S,
+        't' => keys::T,
+        'u' => keys::U,
+        'v' => keys::V,
+        'w' => keys::W,
+        'x' => keys::X,
+        'y' => keys::Y,
+        'z' => keys::Z,
+        '0' => keys::N0,
+        '1' => keys::N1,
+        '2' => keys::N2,
+        '3' => keys::N3,
+        '4' => keys::N4,
+        '5' => keys::N5,
+        '6' => keys::N6,
+        '7' => keys::N7,
+        '8' => keys::N8,
+        '9' => keys::N9,
         ' ' => keys::SPACE,
         _ => 255,
     }
@@ -34,12 +60,20 @@ fn type_sentence(e: &mut Engine, input: &str) -> String {
         let is_caps = c.is_uppercase();
         let r = e.on_key(key, is_caps, false);
         if r.action == Action::Send as u8 {
-            for _ in 0..r.backspace { screen.pop(); }
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
             for i in 0..r.count as usize {
-                if let Some(ch) = char::from_u32(r.chars[i]) { screen.push(ch); }
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
             }
         } else if keys::is_letter(key) {
-            screen.push(if is_caps { c.to_ascii_uppercase() } else { c.to_ascii_lowercase() });
+            screen.push(if is_caps {
+                c.to_ascii_uppercase()
+            } else {
+                c.to_ascii_lowercase()
+            });
         }
     }
     screen
@@ -49,7 +83,11 @@ fn run_telex(cases: &[(&str, &str)]) {
     for (input, expected) in cases {
         let mut e = Engine::new();
         let result = type_sentence(&mut e, input);
-        assert_eq!(result, *expected, "\n[Telex] '{}'\n→ '{}'\n(expected '{}')", input, result, expected);
+        assert_eq!(
+            result, *expected,
+            "\n[Telex] '{}'\n→ '{}'\n(expected '{}')",
+            input, result, expected
+        );
     }
 }
 
@@ -58,7 +96,11 @@ fn run_vni(cases: &[(&str, &str)]) {
         let mut e = Engine::new();
         e.set_method(1);
         let result = type_sentence(&mut e, input);
-        assert_eq!(result, *expected, "\n[VNI] '{}'\n→ '{}'\n(expected '{}')", input, result, expected);
+        assert_eq!(
+            result, *expected,
+            "\n[VNI] '{}'\n→ '{}'\n(expected '{}')",
+            input, result, expected
+        );
     }
 }
 
@@ -86,7 +128,10 @@ fn telex_proverbs() {
         // Học một biết mười
         ("hocj mootj bieets muwowif", "học một biết mười"),
         // Đi một ngày đàng học một sàng khôn
-        ("ddi mootj ngayf ddangf hocj mootj sangf khoon", "đi một ngày đàng học một sàng khôn"),
+        (
+            "ddi mootj ngayf ddangf hocj mootj sangf khoon",
+            "đi một ngày đàng học một sàng khôn",
+        ),
         // Tốt gỗ hơn đẹp người
         ("toots goox hown ddepj nguwowif", "tốt gỗ hơn đẹp người"),
         // Uống nước nhớ nguồn
@@ -116,7 +161,10 @@ fn telex_idioms() {
 #[test]
 fn telex_daily_conversations() {
     run_telex(&[
-        ("hoom nay thowif tieets thees naof", "hôm nay thời tiết thế nào"),
+        (
+            "hoom nay thowif tieets thees naof",
+            "hôm nay thời tiết thế nào",
+        ),
         ("banj ddi ddaau vaayj", "bạn đi đâu vậy"),
         ("tooi ddang ddi lafm", "tôi đang đi làm"),
         ("mootj ly caf phee nhes", "một ly cà phê nhé"),
@@ -132,7 +180,10 @@ fn telex_daily_conversations() {
 fn telex_food() {
     run_telex(&[
         ("cho tooi xem thuwcj ddown", "cho tôi xem thực đơn"),
-        ("tooi muoons goij mootj phaanf phowr", "tôi muốn gọi một phần phở"),
+        (
+            "tooi muoons goij mootj phaanf phowr",
+            "tôi muốn gọi một phần phở",
+        ),
         ("ddoof awn raats ngon", "đồ ăn rất ngon"),
         ("tinhs tieenf nhes", "tính tiền nhé"),
     ]);
@@ -162,8 +213,14 @@ fn telex_expressions() {
 fn telex_poetry() {
     run_telex(&[
         // Truyện Kiều - Nguyễn Du
-        ("trawm nawm trong coix nguwowif ta", "trăm năm trong cõi người ta"),
-        ("chuwx taif chuwx meenhj kheos laf ghets nhau", "chữ tài chữ mệnh khéo là ghét nhau"),
+        (
+            "trawm nawm trong coix nguwowif ta",
+            "trăm năm trong cõi người ta",
+        ),
+        (
+            "chuwx taif chuwx meenhj kheos laf ghets nhau",
+            "chữ tài chữ mệnh khéo là ghét nhau",
+        ),
     ]);
 }
 
@@ -190,11 +247,11 @@ fn telex_long_sentences() {
     run_telex(&[
         (
             "vieetj nam laf mootj quoocs gia nawmf owr ddoong nam as",
-            "việt nam là một quốc gia nằm ở đông nam á"
+            "việt nam là một quốc gia nằm ở đông nam á",
         ),
         (
             "thur ddoo cura vieetj nam laf thanhf phoos haf nooij",
-            "thủ đô của việt nam là thành phố hà nội"
+            "thủ đô của việt nam là thành phố hà nội",
         ),
     ]);
 }
@@ -226,7 +283,10 @@ fn vni_greetings() {
 #[test]
 fn vni_daily() {
     run_vni(&[
-        ("ho6m nay tho7i2 tie61t the61 na2o", "hôm nay thời tiết thế nào"),
+        (
+            "ho6m nay tho7i2 tie61t the61 na2o",
+            "hôm nay thời tiết thế nào",
+        ),
         ("ba5n d9i d9a6u va65y", "bạn đi đâu vậy"),
         ("bao nhie6u tie62n", "bao nhiêu tiền"),
     ]);
@@ -246,11 +306,11 @@ fn vni_long_sentences() {
     run_vni(&[
         (
             "vie65t nam la2 mo65t quo61c gia na82m o73 d9o6ng nam a1",
-            "việt nam là một quốc gia nằm ở đông nam á"
+            "việt nam là một quốc gia nằm ở đông nam á",
         ),
         (
             "thu3 d9o6 cu3a vie65t nam la2 tha2nh pho61 ha2 no65i",
-            "thủ đô của việt nam là thành phố hà nội"
+            "thủ đô của việt nam là thành phố hà nội",
         ),
     ]);
 }

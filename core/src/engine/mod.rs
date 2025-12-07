@@ -16,20 +16,42 @@
 
 pub mod buffer;
 
-use buffer::{Buffer, Char, MAX};
-use crate::data::{chars, keys, vowel::{Modifier, Phonology, Vowel}};
+use crate::data::{
+    chars, keys,
+    vowel::{Modifier, Phonology, Vowel},
+};
 use crate::input;
+use buffer::{Buffer, Char, MAX};
 
 /// Convert key code to character (letters and numbers)
 fn key_to_char(key: u16, caps: bool) -> Option<char> {
     let ch = match key {
-        keys::A => 'a', keys::B => 'b', keys::C => 'c', keys::D => 'd',
-        keys::E => 'e', keys::F => 'f', keys::G => 'g', keys::H => 'h',
-        keys::I => 'i', keys::J => 'j', keys::K => 'k', keys::L => 'l',
-        keys::M => 'm', keys::N => 'n', keys::O => 'o', keys::P => 'p',
-        keys::Q => 'q', keys::R => 'r', keys::S => 's', keys::T => 't',
-        keys::U => 'u', keys::V => 'v', keys::W => 'w', keys::X => 'x',
-        keys::Y => 'y', keys::Z => 'z',
+        keys::A => 'a',
+        keys::B => 'b',
+        keys::C => 'c',
+        keys::D => 'd',
+        keys::E => 'e',
+        keys::F => 'f',
+        keys::G => 'g',
+        keys::H => 'h',
+        keys::I => 'i',
+        keys::J => 'j',
+        keys::K => 'k',
+        keys::L => 'l',
+        keys::M => 'm',
+        keys::N => 'n',
+        keys::O => 'o',
+        keys::P => 'p',
+        keys::Q => 'q',
+        keys::R => 'r',
+        keys::S => 's',
+        keys::T => 't',
+        keys::U => 'u',
+        keys::V => 'v',
+        keys::W => 'w',
+        keys::X => 'x',
+        keys::Y => 'y',
+        keys::Z => 'z',
         keys::N0 => return Some('0'),
         keys::N1 => return Some('1'),
         keys::N2 => return Some('2'),
@@ -57,7 +79,7 @@ pub enum Action {
 /// Result for FFI - fields ordered for alignment
 #[repr(C)]
 pub struct Result {
-    pub chars: [u32; MAX],  // Unicode output array
+    pub chars: [u32; MAX], // Unicode output array
     pub action: u8,
     pub backspace: u8,
     pub count: u8,
@@ -93,8 +115,8 @@ impl Result {
 /// Transform type for revert tracking
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Transform {
-    Mark(u16, u8),  // (key, mark_value)
-    Tone(u16, u8),  // (key, tone_value)
+    Mark(u16, u8), // (key, mark_value)
+    Tone(u16, u8), // (key, tone_value)
 }
 
 /// Main Vietnamese IME engine
@@ -169,7 +191,9 @@ impl Engine {
         }
 
         // Collect buffer keys for delayed operations (excluding already-converted đ)
-        let buffer_keys: Vec<u16> = self.buf.iter()
+        let buffer_keys: Vec<u16> = self
+            .buf
+            .iter()
             .filter(|c| !c.stroke) // Skip already converted 'd' -> 'đ'
             .map(|c| c.key)
             .collect();
@@ -181,7 +205,8 @@ impl Engine {
         }
 
         // Handle tone modifiers (aa, aw, a6, a7, etc.)
-        let vowel_keys: Vec<u16> = buffer_keys.iter()
+        let vowel_keys: Vec<u16> = buffer_keys
+            .iter()
             .copied()
             .filter(|&k| keys::is_vowel(k))
             .collect();
@@ -235,7 +260,9 @@ impl Engine {
     /// Find 'd' in buffer, convert to 'đ', rebuild from that position
     fn handle_delayed_d(&mut self) -> Result {
         // Find position of unconverted 'd' in buffer
-        let d_pos = self.buf.iter()
+        let d_pos = self
+            .buf
+            .iter()
             .enumerate()
             .find(|(_, c)| c.key == keys::D && !c.stroke)
             .map(|(i, _)| i);
@@ -354,7 +381,8 @@ impl Engine {
 
     /// Collect vowels from buffer with phonological information
     fn collect_vowels(&self) -> Vec<Vowel> {
-        self.buf.iter()
+        self.buf
+            .iter()
             .enumerate()
             .filter(|(_, c)| keys::is_vowel(c.key))
             .map(|(pos, c)| {
@@ -370,8 +398,12 @@ impl Engine {
 
     /// Check if there's a consonant after the given position
     fn has_final_consonant(&self, after_pos: usize) -> bool {
-        (after_pos + 1..self.buf.len())
-            .any(|i| self.buf.get(i).map(|c| keys::is_consonant(c.key)).unwrap_or(false))
+        (after_pos + 1..self.buf.len()).any(|i| {
+            self.buf
+                .get(i)
+                .map(|c| keys::is_consonant(c.key))
+                .unwrap_or(false)
+        })
     }
 
     /// Rebuild output from position
@@ -416,22 +448,50 @@ mod tests {
     use super::*;
 
     fn type_keys(e: &mut Engine, s: &str) -> Vec<Result> {
-        s.chars().map(|c| {
-            let key = match c.to_ascii_lowercase() {
-                'a' => keys::A, 'b' => keys::B, 'c' => keys::C, 'd' => keys::D,
-                'e' => keys::E, 'f' => keys::F, 'g' => keys::G, 'h' => keys::H,
-                'i' => keys::I, 'j' => keys::J, 'k' => keys::K, 'l' => keys::L,
-                'm' => keys::M, 'n' => keys::N, 'o' => keys::O, 'p' => keys::P,
-                'q' => keys::Q, 'r' => keys::R, 's' => keys::S, 't' => keys::T,
-                'u' => keys::U, 'v' => keys::V, 'w' => keys::W, 'x' => keys::X,
-                'y' => keys::Y, 'z' => keys::Z,
-                '0' => keys::N0, '1' => keys::N1, '2' => keys::N2, '3' => keys::N3,
-                '4' => keys::N4, '5' => keys::N5, '6' => keys::N6, '7' => keys::N7,
-                '8' => keys::N8, '9' => keys::N9,
-                _ => 0,
-            };
-            e.on_key(key, c.is_uppercase(), false)
-        }).collect()
+        s.chars()
+            .map(|c| {
+                let key = match c.to_ascii_lowercase() {
+                    'a' => keys::A,
+                    'b' => keys::B,
+                    'c' => keys::C,
+                    'd' => keys::D,
+                    'e' => keys::E,
+                    'f' => keys::F,
+                    'g' => keys::G,
+                    'h' => keys::H,
+                    'i' => keys::I,
+                    'j' => keys::J,
+                    'k' => keys::K,
+                    'l' => keys::L,
+                    'm' => keys::M,
+                    'n' => keys::N,
+                    'o' => keys::O,
+                    'p' => keys::P,
+                    'q' => keys::Q,
+                    'r' => keys::R,
+                    's' => keys::S,
+                    't' => keys::T,
+                    'u' => keys::U,
+                    'v' => keys::V,
+                    'w' => keys::W,
+                    'x' => keys::X,
+                    'y' => keys::Y,
+                    'z' => keys::Z,
+                    '0' => keys::N0,
+                    '1' => keys::N1,
+                    '2' => keys::N2,
+                    '3' => keys::N3,
+                    '4' => keys::N4,
+                    '5' => keys::N5,
+                    '6' => keys::N6,
+                    '7' => keys::N7,
+                    '8' => keys::N8,
+                    '9' => keys::N9,
+                    _ => 0,
+                };
+                e.on_key(key, c.is_uppercase(), false)
+            })
+            .collect()
     }
 
     fn last_char(r: &Result) -> Option<char> {

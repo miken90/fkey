@@ -73,10 +73,12 @@ pub extern "C" fn ime_clear() {
 }
 
 /// Free result
+/// # Safety
+/// Caller must ensure `r` is a valid pointer returned by `ime_key` or null.
 #[no_mangle]
-pub extern "C" fn ime_free(r: *mut Result) {
+pub unsafe extern "C" fn ime_free(r: *mut Result) {
     if !r.is_null() {
-        unsafe { drop(Box::from_raw(r)) };
+        drop(Box::from_raw(r));
     }
 }
 
@@ -97,14 +99,14 @@ mod tests {
         // Type 'a' + 's' -> á
         let r1 = ime_key(keys::A, false, false);
         assert!(!r1.is_null());
-        ime_free(r1);
+        unsafe { ime_free(r1) };
 
         let r2 = ime_key(keys::S, false, false);
         assert!(!r2.is_null());
         unsafe {
             assert_eq!((*r2).chars[0], 'á' as u32);
+            ime_free(r2);
         }
-        ime_free(r2);
 
         ime_clear();
     }

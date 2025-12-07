@@ -69,9 +69,26 @@ pub const BACKQUOTE: u16 = 50;
 pub fn is_break(key: u16) -> bool {
     matches!(
         key,
-        SPACE | TAB | RETURN | ENTER | ESC | LEFT | RIGHT | UP | DOWN |
-        DOT | COMMA | SLASH | SEMICOLON | QUOTE | LBRACKET | RBRACKET |
-        BACKSLASH | MINUS | EQUAL | BACKQUOTE
+        SPACE
+            | TAB
+            | RETURN
+            | ENTER
+            | ESC
+            | LEFT
+            | RIGHT
+            | UP
+            | DOWN
+            | DOT
+            | COMMA
+            | SLASH
+            | SEMICOLON
+            | QUOTE
+            | LBRACKET
+            | RBRACKET
+            | BACKSLASH
+            | MINUS
+            | EQUAL
+            | BACKQUOTE
     )
 }
 
@@ -84,8 +101,31 @@ pub fn is_vowel(key: u16) -> bool {
 pub fn is_letter(key: u16) -> bool {
     matches!(
         key,
-        A | B | C | D | E | F | G | H | I | J | K | L | M |
-        N | O | P | Q | R | S | T | U | V | W | X | Y | Z
+        A | B
+            | C
+            | D
+            | E
+            | F
+            | G
+            | H
+            | I
+            | J
+            | K
+            | L
+            | M
+            | N
+            | O
+            | P
+            | Q
+            | R
+            | S
+            | T
+            | U
+            | V
+            | W
+            | X
+            | Y
+            | Z
     )
 }
 

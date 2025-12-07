@@ -12,14 +12,20 @@ pub const MAX: usize = 32;
 pub struct Char {
     pub key: u16,
     pub caps: bool,
-    pub tone: u8,    // 0=none, 1=circumflex(^), 2=horn/breve
-    pub mark: u8,    // 0=none, 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
+    pub tone: u8,     // 0=none, 1=circumflex(^), 2=horn/breve
+    pub mark: u8,     // 0=none, 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
     pub stroke: bool, // true if 'd' → 'đ' (stroke through)
 }
 
 impl Char {
     pub fn new(key: u16, caps: bool) -> Self {
-        Self { key, caps, tone: 0, mark: 0, stroke: false }
+        Self {
+            key,
+            caps,
+            tone: 0,
+            mark: 0,
+            stroke: false,
+        }
     }
 
     pub fn has_tone(&self) -> bool {
