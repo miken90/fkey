@@ -34,16 +34,3 @@ jobs:
           workspaces: core
       - run: cargo build --manifest-path core/Cargo.toml --release
 
-  draft:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: release-drafter/release-drafter@v6
-        with:
-          config-name: drafter.yml
-          disable-autolabeler: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
