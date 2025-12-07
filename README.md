@@ -18,19 +18,15 @@ Nên tôi tự viết.
 
 ## Ba Không
 
-| | |
-|:---:|---|
-| 🚫 | **Không thu phí** — Miễn phí, không có bản premium |
-| 🚫 | **Không quảng cáo** — Không popup, không banner |
-| 🚫 | **Không theo dõi** — Offline hoàn toàn, không gửi dữ liệu đi đâu |
+- 🚫 **Không thu phí** — Miễn phí, không có bản premium
+- 🚫 **Không quảng cáo** — Không popup, không banner
+- 🚫 **Không theo dõi** — Offline hoàn toàn, không gửi dữ liệu đi đâu
 
 ## Cam kết
 
-| | |
-|:---:|---|
-| ✅ | **Duy trì lâu dài** — Ít nhất đến 2030. Tôi dùng hàng ngày nên sẽ fix bug. |
-| ✅ | **Phản hồi nhanh** — Issues/PRs được xem trong 48 giờ. |
-| ✅ | **Ổn định** — Không breaking changes ở minor versions. Config được giữ nguyên qua các bản cập nhật. |
+- ✅ **Duy trì lâu dài** — Ít nhất đến 2030. Tôi dùng hàng ngày nên sẽ fix bug.
+- ✅ **Phản hồi nhanh** — Issues/PRs được xem trong 48 giờ.
+- ✅ **Ổn định** — Không breaking changes ở minor versions. Config được giữ nguyên qua các bản cập nhật.
 
 ## Cách hoạt động
 
