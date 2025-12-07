@@ -85,35 +85,13 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 - Windows: WPF (planned)
 - Linux: IBus/Wayland (planned)
 
-## Cài đặt
+## Tài liệu
 
-```bash
-git clone https://github.com/khaphanspace/gonhanh.org
-cd gonhanh.org
-make build
-cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
-```
-
-Lần đầu chạy cần cấp quyền Accessibility trong System Settings.
-
-## Phát triển
-
-```bash
-make test    # 99 tests
-make build   # Build tất cả
-make clean   # Xóa build artifacts
-```
-
-Xem thêm: [docs/development.md](docs/development.md) · [docs/architecture.md](docs/architecture.md)
-
-## Roadmap
-
-| Version | Khi nào | Gì                  |
-| ------- | ------- | ------------------- |
-| 0.1     | Q1 2025 | macOS beta          |
-| 0.2     | Q2 2025 | Stable, auto-update |
-| 0.3     | Q3 2025 | Windows             |
-| 1.0     | Q4 2025 | Production          |
+| Tài liệu                                                   | Mô tả                                        |
+| ---------------------------------------------------------- | -------------------------------------------- |
+| 🏗️ [Architecture](docs/architecture.md)                    | Kiến trúc hệ thống, FFI, và luồng dữ liệu.   |
+| 🛠️ [Development](docs/development.md)                      | Hướng dẫn build, test, và đóng góp mã nguồn. |
+| 📖 [Vietnamese System](docs/vietnamese-language-system.md) | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.   |
 
 ## Credits
 
