@@ -205,10 +205,12 @@ impl Engine {
         }
 
         // Handle tone modifiers (aa, aw, a6, a7, etc.)
-        let vowel_keys: Vec<u16> = buffer_keys
+        // Only include vowels that don't have a tone yet
+        let vowel_keys: Vec<u16> = self
+            .buf
             .iter()
-            .copied()
-            .filter(|&k| keys::is_vowel(k))
+            .filter(|c| keys::is_vowel(c.key) && c.tone == 0)
+            .map(|c| c.key)
             .collect();
 
         if let Some((tone, target_key)) = m.is_tone_for(key, &vowel_keys) {
@@ -285,7 +287,7 @@ impl Engine {
         if let Some(pos) = self.buf.find_vowel_by_key(target_key) {
             if let Some(c) = self.buf.get_mut(pos) {
                 c.tone = tone;
-                self.last_transform = Some(Transform::Tone(key, tone));
+                self.last_transform = Some(Transform::Tone(key, tone, target_key));
                 return self.rebuild_from(pos);
             }
         }
