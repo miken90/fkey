@@ -99,6 +99,10 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 - [OpenKey](https://github.com/tuyenvm/OpenKey)
 - [EVKey](https://evkeyvn.com/)
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=khaphanspace/gonhanh.org&type=Date)](https://star-history.com/#khaphanspace/gonhanh.org&Date)
+
 ## License
 
 [GPL-3.0-or-later](LICENSE)
