@@ -19,11 +19,11 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 
 ## Động lực
 
-Dự án được xây dựng dựa trên nguồn cảm hứng từ những "người khổng lồ" đi trước:
+Dự án kế thừa cảm hứng từ:
 
-- Sự ổn định bền bỉ qua hàng thập kỷ của **UniKey**.
-- Tinh thần chia sẻ mã nguồn mở từ **OpenKey**.
-- Trải nghiệm tối giản, hiệu quả của **EVKey**.
+- Sự ổn định qua thập kỷ của **UniKey**.
+- Tinh thần mã nguồn mở của **OpenKey**.
+- Sự tối giản, hiệu quả của **EVKey**.
 
 Xuất phát từ nhu cầu cá nhân về sự ổn định tuyệt đối trên các công cụ hiện đại (như Claude Code, Terminal), tôi (**Kha Phan**) phát triển GoNhanh để tiếp nối di sản của những người đi trước.
 
