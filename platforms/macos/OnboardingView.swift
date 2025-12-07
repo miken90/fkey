@@ -16,41 +16,25 @@ struct OnboardingView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            ProgressIndicator(step: stepIndex, total: 3)
-                .padding(.vertical, 16)
-
-            Divider()
-
-            Group {
-                switch currentStep {
-                case .welcome:
-                    WelcomeStepView(onNext: goToPermission)
-                case .permission:
-                    PermissionStepView(
-                        hasPermission: hasPermission,
-                        onRestart: restartApp
-                    )
-                case .setup:
-                    SetupStepView(selectedMode: $selectedMode, onFinish: finish)
-                }
+        Group {
+            switch currentStep {
+            case .welcome:
+                WelcomeStepView(onNext: goToPermission)
+            case .permission:
+                PermissionStepView(
+                    hasPermission: hasPermission,
+                    onRestart: restartApp
+                )
+            case .setup:
+                SetupStepView(selectedMode: $selectedMode, onFinish: finish)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 500, height: 420)
+        .frame(width: 520, height: 480)
         .onAppear {
             startPermissionCheck()
         }
         .onDisappear {
             stopPermissionCheck()
-        }
-    }
-
-    private var stepIndex: Int {
-        switch currentStep {
-        case .welcome: return 0
-        case .permission: return 1
-        case .setup: return 2
         }
     }
 
@@ -99,23 +83,6 @@ struct OnboardingView: View {
 
     private func checkPermission() {
         hasPermission = AXIsProcessTrusted()
-    }
-}
-
-// MARK: - Progress Indicator
-
-struct ProgressIndicator: View {
-    let step: Int
-    let total: Int
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<total, id: \.self) { i in
-                Circle()
-                    .fill(i <= step ? Color.accentColor : Color.gray.opacity(0.3))
-                    .frame(width: 8, height: 8)
-            }
-        }
     }
 }
 
