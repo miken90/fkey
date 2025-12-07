@@ -93,12 +93,6 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 | Architecture                                  | Kiến trúc hệ thống, FFI, và luồng dữ liệu.   | [Tài liệu](docs/architecture.md)               |
 | Development Guide                             | Hướng dẫn build, test, và đóng góp mã nguồn. | [Tài liệu](docs/development.md)                |
 
-## Credits
-
-- [UniKey](https://www.unikey.org/)
-- [OpenKey](https://github.com/tuyenvm/OpenKey)
-- [EVKey](https://evkeyvn.com/)
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=khaphanspace/gonhanh.org&type=Date)](https://star-history.com/#khaphanspace/gonhanh.org&Date)
