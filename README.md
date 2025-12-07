@@ -17,24 +17,37 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 - **Trải nghiệm mượt mà**: Giao diện thích ứng (Light/Dark mode), hoạt ảnh mượt mà, phản hồi lập tức.
 - **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
 
-### Tính năng nổi bật
+### Tính năng chi tiết
 
-- ✅ **Đa kiểu gõ**: Hỗ trợ đầy đủ Telex và VNI.
-- ✅ **Xử lý thông minh**: Tự động đặt dấu đúng vị trí và kiểm tra ngữ âm.
-- ✅ **Phím tắt**: Chuyển đổi Anh/Việt tức thì, có thể tùy biến.
-- ✅ **Tối giản**: Chạy ngầm dưới khay hệ thống, không chiếm không gian làm việc.
+#### 🧠 Core Engine
+
+- **Kiểu gõ**: Hỗ trợ đầy đủ **Telex** và **VNI**.
+- **Xử lý dấu thông minh**:
+  - Tự động đặt dấu đúng vị trí ngữ âm (Smart Tone Placement).
+  - Tùy chọn kiểu bỏ dấu: Cổ điển (`oà`) hoặc Hiện đại (`òa`).
+  - Kiểm tra tính hợp lệ của âm tiết (Phonology Check) để tránh gõ sai.
+- **Hiệu suất tối thượng**: Độ trễ xử lý < 1ms, bộ nhớ sử dụng cực thấp (~5MB), không gây nóng máy.
+
+#### 🖥️ Native App (macOS)
+
+- **Tối giản**: Ứng dụng chạy trên Menu Bar, không chiếm Dock, không làm phiền.
+- **Giao diện hiện đại**: Viết bằng **SwiftUI**, tự động thích ứng Light/Dark mode.
+- **Tiện ích**:
+  - Phím tắt chuyển đổi Anh/Việt toàn cục.
+  - Tự động khởi động cùng hệ thống.
+  - Cơ chế Hook bàn phím cấp thấp (CGEventTap) đảm bảo độ ổn định cao trên mọi ứng dụng (Terminal, Claude, IDE...).
+
+### Cam kết "Ba Không"
+
+- 🚫 **Không thu phí**: Miễn phí trọn đời, không có bản "Premium".
+- 🚫 **Không rác**: Không quảng cáo, không popup, không tính năng thừa thãi.
+- 🚫 **Không theo dõi**: Offline 100%, không thu thập dữ liệu, mã nguồn minh bạch.
 
 ## Động lực
 
 Tiếp nối di sản của **VietKey**, **UniKey**, **OpenKey** và **EVKey**, tôi (**Kha Phan**) phát triển GoNhanh để giải quyết nhu cầu về sự ổn định tuyệt đối trên các công cụ lập trình hiện đại.
 
 Dự án **phi lợi nhuận** với cam kết: **Mã nguồn mở - Miễn phí - Của cộng đồng**.
-
-## Ba Không
-
-- 🚫 **Không thu phí**: Miễn phí trọn đời, không có bản "Premium".
-- 🚫 **Không rác**: Không quảng cáo, không popup, không tính năng thừa thãi.
-- 🚫 **Không theo dõi**: Offline 100%, không thu thập dữ liệu, mã nguồn minh bạch.
 
 ## So sánh
 
