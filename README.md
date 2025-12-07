@@ -45,15 +45,15 @@ Chúng tôi xây dựng GoNhanh dựa trên 3 trụ cột:
 
 ## So sánh
 
-|                |      GoNhanh      |      EVKey      |      OpenKey      |   UniKey   |
-| :------------- | :---------------: | :-------------: | :---------------: | :--------: |
-| **Trạng thái** |   🟢 **Active**   | 🔴 Discontinued |  🟡 Maintenance   | 🟢 Stable  |
-| **Nền tảng**   | macOS, Windows\*  | macOS, Windows  | macOS, Win, Linux |  Windows   |
-| Năm ra mắt     |       2025        |      2018       |       2019        |    2000    |
-| Miễn phí       |        ✅         |       ✅        |        ✅         |     ✅     |
-| Open source    |        ✅         |       ✅        |        ✅         |     ⚠️     |
-| Công nghệ      | **Rust + Native** |    C++ + Qt     |     C++ + Qt      |    C++     |
-| Bảng mã        |    **Unicode**    |   Đa bảng mã    |    Đa bảng mã     | Đa bảng mã |
+|                |        GoNhanh         |        EVKey        |      OpenKey      |   UniKey   |
+| :------------- | :--------------------: | :-----------------: | :---------------: | :--------: |
+| **Trạng thái** | 🟢 **Đang phát triển** | 🔴 Ngừng phát triển |    🟡 Bảo trì     | 🟢 Ổn định |
+| **Nền tảng**   |    macOS, Windows\*    |   macOS, Windows    | macOS, Win, Linux |  Windows   |
+| Năm ra mắt     |          2025          |        2018         |       2019        |    2000    |
+| Miễn phí       |           ✅           |         ✅          |        ✅         |     ✅     |
+| Open source    |           ✅           |         ✅          |        ✅         |     ⚠️     |
+| Công nghệ      |   **Rust + Native**    |      C++ + Qt       |     C++ + Qt      |    C++     |
+| Bảng mã        |      **Unicode**       |     Đa bảng mã      |    Đa bảng mã     | Đa bảng mã |
 
 _\* Windows: đang trong lộ trình phát triển (Roadmap)._
 
