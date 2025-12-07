@@ -9,19 +9,23 @@
   <a href="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml"><img src="https://github.com/khaphanspace/gonhanh.org/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
-<p align="center"><strong>GoNhanh</strong> (đọc là <strong>Gõ Nhanh</strong>) - Bộ gõ tiếng Việt hiệu suất cao, hiện đại và đa nền tảng.</p>
+<p align="center"><strong>GoNhanh</strong> - Bộ gõ tiếng Việt hiện đại, hiệu suất cao dành cho macOS. <br>
+Kết hợp sức mạnh của <strong>Rust</strong> (Core Engine) và <strong>SwiftUI</strong> (Native UI) để mang lại trải nghiệm gõ phím mượt mà, ổn định và bảo mật.</p>
 
-Sức mạnh của **Rust** (Core Engine) kết hợp với **Native UI** (SwiftUI) mang lại trải nghiệm gõ phím mượt mà, ổn định và bảo mật tuyệt đối.
+## 📥 Cài đặt
 
-## 🚀 Về GoNhanh
+1. Tải phiên bản mới nhất tại [**Releases**](https://github.com/khaphanspace/gonhanh.org/releases).
+2. Mở ứng dụng và cấp quyền Accessibility theo hướng dẫn.
+3. Tận hưởng trải nghiệm gõ phím mượt mà!
 
-GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Việt **hoàn thiện nhất**, dựa trên các trụ cột: **Chuẩn hóa - Hiện đại - Tương lai**.
+## 🚀 Tính năng nổi bật
 
-- **Chuẩn hóa**: Tuyệt đối tuân thủ quy tắc chính tả chữ Quốc ngữ (theo chuẩn BGD&ĐT).
-- **Hiệu suất & Công nghệ**: Core engine viết bằng Rust kết hợp Native UI giúp xử lý tức thì, bỏ qua gánh nặng lịch sử (legacy code).
-- **Đa nền tảng & Tương lai**: Kiến trúc Hybrid sẵn sàng cho macOS, Windows, Linux và các hệ thống thế hệ mới (Wayland).
-- **Trải nghiệm mượt mà**: Giao diện thích ứng (Light/Dark mode), hoạt ảnh mượt mà, phản hồi lập tức.
-- **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
+GoNhanh hướng tới sự **Chuẩn hóa - Hiệu suất - Tiện dụng**:
+
+- **Core Engine (Rust)**: Xử lý dấu thông minh, độ trễ < 1ms, bộ nhớ cực thấp (~5MB).
+- **Native UI (SwiftUI)**: Giao diện tối giản trên Menu Bar, hỗ trợ Light/Dark mode.
+- **Hook cấp thấp**: Tương thích tốt với Terminal, IDE (VS Code, IntelliJ) và các ứng dụng đồ họa.
+- **Smart Defaults**: Cài là dùng, không cần cấu hình phức tạp.
 
 ### Tính năng chi tiết
 
@@ -85,11 +89,11 @@ Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 | **Chọn bảng mã**                           |  ⚠️ Nhiều lựa chọn gây rối   |   ✅ Mặc định Unicode    |
 | **Chọn kiểu gõ**                           |    ⚠️ Telex/VNI/VIQR/...     |    ✅ Telex hoặc VNI     |
 | **Cấu hình phức tạp**                      |       ⚠️ 10+ tùy chọn        |      ✅ Cài là dùng      |
-| **Chạy quyền Admin (Windows)**             |     ⚠️ Cần bật thủ công      |   ✅ Tự động (planned)   |
+| **Chạy quyền Admin (Windows)**             |     ⚠️ Cần bật thủ công      |   🗓️ Tự động (planned)   |
 | **Quyền Accessibility (macOS)**            |    ⚠️ Hướng dẫn phức tạp     |    ✅ Prompt tự động     |
 | **Gõ trong Password field**                |  ❌ Bị chặn (Secure Input)   | ✅ Hoạt động bình thường |
 | **Khởi động cùng hệ thống**                |     ⚠️ Cấu hình thủ công     |     ✅ Mặc định bật      |
-| **Cập nhật phiên bản**                     |      ⚠️ Tải về thủ công      | ✅ Auto-update (planned) |
+| **Cập nhật phiên bản**                     |      ⚠️ Tải về thủ công      | 🗓️ Auto-update (planned) |
 
 **Triết lý GoNhanh: Cài là dùng, không cần cấu hình.**
 
@@ -135,12 +139,12 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 ## Tài liệu
 
-| Tài liệu                                      | Mô tả                                                          | Link                                           |
-| --------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- |
-| Hệ thống chữ viết tiếng Việt & Phương pháp gõ | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.                     | [Tài liệu](docs/vietnamese-language-system.md) |
-| Architecture                                  | Kiến trúc hệ thống, FFI, và luồng dữ liệu.                     | [Tài liệu](docs/architecture.md)               |
-| Development Guide                             | Hướng dẫn build, test, và đóng góp mã nguồn.                   | [Tài liệu](docs/development.md)                |
-| Các lỗi thường gặp                            | Tổng hợp lỗi bộ gõ (Chrome, Word, Terminal) và cách khắc phục. | [Tài liệu](docs/common-issues.md)              |
+| Tài liệu                                                                 | Mô tả                                                          |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| [Hệ thống chữ viết & Phương pháp gõ](docs/vietnamese-language-system.md) | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.                     |
+| [Architecture](docs/architecture.md)                                     | Kiến trúc hệ thống, FFI, và luồng dữ liệu.                     |
+| [Development Guide](docs/development.md)                                 | Hướng dẫn build, test, và đóng góp mã nguồn.                   |
+| [Các lỗi thường gặp](docs/common-issues.md)                              | Tổng hợp lỗi bộ gõ (Chrome, Word, Terminal) và cách khắc phục. |
 
 ## Star History
 
