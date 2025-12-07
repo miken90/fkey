@@ -328,10 +328,51 @@ impl Engine {
             if let Some(c) = self.buf.get_mut(pos) {
                 c.tone = tone;
                 self.last_transform = Some(Transform::Tone(key, tone, target_key));
-                return self.rebuild_from(pos);
+
+                // After adding diacritic, reposition mark if needed
+                // e.g., "ua2" → "uà", then "7" → "ưà" should become "ừa"
+                self.reposition_mark_if_needed();
+
+                return self.rebuild_from(0); // Rebuild from start since mark may have moved
             }
         }
         Result::none()
+    }
+
+    /// Reposition mark to correct vowel based on current phonology
+    /// Called after adding/changing diacritic (tone modifier)
+    fn reposition_mark_if_needed(&mut self) {
+        // Find current mark position and value
+        let mark_info: Option<(usize, u8)> = self
+            .buf
+            .iter()
+            .enumerate()
+            .find(|(_, c)| c.mark > 0)
+            .map(|(i, c)| (i, c.mark));
+
+        if let Some((old_pos, mark_value)) = mark_info {
+            // Recalculate correct position based on updated vowels
+            let vowels = self.collect_vowels();
+            if vowels.is_empty() {
+                return;
+            }
+
+            let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
+            let has_final = self.has_final_consonant(last_vowel_pos);
+            let new_pos = Phonology::find_tone_position(&vowels, has_final, self.modern);
+
+            // Move mark if position changed
+            if new_pos != old_pos {
+                // Clear old mark
+                if let Some(c) = self.buf.get_mut(old_pos) {
+                    c.mark = 0;
+                }
+                // Set new mark
+                if let Some(c) = self.buf.get_mut(new_pos) {
+                    c.mark = mark_value;
+                }
+            }
+        }
     }
 
     /// Revert tone transformation
