@@ -86,18 +86,25 @@ fi
 
 echo "🍎 Building macOS app..."
 
+# Get version from git tag
+GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+VERSION=${GIT_TAG#v}  # Remove 'v' prefix
+echo "📌 Version from git tag: $VERSION"
+
 # Build macOS app with xcodebuild
 cd "$(dirname "$0")/../platforms/macos"
 
 if [ -d "GoNhanh.xcodeproj" ]; then
     echo "Building with Xcode..."
 
-    # Build and filter warnings
+    # Build with version from git tag
     xcodebuild -scheme GoNhanh \
         -configuration Release \
         -destination 'platform=macOS,arch=arm64' \
         -destination 'platform=macOS,arch=x86_64' \
         -derivedDataPath "$(pwd)/build/DerivedData" \
+        MARKETING_VERSION="$VERSION" \
+        CURRENT_PROJECT_VERSION="$VERSION" \
         2>&1 | grep -v "Using the first of multiple matching destinations"
 
     # Copy app from DerivedData to local build directory

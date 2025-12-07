@@ -44,8 +44,10 @@ setup: ## Setup dev environment
 install: build ## Install app to /Applications
 	@cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
 
-release: ## Tag & push new version
+release: ## Tag, build & push new version
 	@echo "$(TAG) → v$(NEXT)"
 	@git add -A && git commit -m "release: v$(NEXT)" --allow-empty
-	@git tag v$(NEXT) && git push origin main v$(NEXT)
+	@git tag v$(NEXT)
+	@$(MAKE) build
+	@git push origin main v$(NEXT)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
