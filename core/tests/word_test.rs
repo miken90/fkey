@@ -472,13 +472,14 @@ fn telex_consonant_clusters() {
 #[test]
 fn vni_delayed_tone() {
     // VNI allows typing tone after multiple chars
+    // VNI: 6=^, 7=horn(ơ,ư), 8=breve(ă), 9=đ
     run_vni(&[
         ("toi6", "tôi"),            // 6 finds 'o' not 'i'
         ("toi61", "tối"),           // tôi + sắc
-        ("nguoi8", "nguơi"),        // 8 finds 'o'
-        ("nguoi82", "nguời"),       // nguơi + huyền
-        ("duong8", "duơng"),        // 8 on 'o'
-        ("duong82", "duờng"),       // + huyền
+        ("nguoi7", "nguơi"),        // 7=horn finds 'o'
+        ("nguoi72", "nguời"),       // nguơi + huyền
+        ("duong7", "duơng"),        // 7=horn on 'o'
+        ("duong72", "duờng"),       // + huyền
         ("muon6", "muôn"),          // 6 on 'o'
         ("muon61", "muốn"),         // + sắc
     ]);

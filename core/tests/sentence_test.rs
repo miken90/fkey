@@ -201,15 +201,16 @@ fn telex_long_sentences() {
 
 // ============================================================
 // VNI TESTS
+// VNI: 6=circumflex(^), 7=horn(ơ,ư), 8=breve(ă), 9=đ
 // ============================================================
 
 #[test]
 fn vni_proverbs() {
     run_vni(&[
-        ("ho5c mo65t bie61t mu8o8i2", "học một biết mười"),
-        ("uo61ng nu8o81c nho81 nguo62n", "uống nước nhớ nguồn"),
-        ("to61t go64 ho8n d9e5p ngu8o8i2", "tốt gỗ hơn đẹp người"),
-        ("nu8o81c cha3y d9a1 mo2n", "nước chảy đá mòn"),
+        ("ho5c mo65t bie61t mu7o7i2", "học một biết mười"),
+        ("uo61ng nu7o71c nho71 nguo62n", "uống nước nhớ nguồn"),
+        ("to61t go64 ho7n d9e5p ngu7o7i2", "tốt gỗ hơn đẹp người"),
+        ("nu7o71c cha3y d9a1 mo2n", "nước chảy đá mòn"),
     ]);
 }
 
@@ -218,14 +219,14 @@ fn vni_greetings() {
     run_vni(&[
         ("xin cha2o", "xin chào"),
         ("ta5m bie65t", "tạm biệt"),
-        ("ca3m o8n", "cảm ơn"),
+        ("ca3m o7n", "cảm ơn"),
     ]);
 }
 
 #[test]
 fn vni_daily() {
     run_vni(&[
-        ("ho6m nay tho8i2 tie61t the61 na2o", "hôm nay thời tiết thế nào"),
+        ("ho6m nay tho7i2 tie61t the61 na2o", "hôm nay thời tiết thế nào"),
         ("ba5n d9i d9a6u va65y", "bạn đi đâu vậy"),
         ("bao nhie6u tie62n", "bao nhiêu tiền"),
     ]);
@@ -244,7 +245,7 @@ fn vni_mixed_case() {
 fn vni_long_sentences() {
     run_vni(&[
         (
-            "vie65t nam la2 mo65t quo61c gia na72m o83 d9o6ng nam a1",
+            "vie65t nam la2 mo65t quo61c gia na82m o73 d9o6ng nam a1",
             "việt nam là một quốc gia nằm ở đông nam á"
         ),
         (
