@@ -35,6 +35,19 @@ Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn
 - ✅ **Chất lượng cao**: Quy trình phát triển nghiêm ngặt (CI/CD, High Test Coverage).
 - ✅ **Tôn trọng người dùng**: Lắng nghe phản hồi và fix bug nhanh chóng (48h).
 
+## So sánh
+
+|              | GoNhanh | OpenKey | UniKey | EVKey |
+| ------------ | :-----: | :-----: | :----: | :---: |
+| Năm          |  2025   |  2019   |  2000  | 2018  |
+| Miễn phí     |   ✅    |   ✅    |   ✅   |  ✅   |
+| Open source  |   ✅    |   ✅    |   ⚠️   |  ✅   |
+| Chỉ Unicode  |   ✅    |   ❌    |   ❌   |  ❌   |
+| macOS native | SwiftUI |  Obj-C  |   Qt   |  Qt   |
+| Engine       |  Rust   |   C++   |  C++   |  C++  |
+
+Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
+
 ## Cách hoạt động
 
 Engine dựa trên ngữ âm học tiếng Việt thay vì bảng tra cứu:
@@ -50,30 +63,27 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 ## Kiến trúc
 
 ```
-┌─────────────────────────────────┐
-│     Platform UI (Swift/WPF)    │
-└───────────────┬─────────────────┘
-                │ FFI
-┌───────────────▼─────────────────┐
-│         Rust Core Engine        │
-└─────────────────────────────────┘
+┌─────────────────────────────────────┐
+│         Platform UI Layer           │
+│  ┌──────────┐      ┌──────────┐    │
+│  │  macOS   │      │ Windows  │    │
+│  │ SwiftUI  │      │   WPF    │    │
+│  └─────┬────┘      └────┬─────┘    │
+└────────┼────────────────┼──────────┘
+         │    FFI (C ABI) │
+┌────────▼────────────────▼──────────┐
+│         Rust Core Library          │
+│  ┌─────────────────────────────┐   │
+│  │  Engine (Telex/VNI)         │   │
+│  │  - Buffer management        │   │
+│  │  - Phonology-based rules    │   │
+│  │  - Unicode output           │   │
+│  └─────────────────────────────┘   │
+└────────────────────────────────────┘
 ```
 
 - macOS: SwiftUI (done)
 - Windows: WPF (planned)
-
-## So sánh
-
-|              | GoNhanh | OpenKey | UniKey | EVKey |
-| ------------ | :-----: | :-----: | :----: | :---: |
-| Năm          |  2025   |  2019   |  2000  | 2018  |
-| Miễn phí     |   ✅    |   ✅    |   ✅   |  ✅   |
-| Open source  |   ✅    |   ✅    |   ⚠️   |  ✅   |
-| Chỉ Unicode  |   ✅    |   ❌    |   ❌   |  ❌   |
-| macOS native | SwiftUI |  Obj-C  |   Qt   |  Qt   |
-| Engine       |  Rust   |   C++   |  C++   |  C++  |
-
-Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 
 ## Cài đặt
 
