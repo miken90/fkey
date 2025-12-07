@@ -213,7 +213,7 @@ fn telex_three_vowels() {
         ("ngoais", "ngoái"),        // turn back
         ("khoair", "khoải"),        // (rare)
         ("loaij", "loại"),          // type/kind
-        ("xoaij", "xoài"),          // mango (tree)
+        ("xoaif", "xoài"),          // mango (tree)
 
         // ươu: mark on ơ
         ("ruwowuj", "rượu"),        // alcohol
