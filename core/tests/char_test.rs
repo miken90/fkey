@@ -169,7 +169,7 @@ fn telex_d_stroke() {
 #[test]
 fn telex_delayed_tone_input() {
     // Telex delayed mode: tone key can be typed after consonants
-    // w applies to first matching vowel from end (u, o, or a)
+    // w applies horn to vowels; for uo compound, applies to BOTH u and o
     run_telex(&[
         // Single vowel cases
         ("tuw", "tư"), // tu + w → tư
@@ -178,10 +178,8 @@ fn telex_delayed_tone_input() {
         // With final consonants - w still finds vowel
         ("tungw", "tưng"), // tung + w → tưng
         ("tongw", "tơng"), // tong + w → tơng
-        // Multiple vowels: w finds u first (for uo → ươ pattern)
-        ("tuow", "tưo"),  // tuo + w → tưo (first w applies to u)
-        ("tuoww", "tươ"), // tuow + w → tươ (second w applies to o)
-        // Standard ươ compound needs uwow pattern
+        // uo compound: single w applies horn to BOTH u and o
+        ("tuow", "tươ"),       // tuo + w → tươ (w applies to both u and o)
         ("truwowng", "trương"), // standard Telex for trường
     ]);
 }
