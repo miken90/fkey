@@ -1,52 +1,63 @@
 # ⚡ GoNhanh
 
+[![CI](https://github.com/user/gonhanh/actions/workflows/ci.yml/badge.svg)](https://github.com/user/gonhanh/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+
 Bộ gõ tiếng Việt hiệu suất cao, native cho macOS và Windows.
 
-## Features
+## ✨ Features
 
-- ⚡ Siêu nhẹ (~3 MB)
-- 🚀 Cực nhanh (~25 MB RAM)
-- 🎯 Native macOS SwiftUI
-- 🦀 Rust core - an toàn & hiệu quả
-- 🔒 Open source - GPL-3.0
+| | |
+|---|---|
+| ⚡ **Siêu nhẹ** | ~3 MB binary |
+| 🚀 **Cực nhanh** | ~25 MB RAM, khởi động 0.2s |
+| 🎯 **Native UI** | SwiftUI (macOS), WPF (Windows) |
+| 🦀 **Rust core** | An toàn, hiệu quả, cross-platform |
+| 🔒 **Open source** | GPL-3.0 |
+
+## 📥 Installation
+
+### macOS
+
+```bash
+# Homebrew (coming soon)
+brew install gonhanh
+
+# Manual
+# Download from Releases page
+```
+
+## 🛠 Build from source
+
+**Prerequisites:** Rust 1.70+, Xcode 15+ (macOS)
+
+```bash
+# Clone
+git clone https://github.com/user/gonhanh.org
+cd gonhanh.org
+
+# Build
+./scripts/build-macos.sh
+
+# Or build core only
+cd core && cargo build --release
+```
 
 ## 📁 Structure
 
 ```
 gonhanh.org/
-├── core/                # Rust core engine (cross-platform)
-├── platforms/           # Platform-specific apps
-│   ├── macos/          # macOS SwiftUI app
-│   │   ├── *.swift     # Swift source files
-│   │   └── Info.plist
-│   └── windows/         # Windows (WPF) - coming soon
-└── scripts/             # Build scripts
+├── core/           # Rust core (cross-platform)
+├── platforms/
+│   ├── macos/      # SwiftUI app
+│   └── windows/    # WPF (planned)
+└── scripts/        # Build scripts
 ```
 
-## 🚀 Build
+## 🤝 Contributing
 
-### macOS
-```bash
-./scripts/build-macos.sh
-```
-
-### Core only
-```bash
-cd core && cargo build --release
-```
-
-## 📊 Metrics
-
-- Binary: ~3 MB
-- RAM: ~25 MB
-- Startup: ~0.2s
-
-## 🛠 Tech Stack
-
-- **Core**: Rust (rdev, enigo)
-- **macOS**: SwiftUI
-- **Windows**: WPF/WinUI3 (planned)
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## 📄 License
 
-GPL-3.0-or-later
+[GPL-3.0-or-later](LICENSE)

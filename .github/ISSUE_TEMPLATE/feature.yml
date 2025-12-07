@@ -1,0 +1,26 @@
+name: ✨ Feature Request
+description: Suggest a new feature
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      placeholder: What would you like?
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      placeholder: Why is this useful?
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - All
+        - macOS
+        - Windows
