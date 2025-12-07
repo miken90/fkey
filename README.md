@@ -87,11 +87,11 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 ## Tài liệu
 
-| Tài liệu                                                   | Mô tả                                        |
-| ---------------------------------------------------------- | -------------------------------------------- |
-| 🏗️ [Architecture](docs/architecture.md)                    | Kiến trúc hệ thống, FFI, và luồng dữ liệu.   |
-| 🛠️ [Development](docs/development.md)                      | Hướng dẫn build, test, và đóng góp mã nguồn. |
-| 📖 [Vietnamese System](docs/vietnamese-language-system.md) | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.   |
+| Tài liệu                   | Link                                                                        | Mô tả                                        |
+| -------------------------- | --------------------------------------------------------------------------- | -------------------------------------------- |
+| Architecture               | 🏗️ [docs/architecture.md](docs/architecture.md)                             | Kiến trúc hệ thống, FFI, và luồng dữ liệu.   |
+| Development Guide          | 🛠️ [docs/development.md](docs/development.md)                               | Hướng dẫn build, test, và đóng góp mã nguồn. |
+| Vietnamese Language System | 📖 [docs/vietnamese-language-system.md](docs/vietnamese-language-system.md) | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.   |
 
 ## Credits
 
