@@ -52,11 +52,15 @@ Tài liệu này tổng hợp các vấn đề phổ biến nhất mà người 
 
 ## 2. Lỗi trên Trình duyệt (Chrome/Edge/Safari/Firefox)
 
-### 2.1. Mất chữ trên thanh địa chỉ (Omnibox) - Chrome/Edge Chromium
+### 2.1. Mất chữ / Dính chữ trên thanh địa chỉ (Omnibox) - Chrome/Edge Chromium
 
-- **Hiện tượng**: Gõ `tiếng việt` -> `tiêng viêt` (mất dấu) hoặc `t iếng việt` (nhảy cách/lặp chữ cái đầu).
+- **Hiện tượng**:
+  - Gõ `tiếng việt` -> `tiêng viêt` (mất dấu).
+  - Gõ `aa` -> `aâ` (dính chữ, thay vì `â`).
+  - Gõ `dd` -> `dđ` (dính chữ).
 - **Nguyên nhân**: Cơ chế **Suggestion/Autocomplete** của trình duyệt xung đột với bộ gõ khi đang bỏ dấu.
-- **Khắc phục**:
+
+* **Khắc phục**:
   - **Cách 1 (Khuyên dùng)**: Dùng phím tắt `Ctrl+K` (hoặc `Cmd+L` rồi `Tab`) để tìm kiếm bằng Google Search thay vì gõ trực tiếp URL.
   - **Cách 2**: Tắt gợi ý trong Settings:
     - Chrome: `Settings` -> `You and Google` -> `Sync and Google services` -> tắt **Autocomplete searches and URLs**.
