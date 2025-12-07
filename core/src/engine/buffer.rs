@@ -7,13 +7,14 @@ pub const MAX: usize = 32;
 pub struct Char {
     pub key: u16,
     pub caps: bool,
-    pub tone: u8,  // 0=none, 1=hat(^), 2=breve(˘)
-    pub mark: u8,  // 0=none, 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
+    pub tone: u8,   // 0=none, 1=hat(^), 2=breve(˘)
+    pub mark: u8,   // 0=none, 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
+    pub is_d: bool, // true if 'd' has been converted to 'đ'
 }
 
 impl Char {
     pub fn new(key: u16, caps: bool) -> Self {
-        Self { key, caps, tone: 0, mark: 0 }
+        Self { key, caps, tone: 0, mark: 0, is_d: false }
     }
 
     pub fn has_tone(&self) -> bool {

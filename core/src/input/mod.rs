@@ -28,8 +28,16 @@ pub trait Method {
         None
     }
 
-    /// Check if key triggers đ
+    /// Check if key triggers đ (immediate mode - checks prev key only)
     fn is_d(&self, key: u16, prev: Option<u16>) -> bool;
+
+    /// Check if key triggers đ for any 'd' in buffer (delayed mode - VNI)
+    /// Returns true if key=9 and buffer contains 'd'
+    fn is_d_for(&self, key: u16, buffer_keys: &[u16]) -> bool {
+        // Default: no delayed đ support
+        let _ = (key, buffer_keys);
+        false
+    }
 
     /// Check if key removes mark (z or 0)
     fn is_remove(&self, key: u16) -> bool;

@@ -162,16 +162,28 @@ impl Engine {
         let m = input::get(self.method);
         let prev_key = self.buf.last().map(|c| c.key);
 
-        // Handle đ (dd/d9)
+        // Handle đ (dd/d9) - immediate mode
         if m.is_d(key, prev_key) {
             self.last_transform = None;
             return self.handle_d();
         }
 
-        // Handle tone modifiers (aa, aw, a6, a7, etc.)
-        let vowel_keys: Vec<u16> = self.buf.iter()
-            .filter(|c| keys::is_vowel(c.key))
+        // Collect buffer keys for delayed operations (excluding already-converted đ)
+        let buffer_keys: Vec<u16> = self.buf.iter()
+            .filter(|c| !c.is_d) // Skip already converted 'd' -> 'đ'
             .map(|c| c.key)
+            .collect();
+
+        // Handle delayed đ (VNI: dung9 -> đung)
+        if m.is_d_for(key, &buffer_keys) {
+            self.last_transform = None;
+            return self.handle_delayed_d();
+        }
+
+        // Handle tone modifiers (aa, aw, a6, a7, etc.)
+        let vowel_keys: Vec<u16> = buffer_keys.iter()
+            .copied()
+            .filter(|&k| keys::is_vowel(k))
             .collect();
 
         if let Some((tone, target_key)) = m.is_tone_for(key, &vowel_keys) {
@@ -212,11 +224,33 @@ impl Engine {
         Result::none()
     }
 
-    /// Handle đ transformation (dd/d9)
+    /// Handle đ transformation (dd/d9) - immediate mode
     fn handle_d(&mut self) -> Result {
         let caps = self.buf.last().map(|c| c.caps).unwrap_or(false);
         self.buf.pop();
         Result::send(1, &[chars::get_d(caps)])
+    }
+
+    /// Handle delayed đ transformation (VNI: dung9 -> đung)
+    /// Find 'd' in buffer, convert to 'đ', rebuild from that position
+    fn handle_delayed_d(&mut self) -> Result {
+        // Find position of unconverted 'd' in buffer
+        let d_pos = self.buf.iter()
+            .enumerate()
+            .find(|(_, c)| c.key == keys::D && !c.is_d)
+            .map(|(i, _)| i);
+
+        if let Some(pos) = d_pos {
+            // Mark 'd' as converted to 'đ'
+            if let Some(c) = self.buf.get_mut(pos) {
+                c.is_d = true;
+            }
+
+            // Rebuild from 'd' position
+            self.rebuild_from(pos)
+        } else {
+            Result::none()
+        }
     }
 
     /// Handle tone modifier (^, ơ, ư, ă)
@@ -348,11 +382,17 @@ impl Engine {
         for i in from..self.buf.len() {
             if let Some(c) = self.buf.get(i) {
                 backspace += 1;
+
+                // Handle 'd' -> 'đ' conversion
+                if c.key == keys::D && c.is_d {
+                    output.push(chars::get_d(c.caps));
+                }
                 // Try vowel conversion
-                if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
+                else if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
                     output.push(ch);
-                } else if let Some(ch) = key_to_char(c.key, c.caps) {
-                    // Consonant
+                }
+                // Consonant
+                else if let Some(ch) = key_to_char(c.key, c.caps) {
                     output.push(ch);
                 }
             }

@@ -79,8 +79,14 @@ impl Method for Vni {
     }
 
     fn is_d(&self, key: u16, prev: Option<u16>) -> bool {
-        // d9 -> đ
+        // d9 -> đ (immediate mode)
         key == keys::N9 && prev == Some(keys::D)
+    }
+
+    /// VNI delayed đ: find 'd' anywhere in buffer
+    /// Example: "dung9" -> find 'd' at start, convert to 'đ'
+    fn is_d_for(&self, key: u16, buffer_keys: &[u16]) -> bool {
+        key == keys::N9 && buffer_keys.contains(&keys::D)
     }
 
     fn is_remove(&self, key: u16) -> bool {
