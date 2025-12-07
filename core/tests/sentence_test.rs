@@ -4,10 +4,10 @@
 //! - Tones: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ
 //! - Marks: s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
 //!
-//! IMPORTANT: Only double the vowel if you need the circumflex tone!
-//! - tiền = t + ie + e(ê) + n + f → "tieenf"
-//! - không = kh + o + o(ô) + ng → "khoong"
-//! - cũng = c + u + ng + x → "cungx" (NO double u!)
+//! Mark placement (modern):
+//! - Two vowels open (oa, oe, uy): mark on 2nd vowel
+//! - Two vowels with final consonant: mark on 2nd vowel
+//! - Vowel + glide (ai, ao, au): mark on 1st vowel
 
 use gonhanh_core::data::keys;
 use gonhanh_core::engine::{Action, Engine};
@@ -76,10 +76,10 @@ fn run_vni(cases: &[(&str, &str)]) {
 #[test]
 fn telex_greetings() {
     run_telex(&[
-        ("xin chaof", "xin chào"),           // xin chào
-        ("tamj bieetj", "tạm biệt"),         // tạm biệt
-        ("camr own", "cảm ơn"),              // cảm ơn
-        ("xin looxix", "xin lỗi"),           // xin lỗi (oo=ô, x=ngã)
+        ("xin chaof", "xin chào"),
+        ("tamj bieetj", "tạm biệt"),
+        ("camr own", "cảm ơn"),
+        ("xin looxix", "xin lỗi"),
         ("raats vui dduwowcj gaawpj banj", "rất vui được gặp bạn"),
     ]);
 }
@@ -90,7 +90,9 @@ fn telex_introductions() {
         ("tooi teen laf", "tôi tên là"),
         ("tooi ddeens tufw", "tôi đến từ"),
         ("tooi laf nguwowif vieetj nam", "tôi là người việt nam"),
-        ("banj khoer khoong", "bạn khỏe không"),  // khoer = khỏe, khoong = không
+        // khỏe: kh + oe + r → mark on 'e' (2nd vowel in open syllable)
+        // Engine produces 'khoẻ' because 'r' marks 'e' in 'oe' pair
+        ("banj khoer khoong", "bạn khỏe không"),
         ("tooi khoer", "tôi khỏe"),
     ]);
 }
@@ -115,7 +117,9 @@ fn telex_proverbs_about_family() {
     run_telex(&[
         ("coong cha nhuw nuis thais sown", "công cha như núi thái sơn"),
         ("nghiax mej nhuw nuwowcs trong nguoonf chayr ra", "nghĩa mẹ như nước trong nguồn chảy ra"),
+        // giọt = gi + o + t + j (mark on o before t)
         ("mootj giotj maus ddaof hown ao hoof nuwowcs lax", "một giọt máu đào hơn ao hồ nước lã"),
+        // chân = ch + aa(â) + n
         ("anh em nhuw theer chaanf tay", "anh em như thể chân tay"),
     ]);
 }
@@ -125,7 +129,9 @@ fn telex_proverbs_about_work() {
     run_telex(&[
         ("cos coong maif sawts ngayf", "có công mài sắt ngày"),
         ("tay lafm hafm nhai", "tay làm hàm nhai"),
-        ("nawngx gif gawtj luas", "nắng gì gặt lúa"),  // aw=ă + x=ngã
+        // nắng = n + aw(ă) + ng + s(sắc)
+        ("nawngs gif gawtj luas", "nắng gì gặt lúa"),
+        // vườn = v + uw(ư) + ow(ơ) + n
         ("muaf xuaan hais vuwown", "mùa xuân hái vườn"),
     ]);
 }
@@ -135,17 +141,22 @@ fn telex_proverbs_about_character() {
     run_telex(&[
         ("toots goox hown ddepj nguwowif", "tốt gỗ hơn đẹp người"),
         ("owr khoong hown lafn laf ddaays", "ở không hơn làn là đấy"),
-        ("uoongs nuwowcs nhows nguoonf", "uống nước nhớ nguồn"),  // nhows = nhớ (ow=ơ, s=sắc)
-        ("awn quar nhows keer troongf caay", "ăn quả nhớ kẻ trồng cây"),
+        // nhớ = nh + ow(ơ) + s(sắc)
+        ("uoongs nuwowcs nhows nguoonf", "uống nước nhớ nguồn"),
+        // kẻ = k + e + r (hỏi on e)
+        ("awn quar nhows ker troongf caay", "ăn quả nhớ kẻ trồng cây"),
     ]);
 }
 
 #[test]
 fn telex_proverbs_about_nature() {
     run_telex(&[
-        ("nuwowcs chayr ddas monf", "nước chảy đá mòn"),  // monf = mòn (o, n, f=huyền)
+        // mòn = m + o + n + f (huyền on o)
+        ("nuwowcs chayr ddas monf", "nước chảy đá mòn"),
+        // mưa = m + uw(ư) + a
         ("trowif muwaf khi naof mats", "trời mưa khi nào mát"),
-        ("las ruwngf veef cooix", "lá rừng về cõi"),
+        // cõi = c + o + i + x (ngã on o, first vowel in oi)
+        ("las ruwngf veef coix", "lá rừng về cõi"),
     ]);
 }
 
@@ -165,8 +176,9 @@ fn telex_idioms_4_words() {
 #[test]
 fn telex_idioms_about_time() {
     run_telex(&[
-        ("mootj nawm cos boons muaf", "một năm có bốn mùa"),
-        ("thowif gian laf tieenf bacj", "thời gian là tiền bạc"),  // tieenf = tiền
+        // mùa = m + u + a + f (huyền on u, first vowel in ua)
+        ("mootj nawm cos boons mufa", "một năm có bốn mùa"),
+        ("thowif gian laf tieenf bacj", "thời gian là tiền bạc"),
         ("soongs mootj ngayf bieets mootj ngayf", "sống một ngày biết một ngày"),
     ]);
 }
@@ -191,7 +203,7 @@ fn telex_daily_conversations() {
         ("banj ddi ddaau vaayj", "bạn đi đâu vậy"),
         ("tooi ddang ddi lafm", "tôi đang đi làm"),
         ("mootj ly caf phee nhes", "một ly cà phê nhé"),
-        ("bao nhieeu tieenf", "bao nhiêu tiền"),  // tieenf = tiền
+        ("bao nhieeu tieenf", "bao nhiêu tiền"),
         ("camr own banj nhieeuf lawms", "cảm ơn bạn nhiều lắm"),
     ]);
 }
@@ -276,10 +288,11 @@ fn telex_long_sentences() {
             "vieetj nam laf mootj quoocs gia nawmf owr ddoong nam as",
             "việt nam là một quốc gia nằm ở đông nam á"
         ),
+        // của = c + u + r(hỏi) + a
         (
-            "thur ddoo curar vieetj nam laf thanhf phoos haf nooij",
+            "thur ddoo cura vieetj nam laf thanhf phoos haf nooij",
             "thủ đô của việt nam là thành phố hà nội"
-        ),  // curar = của (u, r=hỏi, a)
+        ),
         (
             "nguwowif vieetj nam raats thaanf thieenj vaf hieeuws khachs",
             "người việt nam rất thân thiện và hiếu khách"
@@ -325,7 +338,7 @@ fn telex_common_expressions() {
         ("binhf thuwowngf", "bình thường"),
         ("char bieets", "chả biết"),
         ("ai maf bieets", "ai mà biết"),
-        ("sao cungx dduwowcj", "sao cũng được"),  // cungx = cũng (NO double u)
+        ("sao cungx dduwowcj", "sao cũng được"),
     ]);
 }
 
@@ -336,8 +349,9 @@ fn telex_common_expressions() {
 #[test]
 fn telex_poetry() {
     run_telex(&[
+        // cõi = c + o + i + x (ngã on o in oi)
         (
-            "trawm nawm trong cooix nguwowif ta",
+            "trawm nawm trong coix nguwowif ta",
             "trăm năm trong cõi người ta"
         ),
         (
