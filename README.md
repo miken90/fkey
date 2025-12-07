@@ -17,6 +17,14 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 - **Trải nghiệm mượt mà**: Giao diện thích ứng (Light/Dark mode), hoạt ảnh mượt mà, phản hồi lập tức.
 - **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
 
+### Triết lý
+
+Dự án được phát triển dựa trên 3 trụ cột:
+
+1. **Chuẩn hóa**: Tuyệt đối tuân thủ quy tắc chính tả chữ Quốc ngữ (theo chuẩn BGD&ĐT).
+2. **Hiện đại**: Tận dụng sức mạnh công nghệ mới (Rust, Native UI) để tối ưu hiệu suất, bỏ qua các gánh nặng lịch sử (legacy code).
+3. **Tương lai**: Sẵn sàng cho các nền tảng và kiến trúc hệ điều hành thế hệ mới (Wayland, macOS updates).
+
 ## Động lực
 
 Dự án kế thừa cảm hứng từ:
@@ -34,14 +42,6 @@ Xuất phát từ nhu cầu cá nhân về sự ổn định tuyệt đối trê
 - 🚫 **Không thu phí**: Miễn phí trọn đời, không có bản "Premium".
 - 🚫 **Không rác**: Không quảng cáo, không popup, không tính năng thừa thãi.
 - 🚫 **Không theo dõi**: Offline 100%, không thu thập dữ liệu, mã nguồn minh bạch.
-
-## Triết lý sản phẩm
-
-Chúng tôi xây dựng GoNhanh dựa trên 3 trụ cột:
-
-1.  **Chuẩn hóa**: Tuyệt đối tuân thủ quy tắc chính tả chữ Quốc ngữ (theo chuẩn BGD&ĐT).
-2.  **Hiện đại**: Tận dụng sức mạnh công nghệ mới (Rust, Native UI) để tối ưu hiệu suất, bỏ qua các gánh nặng lịch sử (legacy code).
-3.  **Tương lai**: Sẵn sàng cho các nền tảng và kiến trúc hệ điều hành thế hệ mới (Wayland, macOS updates).
 
 ## So sánh
 
