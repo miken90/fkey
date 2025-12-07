@@ -14,26 +14,16 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 - **Hiệu suất vượt trội**: Core engine viết bằng Rust, xử lý tức thì, không độ trễ.
 - **Đa nền tảng**: Kiến trúc Hybrid thông minh, sẵn sàng cho macOS, Windows và Linux.
 - **Hiện đại**: Hỗ trợ Unicode chuẩn, logic đặt dấu ngữ âm học, không phụ thuộc bảng mã cũ.
-- **Tinh tế**: Giao diện Native, không dùng Electron/Qt, tiết kiệm tài nguyên hệ thống.
+- **Trải nghiệm mượt mà**: Giao diện thích ứng (Light/Dark mode), hoạt ảnh mượt mà, phản hồi lập tức.
 - **Cài là dùng**: Cấu hình tối ưu sẵn (Smart Defaults), không cần thiết lập phức tạp.
 
-## Động lực
+## Triết lý sản phẩm
 
-Dự án lấy cảm hứng từ **EVKey** - hình mẫu về sự tối giản và hiệu quả.
+Chúng tôi xây dựng GoNhanh dựa trên 3 trụ cột:
 
-Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn định tuyệt đối trên các công cụ hiện đại (như Claude Code, Terminal), GoNhanh ra đời để tiếp nối di sản đó khi các công cụ cũ dừng cập nhật. Chúng tôi cam kết xây dựng một sản phẩm **Mã nguồn mở - Miễn phí - Của cộng đồng**.
-
-## Ba Không
-
-- 🚫 **Không thu phí**: Miễn phí trọn đời, không có bản "Premium".
-- 🚫 **Không rác**: Không quảng cáo, không popup, không tính năng thừa thãi.
-- 🚫 **Không theo dõi**: Offline 100%, không thu thập dữ liệu, mã nguồn minh bạch.
-
-## Cam kết phát triển
-
-- ✅ **Duy trì dài hạn**: Cam kết hỗ trợ ít nhất đến 2030.
-- ✅ **Chất lượng cao**: Quy trình phát triển nghiêm ngặt (CI/CD, High Test Coverage).
-- ✅ **Tôn trọng người dùng**: Lắng nghe phản hồi và fix bug nhanh chóng (48h).
+1.  **Chuẩn hóa**: Tuyệt đối tuân thủ quy tắc chính tả chữ Quốc ngữ (theo chuẩn BGD&ĐT).
+2.  **Hiện đại**: Tận dụng sức mạnh công nghệ mới (Rust, Native UI) để tối ưu hiệu suất, bỏ qua các gánh nặng lịch sử (legacy code).
+3.  **Tương lai**: Sẵn sàng cho các nền tảng và kiến trúc hệ điều hành thế hệ mới (Wayland, macOS updates).
 
 ## So sánh
 
