@@ -762,6 +762,12 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 
 ## Changelog
 
+- **2025-12-07**: Bổ sung quy tắc đặt dấu thanh
+  - Thêm mục 7.4: Hai trường phái đặt dấu (kiểu cũ vs kiểu mới)
+  - Thêm bảng so sánh các trường hợp khác biệt (oa, oe, uy)
+  - Thêm Quyết định 1989/QĐ-BGDĐT của Bộ GD&ĐT
+  - Cập nhật tất cả links Wikipedia sang tiếng Việt (vi.wikipedia.org)
+
 - **2025-12-07**: Tạo tài liệu toàn diện
   - Hệ thống hóa bảng chữ cái tiếng Việt
   - Chi tiết hệ thống nguyên âm (đơn, đôi, ba)
