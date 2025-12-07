@@ -49,23 +49,17 @@ install: build ## Install app to /Applications
 release: ## Patch release (1.0.9 → 1.0.10)
 	@echo "$(TAG) → v$(NEXT_PATCH)"
 	@git add -A && git commit -m "release: v$(NEXT_PATCH)" --allow-empty
-	@git tag v$(NEXT_PATCH)
-	@$(MAKE) build
-	@git push origin main v$(NEXT_PATCH)
+	@git tag v$(NEXT_PATCH) && git push origin main v$(NEXT_PATCH)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
 
 release-minor: ## Minor release (1.0.9 → 1.1.0)
 	@echo "$(TAG) → v$(NEXT_MINOR)"
 	@git add -A && git commit -m "release: v$(NEXT_MINOR)" --allow-empty
-	@git tag v$(NEXT_MINOR)
-	@$(MAKE) build
-	@git push origin main v$(NEXT_MINOR)
+	@git tag v$(NEXT_MINOR) && git push origin main v$(NEXT_MINOR)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
 
 release-major: ## Major release (1.0.9 → 2.0.0)
 	@echo "$(TAG) → v$(NEXT_MAJOR)"
 	@git add -A && git commit -m "release: v$(NEXT_MAJOR)" --allow-empty
-	@git tag v$(NEXT_MAJOR)
-	@$(MAKE) build
-	@git push origin main v$(NEXT_MAJOR)
+	@git tag v$(NEXT_MAJOR) && git push origin main v$(NEXT_MAJOR)
 	@echo "→ https://github.com/khaphanspace/gonhanh.org/releases"
