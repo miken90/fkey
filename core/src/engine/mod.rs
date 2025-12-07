@@ -365,7 +365,8 @@ impl Engine {
 
             let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
             let has_final = self.has_final_consonant(last_vowel_pos);
-            let new_pos = Phonology::find_tone_position(&vowels, has_final, self.modern);
+            let has_qu = self.has_qu_initial();
+            let new_pos = Phonology::find_tone_position(&vowels, has_final, self.modern, has_qu);
 
             // Move mark if position changed
             if new_pos != old_pos {
@@ -417,7 +418,8 @@ impl Engine {
         // Use phonology-based algorithm to find mark position
         let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
         let has_final = self.has_final_consonant(last_vowel_pos);
-        let pos = Phonology::find_tone_position(&vowels, has_final, self.modern);
+        let has_qu = self.has_qu_initial();
+        let pos = Phonology::find_tone_position(&vowels, has_final, self.modern, has_qu);
 
         if let Some(c) = self.buf.get_mut(pos) {
             c.mark = mark;
@@ -495,6 +497,24 @@ impl Engine {
                 .map(|c| keys::is_consonant(c.key))
                 .unwrap_or(false)
         })
+    }
+
+    /// Check if 'q' precedes 'u' in buffer (for "qua" vs "mua" distinction)
+    /// Returns true for patterns like "qua" where u is medial, not main vowel
+    fn has_qu_initial(&self) -> bool {
+        // Find first 'u' in buffer
+        for (i, c) in self.buf.iter().enumerate() {
+            if c.key == keys::U {
+                // Check if preceded by 'q'
+                if i > 0 {
+                    if let Some(prev) = self.buf.get(i - 1) {
+                        return prev.key == keys::Q;
+                    }
+                }
+                return false;
+            }
+        }
+        false
     }
 
     /// Rebuild output from position

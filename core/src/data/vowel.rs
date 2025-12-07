@@ -73,17 +73,26 @@ impl Phonology {
     ///    - toán, hoàn, tiến, muốn, biển
     ///
     /// 3. **Two vowels open syllable**:
-    ///    - Medial + Main (oa, oe, uy, ua, uê): Mark on 2nd (main)
+    ///    - Medial + Main (oa, oe, uy, qua, uê): Mark on 2nd (main)
     ///    - Main + Glide (ai, ao, au, oi, ui): Mark on 1st (main)
     ///    - Compound (ươ, uô, iê): Mark on 2nd (main has diacritic)
     ///    - ưa pattern: Mark on 1st (ư has diacritic, a is simple)
+    ///    - ua without q: Mark on 1st (u is main, e.g., mùa)
     ///
     /// 4. **Three+ vowels**: Mark on middle vowel
     ///    - ươi, oai, uôi: Mark on middle
     ///
     /// 5. **Diacritic priority**: When vowel has diacritic (ă, â, ê, ô, ơ, ư),
     ///    it often receives the mark
-    pub fn find_tone_position(vowels: &[Vowel], has_final_consonant: bool, modern: bool) -> usize {
+    ///
+    /// ## Parameters
+    /// - `has_qu_initial`: true if 'q' precedes 'u' (e.g., "qua" vs "mua")
+    pub fn find_tone_position(
+        vowels: &[Vowel],
+        has_final_consonant: bool,
+        modern: bool,
+        has_qu_initial: bool,
+    ) -> usize {
         let n = vowels.len();
         if n == 0 {
             return 0;
@@ -121,9 +130,14 @@ impl Phonology {
                 return v2.pos;
             }
 
-            // Medial pairs (oa, oe, uy, ua, uê): mark on 2nd (main vowel)
-            if Self::is_medial_pair(v1.key, v2.key) {
+            // Medial pairs (oa, oe, uy, uê, and ua with q): mark on 2nd (main vowel)
+            if Self::is_medial_pair(v1.key, v2.key, has_qu_initial) {
                 return if modern { v2.pos } else { v1.pos };
+            }
+
+            // ua without q (mua): u is main vowel, a is glide → mark on u
+            if v1.key == keys::U && v2.key == keys::A && !has_qu_initial {
+                return v1.pos;
             }
 
             // Main + glide (ai, ao, au, oi, ui): mark on 1st (main vowel)
@@ -187,7 +201,12 @@ impl Phonology {
     }
 
     /// Determine the role of each vowel in a syllable
-    pub fn classify_roles(vowels: &[Vowel], has_final_consonant: bool) -> Vec<(usize, Role)> {
+    #[allow(dead_code)]
+    pub fn classify_roles(
+        vowels: &[Vowel],
+        has_final_consonant: bool,
+        has_qu_initial: bool,
+    ) -> Vec<(usize, Role)> {
         let n = vowels.len();
         if n == 0 {
             return vec![];
@@ -201,7 +220,7 @@ impl Phonology {
         if n == 2 {
             let (k1, k2) = (vowels[0].key, vowels[1].key);
 
-            if Self::is_medial_pair(k1, k2)
+            if Self::is_medial_pair(k1, k2, has_qu_initial)
                 || Self::is_compound_vowel(k1, k2)
                 || has_final_consonant
             {
@@ -231,14 +250,22 @@ impl Phonology {
 
     /// Check if v1+v2 forms a medial+main pair (âm đệm + âm chính)
     ///
-    /// Medial pairs: oa, oe, ua, uê, uy
+    /// Medial pairs: oa, oe, uê, uy, and ua (only when preceded by 'q')
     /// These are when the first vowel acts as a glide before the main vowel
-    fn is_medial_pair(v1: u16, v2: u16) -> bool {
+    ///
+    /// Note: "ua" is special:
+    /// - "qua" → quá (u is medial, mark on a)
+    /// - "mua" → mùa (u is main vowel, mark on u)
+    fn is_medial_pair(v1: u16, v2: u16, has_qu_initial: bool) -> bool {
+        // ua is only medial when preceded by 'q'
+        if v1 == keys::U && v2 == keys::A {
+            return has_qu_initial;
+        }
+
         matches!(
             (v1, v2),
             (keys::O, keys::A) | // oa
             (keys::O, keys::E) | // oe
-            (keys::U, keys::A) | // ua (qua)
             (keys::U, keys::E) | // uê
             (keys::U, keys::Y) // uy
         )
@@ -255,7 +282,9 @@ impl Phonology {
         }
 
         // Not a medial or compound pattern
-        !Self::is_medial_pair(v1, v2) && !Self::is_compound_vowel(v1, v2)
+        // Note: for is_main_glide_pair, we pass false for has_qu_initial since
+        // this check is about the pair pattern, not the specific context
+        !Self::is_medial_pair(v1, v2, false) && !Self::is_compound_vowel(v1, v2)
     }
 
     /// Check if v1+v2 forms a compound vowel (ươ, uô, iê)
@@ -281,50 +310,61 @@ mod tests {
     #[test]
     fn test_single_vowel() {
         let vowels = vec![v(keys::A, Modifier::None, 0)];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 0);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 0);
     }
 
     #[test]
     fn test_medial_pairs() {
         // oa → mark on a (pos 1)
         let vowels = vec![v(keys::O, Modifier::None, 0), v(keys::A, Modifier::None, 1)];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 1);
 
         // uy → mark on y (pos 1)
         let vowels = vec![v(keys::U, Modifier::None, 0), v(keys::Y, Modifier::None, 1)];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 1);
+    }
+
+    #[test]
+    fn test_ua_patterns() {
+        // ua without q (mua) → mark on u (pos 0)
+        let vowels = vec![v(keys::U, Modifier::None, 0), v(keys::A, Modifier::None, 1)];
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 0);
+
+        // ua with q (qua) → mark on a (pos 1)
+        let vowels = vec![v(keys::U, Modifier::None, 0), v(keys::A, Modifier::None, 1)];
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, true), 1);
     }
 
     #[test]
     fn test_main_glide_pairs() {
         // ai → mark on a (pos 0)
         let vowels = vec![v(keys::A, Modifier::None, 0), v(keys::I, Modifier::None, 1)];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 0);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 0);
 
         // ao → mark on a (pos 0)
         let vowels = vec![v(keys::A, Modifier::None, 0), v(keys::O, Modifier::None, 1)];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 0);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 0);
     }
 
     #[test]
     fn test_with_final_consonant() {
         // oan → mark on a (pos 1)
         let vowels = vec![v(keys::O, Modifier::None, 0), v(keys::A, Modifier::None, 1)];
-        assert_eq!(Phonology::find_tone_position(&vowels, true, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, true, true, false), 1);
     }
 
     #[test]
     fn test_compound_vowels() {
         // ươ → mark on ơ (pos 1)
         let vowels = vec![v(keys::U, Modifier::Horn, 0), v(keys::O, Modifier::Horn, 1)];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 1);
 
         // iê → mark on ê (pos 1)
         let vowels = vec![
             v(keys::I, Modifier::None, 0),
             v(keys::E, Modifier::Circumflex, 1),
         ];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 1);
     }
 
     #[test]
@@ -335,7 +375,7 @@ mod tests {
             v(keys::O, Modifier::Horn, 1),
             v(keys::I, Modifier::None, 2),
         ];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 1);
 
         // oai → mark on a (pos 1, middle)
         let vowels = vec![
@@ -343,7 +383,7 @@ mod tests {
             v(keys::A, Modifier::None, 1),
             v(keys::I, Modifier::None, 2),
         ];
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 1);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 1);
     }
 
     #[test]
@@ -352,6 +392,6 @@ mod tests {
         let vowels = vec![v(keys::U, Modifier::Horn, 0), v(keys::A, Modifier::None, 1)];
         // ưa is NOT a compound vowel (compound is ươ, not ưa)
         // ư has diacritic, a doesn't → mark on ư
-        assert_eq!(Phonology::find_tone_position(&vowels, false, true), 0);
+        assert_eq!(Phonology::find_tone_position(&vowels, false, true, false), 0);
     }
 }
