@@ -150,17 +150,17 @@ fn vni_uo_compound_with_marks() {
     // ươ compound vowel patterns - mark on ơ (2nd vowel with diacritic)
     run_vni(&[
         // uo + horn on both → ươ, then mark on ơ
-        ("uo71", "ướ"),   // ươ + sắc → ướ
-        ("uo72", "ườ"),   // ươ + huyền → ườ
-        ("uo73", "ưở"),   // ươ + hỏi → ưở
-        ("uo74", "ưỡ"),   // ươ + ngã → ưỡ
-        ("uo75", "ượ"),   // ươ + nặng → ượ
+        ("uo71", "ướ"), // ươ + sắc → ướ
+        ("uo72", "ườ"), // ươ + huyền → ườ
+        ("uo73", "ưở"), // ươ + hỏi → ưở
+        ("uo74", "ưỡ"), // ươ + ngã → ưỡ
+        ("uo75", "ượ"), // ươ + nặng → ượ
         // Alternate order: mark first, then horn
-        ("uo17", "ướ"),   // uó + horn → ướ (mark repositions)
-        ("uo27", "ườ"),   // uò + horn → ườ
+        ("uo17", "ướ"), // uó + horn → ướ (mark repositions)
+        ("uo27", "ườ"), // uò + horn → ườ
         // Horn on u first, then o, then mark
-        ("u7o71", "ướ"),  // ư + ơ + sắc → ướ
-        ("u7o72", "ườ"),  // ư + ơ + huyền → ườ
+        ("u7o71", "ướ"), // ư + ơ + sắc → ướ
+        ("u7o72", "ườ"), // ư + ơ + huyền → ườ
     ]);
 }
 
@@ -198,11 +198,11 @@ fn vni_real_words_with_ua() {
         ("rua2", "rùa"),   // rùa (turtle): huyền on u
         ("lua1", "lúa"),   // lúa (rice plant): sắc on u
         // sữa needs ư (horn on u) + ngã
-        ("su7a4", "sữa"),  // sữa (milk): u7=ư, then 4=ngã on ư
+        ("su7a4", "sữa"), // sữa (milk): u7=ư, then 4=ngã on ư
         // qua type: u is medial, mark on a
-        ("qua1", "quá"),   // quá (too much): sắc on a
-        ("qua3", "quả"),   // quả (fruit): hỏi on a
-        ("qua2", "quà"),   // quà (gift): huyền on a
+        ("qua1", "quá"), // quá (too much): sắc on a
+        ("qua3", "quả"), // quả (fruit): hỏi on a
+        ("qua2", "quà"), // quà (gift): huyền on a
     ]);
 }
 
@@ -210,15 +210,15 @@ fn vni_real_words_with_ua() {
 fn vni_real_words_with_ie() {
     // Words with iê compound
     run_vni(&[
-        ("vie65t", "việt"),     // Việt
-        ("tie61ng", "tiếng"),   // tiếng (sound/language)
-        ("bie63n", "biển"),     // biển (sea)
-        ("mie61ng", "miếng"),   // miếng (piece)
-        ("chie62n", "chiền"),   // chiền (not common)
-        ("die64n", "diễn"),     // diễn (perform)
-        ("kie63m", "kiểm"),     // kiểm (check)
-        ("tie62n", "tiền"),     // tiền (money)
-        ("hie63u", "hiểu"),     // hiểu (understand)
+        ("vie65t", "việt"),   // Việt
+        ("tie61ng", "tiếng"), // tiếng (sound/language)
+        ("bie63n", "biển"),   // biển (sea)
+        ("mie61ng", "miếng"), // miếng (piece)
+        ("chie62n", "chiền"), // chiền (not common)
+        ("die64n", "diễn"),   // diễn (perform)
+        ("kie63m", "kiểm"),   // kiểm (check)
+        ("tie62n", "tiền"),   // tiền (money)
+        ("hie63u", "hiểu"),   // hiểu (understand)
     ]);
 }
 
@@ -228,16 +228,16 @@ fn vni_real_words_mixed() {
     // VNI: 6=circumflex(^), 7=horn, 8=breve(˘)
     // Marks: 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
     run_vni(&[
-        ("co1", "có"),         // có (have)
-        ("kho6ng", "không"),   // không (no/not)
-        ("la2", "là"),         // là (is)
-        ("d9i", "đi"),         // đi (go)
-        ("ve62", "về"),        // về (return): e6=ê, then 2=huyền
-        ("a8n", "ăn"),         // ăn (eat): 8=breve
-        ("o6ng1", "ống"),      // ống (tube): o6=ô, then 1=sắc
-        ("ba2n", "bàn"),       // bàn (table)
-        ("nha2", "nhà"),       // nhà (house)
-        ("hoc5", "học"),       // học (study): 5=nặng on o
+        ("co1", "có"),       // có (have)
+        ("kho6ng", "không"), // không (no/not)
+        ("la2", "là"),       // là (is)
+        ("d9i", "đi"),       // đi (go)
+        ("ve62", "về"),      // về (return): e6=ê, then 2=huyền
+        ("a8n", "ăn"),       // ăn (eat): 8=breve
+        ("o6ng1", "ống"),    // ống (tube): o6=ô, then 1=sắc
+        ("ba2n", "bàn"),     // bàn (table)
+        ("nha2", "nhà"),     // nhà (house)
+        ("hoc5", "học"),     // học (study): 5=nặng on o
     ]);
 }
 
@@ -281,8 +281,8 @@ fn telex_delayed_all_patterns() {
         ("tongw", "tơng"),
         ("tangw", "tăng"),
         // uo compound: single w applies horn to both u and o
-        ("tuow", "tươ"),      // one w enough for ươ
-        ("nguoiw", "ngươi"),  // uo compound detected, horn on both
+        ("tuow", "tươ"),     // one w enough for ươ
+        ("nguoiw", "ngươi"), // uo compound detected, horn on both
     ]);
 }
 
@@ -332,11 +332,11 @@ fn telex_real_words_with_ua() {
         ("ruaf", "rùa"),   // rùa (turtle): huyền on u
         ("luas", "lúa"),   // lúa (rice plant): sắc on u
         // sữa needs ư (horn on u) + ngã
-        ("suwax", "sữa"),  // sữa (milk): uw=ư, then x=ngã on ư
+        ("suwax", "sữa"), // sữa (milk): uw=ư, then x=ngã on ư
         // qua type: u is medial, mark on a
-        ("quas", "quá"),   // quá (too much): sắc on a
-        ("quar", "quả"),   // quả (fruit): hỏi on a
-        ("quaf", "quà"),   // quà (gift): huyền on a
+        ("quas", "quá"), // quá (too much): sắc on a
+        ("quar", "quả"), // quả (fruit): hỏi on a
+        ("quaf", "quà"), // quà (gift): huyền on a
     ]);
 }
 
@@ -344,14 +344,14 @@ fn telex_real_words_with_ua() {
 fn telex_real_words_with_ie() {
     // Words with iê compound
     run_telex(&[
-        ("vieetj", "việt"),     // Việt
-        ("tieengs", "tiếng"),   // tiếng (sound/language)
-        ("bieenr", "biển"),     // biển (sea)
-        ("mieengs", "miếng"),   // miếng (piece)
-        ("dieenx", "diễn"),     // diễn (perform)
-        ("kieemr", "kiểm"),     // kiểm (check)
-        ("tieenf", "tiền"),     // tiền (money)
-        ("hieeur", "hiểu"),     // hiểu (understand)
+        ("vieetj", "việt"),   // Việt
+        ("tieengs", "tiếng"), // tiếng (sound/language)
+        ("bieenr", "biển"),   // biển (sea)
+        ("mieengs", "miếng"), // miếng (piece)
+        ("dieenx", "diễn"),   // diễn (perform)
+        ("kieemr", "kiểm"),   // kiểm (check)
+        ("tieenf", "tiền"),   // tiền (money)
+        ("hieeur", "hiểu"),   // hiểu (understand)
     ]);
 }
 
@@ -359,16 +359,16 @@ fn telex_real_words_with_ie() {
 fn telex_real_words_mixed() {
     // Mixed common words
     run_telex(&[
-        ("cos", "có"),         // có (have)
-        ("khoong", "không"),   // không (no/not)
-        ("laf", "là"),         // là (is)
-        ("ddi", "đi"),         // đi (go)
-        ("veef", "về"),        // về (return)
-        ("awn", "ăn"),         // ăn (eat)
-        ("oongs", "ống"),      // ống (tube)
-        ("banf", "bàn"),       // bàn (table)
-        ("nhaf", "nhà"),       // nhà (house)
-        ("hocj", "học"),       // học (study)
+        ("cos", "có"),       // có (have)
+        ("khoong", "không"), // không (no/not)
+        ("laf", "là"),       // là (is)
+        ("ddi", "đi"),       // đi (go)
+        ("veef", "về"),      // về (return)
+        ("awn", "ăn"),       // ăn (eat)
+        ("oongs", "ống"),    // ống (tube)
+        ("banf", "bàn"),     // bàn (table)
+        ("nhaf", "nhà"),     // nhà (house)
+        ("hocj", "học"),     // học (study)
     ]);
 }
 
@@ -378,14 +378,14 @@ fn telex_uo_compound_with_marks() {
     // With compound detection: single w on uo applies horn to BOTH
     run_telex(&[
         // Standard Telex: uwow = ư + ơ, then mark
-        ("uwows", "ướ"),   // ươ + sắc → ướ
-        ("uwowf", "ườ"),   // ươ + huyền → ườ
-        ("uwowr", "ưở"),   // ươ + hỏi → ưở
-        ("uwowx", "ưỡ"),   // ươ + ngã → ưỡ
-        ("uwowj", "ượ"),   // ươ + nặng → ượ
+        ("uwows", "ướ"), // ươ + sắc → ướ
+        ("uwowf", "ườ"), // ươ + huyền → ườ
+        ("uwowr", "ưở"), // ươ + hỏi → ưở
+        ("uwowx", "ưỡ"), // ươ + ngã → ưỡ
+        ("uwowj", "ượ"), // ươ + nặng → ượ
         // Compound shortcut: uow = ươ (single w for both)
-        ("uows", "ướ"),    // uo + w → ươ, then s → ướ
-        ("uowf", "ườ"),    // uo + w → ươ, then f → ườ
+        ("uows", "ướ"), // uo + w → ươ, then s → ướ
+        ("uowf", "ườ"), // uo + w → ươ, then f → ườ
     ]);
 }
 

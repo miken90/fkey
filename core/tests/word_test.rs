@@ -418,13 +418,13 @@ fn vni_delayed_tone() {
     // VNI: 6=^, 7=horn(ơ,ư), 8=breve(ă), 9=đ
     // With compound detection: 7 on uo applies horn to BOTH u and o
     run_vni(&[
-        ("toi6", "tôi"),       // 6 finds 'o' not 'i'
-        ("toi61", "tối"),      // tôi + sắc
-        ("nguoi7", "ngươi"),   // 7=horn on uo compound → ngươi
-        ("nguoi72", "người"),  // ngươi + huyền
-        ("duong7", "dương"),   // 7=horn on uo compound
-        ("duong72", "dường"),  // dương + huyền
-        ("muon6", "muôn"),     // 6 on 'o' (circumflex, not horn)
-        ("muon61", "muốn"),    // + sắc
+        ("toi6", "tôi"),      // 6 finds 'o' not 'i'
+        ("toi61", "tối"),     // tôi + sắc
+        ("nguoi7", "ngươi"),  // 7=horn on uo compound → ngươi
+        ("nguoi72", "người"), // ngươi + huyền
+        ("duong7", "dương"),  // 7=horn on uo compound
+        ("duong72", "dường"), // dương + huyền
+        ("muon6", "muôn"),    // 6 on 'o' (circumflex, not horn)
+        ("muon61", "muốn"),   // + sắc
     ]);
 }

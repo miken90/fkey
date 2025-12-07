@@ -179,7 +179,7 @@ fn telex_delayed_tone_input() {
         ("tungw", "tưng"), // tung + w → tưng
         ("tongw", "tơng"), // tong + w → tơng
         // uo compound: single w applies horn to BOTH u and o
-        ("tuow", "tươ"),       // tuo + w → tươ (w applies to both u and o)
+        ("tuow", "tươ"),        // tuo + w → tươ (w applies to both u and o)
         ("truwowng", "trương"), // standard Telex for trường
     ]);
 }
