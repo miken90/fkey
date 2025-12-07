@@ -172,15 +172,15 @@ fn telex_delayed_tone_input() {
     // w applies to first matching vowel from end (u, o, or a)
     run_telex(&[
         // Single vowel cases
-        ("tuw", "tư"),         // tu + w → tư
-        ("tow", "tơ"),         // to + w → tơ
-        ("taw", "tă"),         // ta + w → tă
+        ("tuw", "tư"), // tu + w → tư
+        ("tow", "tơ"), // to + w → tơ
+        ("taw", "tă"), // ta + w → tă
         // With final consonants - w still finds vowel
-        ("tungw", "tưng"),     // tung + w → tưng
-        ("tongw", "tơng"),     // tong + w → tơng
+        ("tungw", "tưng"), // tung + w → tưng
+        ("tongw", "tơng"), // tong + w → tơng
         // Multiple vowels: w finds u first (for uo → ươ pattern)
-        ("tuow", "tưo"),       // tuo + w → tưo (first w applies to u)
-        ("tuoww", "tươ"),      // tuow + w → tươ (second w applies to o)
+        ("tuow", "tưo"),  // tuo + w → tưo (first w applies to u)
+        ("tuoww", "tươ"), // tuow + w → tươ (second w applies to o)
         // Standard ươ compound needs uwow pattern
         ("truwowng", "trương"), // standard Telex for trường
     ]);

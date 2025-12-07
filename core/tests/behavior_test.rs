@@ -46,7 +46,7 @@ fn telex_wrong_order_mark_before_vowel() {
     // Người dùng có thể gõ dấu trước nguyên âm
     // Engine chỉ xử lý khi có nguyên âm trong buffer
     test_telex("sa", "sa"); // s trước, không có vowel -> pass through
-    test_telex("as", "á");  // a trước, s sau -> á
+    test_telex("as", "á"); // a trước, s sau -> á
 }
 
 #[test]

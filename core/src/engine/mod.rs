@@ -185,15 +185,15 @@ impl Engine {
         let m = input::get(self.method);
 
         // Try each handler in order
-        if let Some(r) = self.try_handle_d(key, &m) {
+        if let Some(r) = self.try_handle_d(key, m.as_ref()) {
             return r;
         }
 
-        if let Some(r) = self.try_handle_tone(key, caps, &m) {
+        if let Some(r) = self.try_handle_tone(key, caps, m.as_ref()) {
             return r;
         }
 
-        if let Some(r) = self.try_handle_mark(key, caps, &m) {
+        if let Some(r) = self.try_handle_mark(key, caps, m.as_ref()) {
             return r;
         }
 
@@ -206,7 +206,7 @@ impl Engine {
     }
 
     /// Try to handle đ transformation (dd/d9)
-    fn try_handle_d(&mut self, key: u16, m: &Box<dyn input::Method>) -> Option<Result> {
+    fn try_handle_d(&mut self, key: u16, m: &dyn input::Method) -> Option<Result> {
         let prev_key = self.buf.last().map(|c| c.key);
 
         // Immediate mode: dd or d9
@@ -232,7 +232,7 @@ impl Engine {
     }
 
     /// Try to handle tone modifiers (aa, aw, a6, a7, etc.)
-    fn try_handle_tone(&mut self, key: u16, caps: bool, m: &Box<dyn input::Method>) -> Option<Result> {
+    fn try_handle_tone(&mut self, key: u16, caps: bool, m: &dyn input::Method) -> Option<Result> {
         // Collect vowels without tone for new application
         let vowel_keys: Vec<u16> = self
             .buf
@@ -267,7 +267,7 @@ impl Engine {
     }
 
     /// Try to handle mark modifiers (s/f/r/x/j or 1-5)
-    fn try_handle_mark(&mut self, key: u16, caps: bool, m: &Box<dyn input::Method>) -> Option<Result> {
+    fn try_handle_mark(&mut self, key: u16, caps: bool, m: &dyn input::Method) -> Option<Result> {
         if let Some(mark_value) = m.is_mark(key) {
             // Check for double-key revert
             if let Some(Transform::Mark(last_key, _)) = self.last_transform {

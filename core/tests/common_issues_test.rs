@@ -15,18 +15,18 @@ use common::{run_telex, run_vni};
 fn telex_circumflex_not_sticky() {
     // These should produce single character output, not doubled
     run_telex(&[
-        ("aa", "â"),   // NOT "aâ"
-        ("ee", "ê"),   // NOT "eê"
-        ("oo", "ô"),   // NOT "oô"
-        ("dd", "đ"),   // NOT "dđ"
-        ("DD", "Đ"),   // NOT "DĐ"
+        ("aa", "â"), // NOT "aâ"
+        ("ee", "ê"), // NOT "eê"
+        ("oo", "ô"), // NOT "oô"
+        ("dd", "đ"), // NOT "dđ"
+        ("DD", "Đ"), // NOT "DĐ"
     ]);
 }
 
 #[test]
 fn vni_modifier_not_sticky() {
     run_vni(&[
-        ("a6", "â"),   // NOT "a6" or "aâ"
+        ("a6", "â"), // NOT "a6" or "aâ"
         ("e6", "ê"),
         ("o6", "ô"),
         ("d9", "đ"),
@@ -43,18 +43,18 @@ fn vni_modifier_not_sticky() {
 fn telex_no_double_d() {
     // đ should appear once, not twice
     run_telex(&[
-        ("dduwowcj", "được"),   // NOT "đđược"
-        ("ddif", "đì"),         // NOT "đđì"
-        ("ddi", "đi"),          // NOT "đđi"
-        ("ddang", "đang"),      // NOT "đđang"
-        ("ddaauf", "đầu"),      // NOT "đđầu"
+        ("dduwowcj", "được"), // NOT "đđược"
+        ("ddif", "đì"),       // NOT "đđì"
+        ("ddi", "đi"),        // NOT "đđi"
+        ("ddang", "đang"),    // NOT "đđang"
+        ("ddaauf", "đầu"),    // NOT "đđầu"
     ]);
 }
 
 #[test]
 fn vni_no_double_d() {
     run_vni(&[
-        ("d9u7o7c5", "được"),   // NOT "đđược"
+        ("d9u7o7c5", "được"), // NOT "đđược"
         ("d9i", "đi"),
         ("d9ang", "đang"),
     ]);
@@ -69,10 +69,10 @@ fn vni_no_double_d() {
 fn telex_preserve_tone_mark() {
     // Mark should appear on correct vowel
     run_telex(&[
-        ("truwowngf", "trường"),   // NOT "trương"
-        ("dduwowngf", "đường"),    // NOT "đương"
-        ("nguwowif", "người"),     // NOT "ngươi"
-        ("muwowif", "mười"),       // NOT "mươi"
+        ("truwowngf", "trường"), // NOT "trương"
+        ("dduwowngf", "đường"),  // NOT "đương"
+        ("nguwowif", "người"),   // NOT "ngươi"
+        ("muwowif", "mười"),     // NOT "mươi"
     ]);
 }
 
@@ -153,12 +153,12 @@ fn telex_correction_patterns() {
     // Common correction scenarios
     run_telex(&[
         // Type wrong mark, then correct (mark replacement)
-        ("asf", "à"),  // á then f replaces sắc with huyền → à
-        ("afs", "á"),  // à then s replaces huyền with sắc → á
+        ("asf", "à"), // á then f replaces sắc with huyền → à
+        ("afs", "á"), // à then s replaces huyền with sắc → á
         // Simple letter replacement mid-word
-        ("ab<c", "ac"),  // a + b + backspace + c = ac
+        ("ab<c", "ac"), // a + b + backspace + c = ac
         // Backspace mid-word then apply mark
-        ("toi<as", "toá"),  // to + i + backspace + á = toá
+        ("toi<as", "toá"), // to + i + backspace + á = toá
     ]);
 }
 
@@ -204,8 +204,8 @@ fn telex_letter_vs_modifier() {
 
     // 'f' as letter vs 'f' as huyền mark
     run_telex(&[
-        ("fa", "fa"),    // f is consonant (borrowed words)
-        ("af", "à"),     // f is huyền mark
+        ("fa", "fa"), // f is consonant (borrowed words)
+        ("af", "à"),  // f is huyền mark
     ]);
 }
 
@@ -221,6 +221,6 @@ fn telex_long_words() {
         ("nghieeng", "nghiêng"),
         ("khuyeens", "khuyến"),
         ("truwowngf", "trường"),
-        ("nguoongf", "nguồng"),  // unusual but valid
+        ("nguoongf", "nguồng"), // unusual but valid
     ]);
 }
