@@ -153,7 +153,7 @@ impl Engine {
         // Check đ (dd or d9)
         if m.is_d(key, prev_key) {
             self.last_transform = None;
-            return self.handle_d(caps);
+            return self.handle_d();
         }
 
         // Check tone (aa, aw, a6, a7, etc.)
@@ -203,7 +203,9 @@ impl Engine {
     }
 
     /// Handle đ (dd/d9)
-    fn handle_d(&mut self, caps: bool) -> Result {
+    fn handle_d(&mut self) -> Result {
+        // Get caps from the D in buffer before popping it
+        let caps = self.buf.last().map(|c| c.caps).unwrap_or(false);
         self.buf.pop();
         Result::send(1, &[chars::get_d(caps)])
     }
