@@ -36,7 +36,7 @@ Dự án **phi lợi nhuận** với cam kết: **Mã nguồn mở - Miễn phí
 | **Trạng thái** | 🟢 **Phát triển**  | 🔴 Ngừng phát triển |   🟡 Bảo trì   | 🟡 Ngừng cập nhật |   🟢 Ổn định   | 🟢 Ổn định  |   🟢 Ổn định   |
 | macOS          |         ✅         |         ✅          |       ✅       |        ✅         |       ❌       |     ❌      |       ❌       |
 | Windows        |     🗓️ Planned     |         ✅          |       ✅       |        ✅         |       ✅       |     ✅      |       ❌       |
-| Linux          |         ❌         |         ❌          |       ✅       |        ❌         |  ✅ (Engine)   |     ❌      |       ✅       |
+| Linux          |     🗓️ Planned     |         ❌          |       ✅       |        ❌         |  ✅ (Engine)   |     ❌      |       ✅       |
 | **Mã nguồn**   | ✅ **Open Source** |   ✅ Open Source    | ✅ Open Source |     🚫 Closed     | ✅ Core Engine |  🚫 Closed  | ✅ Open Source |
 | Công nghệ      | **Rust + Native**  |      C++ + Qt       |    C++ + Qt    |    Obj-C / C++    |      C++       |     C++     |       Go       |
 | Bảng mã        |    **Unicode**     |     Đa bảng mã      |   Đa bảng mã   |    Đa bảng mã     |   Đa bảng mã   | Đa bảng mã  |   Đa bảng mã   |
@@ -83,6 +83,7 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 - macOS: SwiftUI (done)
 - Windows: WPF (planned)
+- Linux: IBus/Wayland (planned)
 
 ## Cài đặt
 
