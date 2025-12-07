@@ -37,14 +37,17 @@ Xuất phát từ nhu cầu của một lập trình viên macOS cần sự ổn
 
 ## So sánh
 
-|              | GoNhanh | OpenKey | UniKey | EVKey |
-| ------------ | :-----: | :-----: | :----: | :---: |
-| Năm          |  2025   |  2019   |  2000  | 2018  |
-| Miễn phí     |   ✅    |   ✅    |   ✅   |  ✅   |
-| Open source  |   ✅    |   ✅    |   ⚠️   |  ✅   |
-| Chỉ Unicode  |   ✅    |   ❌    |   ❌   |  ❌   |
-| macOS native | SwiftUI |  Obj-C  |   Qt   |  Qt   |
-| Engine       |  Rust   |   C++   |  C++   |  C++  |
+|                |      GoNhanh      |      EVKey      |      OpenKey      |  UniKey   |
+| :------------- | :---------------: | :-------------: | :---------------: | :-------: |
+| **Trạng thái** |   🟢 **Active**   | 🔴 Discontinued |  🟡 Maintenance   | 🟢 Stable |
+| **Nền tảng**   | macOS, Windows\*  | macOS, Windows  | macOS, Win, Linux |  Windows  |
+| Năm ra mắt     |       2025        |      2018       |       2019        |   2000    |
+| Miễn phí       |        ✅         |       ✅        |        ✅         |    ✅     |
+| Open source    |        ✅         |       ✅        |        ✅         |    ⚠️     |
+| Công nghệ      | **Rust + Native** |    C++ + Qt     |     C++ + Qt      |    C++    |
+| Chỉ Unicode    |        ✅         |       ❌        |        ❌         |    ❌     |
+
+_\* Windows: đang trong lộ trình phát triển (Roadmap)._
 
 Nếu cần chuyển mã hay dùng bảng mã cũ, dùng UniKey/EVKey/OpenKey.
 
