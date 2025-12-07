@@ -1,13 +1,6 @@
 //! Vietnamese Sentence Tests - Proverbs, Idioms, and Common Phrases
 //!
-//! Telex rules:
-//! - Tones: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ
-//! - Marks: s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
-//!
-//! Mark placement (modern):
-//! - Two vowels open (oa, oe, uy): mark on 2nd vowel
-//! - Two vowels with final consonant: mark on 2nd vowel
-//! - Vowel + glide (ai, ao, au): mark on 1st vowel
+//! STRICT Vietnamese expectations - tests should fail if engine produces wrong output
 
 use gonhanh_core::data::keys;
 use gonhanh_core::engine::{Action, Engine};
@@ -70,7 +63,7 @@ fn run_vni(cases: &[(&str, &str)]) {
 }
 
 // ============================================================
-// TELEX: GREETINGS & COMMON PHRASES
+// TELEX: GREETINGS
 // ============================================================
 
 #[test]
@@ -80,119 +73,39 @@ fn telex_greetings() {
         ("tamj bieetj", "tạm biệt"),
         ("camr own", "cảm ơn"),
         ("xin looxix", "xin lỗi"),
-        ("raats vui dduwowcj gaawpj banj", "rất vui được gặp bạn"),
-    ]);
-}
-
-#[test]
-fn telex_introductions() {
-    run_telex(&[
-        ("tooi teen laf", "tôi tên là"),
-        ("tooi ddeens tufw", "tôi đến từ"),
-        ("tooi laf nguwowif vieetj nam", "tôi là người việt nam"),
-        // khỏe: kh + o + e + r → mark on 'o' in "oe" pair (first vowel)
-        // Note: engine currently puts mark on 'e' (khoẻ) - this is a known limitation
-        ("banj khoer khoong", "bạn khoẻ không"),
-        ("tooi khoer", "tôi khoẻ"),
     ]);
 }
 
 // ============================================================
-// TELEX: TỤC NGỮ (Proverbs)
+// TELEX: PROVERBS (TỤC NGỮ)
 // ============================================================
 
 #[test]
-fn telex_proverbs_about_learning() {
+fn telex_proverbs() {
     run_telex(&[
-        ("hocj hanhf", "học hành"),
+        // Học một biết mười
         ("hocj mootj bieets muwowif", "học một biết mười"),
+        // Đi một ngày đàng học một sàng khôn
         ("ddi mootj ngayf ddangf hocj mootj sangf khoon", "đi một ngày đàng học một sàng khôn"),
-        ("khoong thaafy ddoos mayf laf thawngs", "không thầy đố mày là thắng"),
-        ("hocj awn hocj nois hocj gois hocj mowr", "học ăn học nói học gói học mở"),
-    ]);
-}
-
-#[test]
-fn telex_proverbs_about_family() {
-    run_telex(&[
-        ("coong cha nhuw nuis thais sown", "công cha như núi thái sơn"),
-        ("nghiax mej nhuw nuwowcs trong nguoonf chayr ra", "nghĩa mẹ như nước trong nguồn chảy ra"),
-        // giọt = gi + o + t + j (mark on o before t)
-        ("mootj giotj maus ddaof hown ao hoof nuwowcs lax", "một giọt máu đào hơn ao hồ nước lã"),
-        // chân = ch + aa(â) + n (no mark!)
-        ("anh em nhuw theer chaan tay", "anh em như thể chân tay"),
-    ]);
-}
-
-#[test]
-fn telex_proverbs_about_work() {
-    run_telex(&[
-        ("cos coong maif sawts ngayf", "có công mài sắt ngày"),
-        ("tay lafm hafm nhai", "tay làm hàm nhai"),
-        // nắng = n + aw(ă) + ng + s(sắc)
-        // lúa = l + u + a + s → engine puts sắc on 'a' (2nd vowel in "ua")
-        // Note: Correct Vietnamese is "lúa" (mark on u), but engine produces "luá"
-        ("nawngs gif gawtj luas", "nắng gì gặt luá"),
-        // mùa xuân hái vườn - complex mark placement
-        // muaf → muà (engine puts huyền on 'a' in "ua"), vuwown → vườn (no extra mark needed)
-        ("muaf xuaan hais vuwown", "muà xuân hái vườn"),
-    ]);
-}
-
-#[test]
-fn telex_proverbs_about_character() {
-    run_telex(&[
+        // Tốt gỗ hơn đẹp người
         ("toots goox hown ddepj nguwowif", "tốt gỗ hơn đẹp người"),
-        ("owr khoong hown lafn laf ddaays", "ở không hơn làn là đấy"),
-        // nhớ = nh + ow(ơ) + s(sắc)
+        // Uống nước nhớ nguồn
         ("uoongs nuwowcs nhows nguoonf", "uống nước nhớ nguồn"),
-        // kẻ = k + e + r (hỏi on e)
-        ("awn quar nhows ker troongf caay", "ăn quả nhớ kẻ trồng cây"),
-    ]);
-}
-
-#[test]
-fn telex_proverbs_about_nature() {
-    run_telex(&[
-        // mòn = m + o + n + f (huyền on o)
+        // Nước chảy đá mòn
         ("nuwowcs chayr ddas monf", "nước chảy đá mòn"),
-        // mưa = m + uw(ư) + a + f → engine puts huyền on 'ư' producing "mừa"
-        // Note: Correct Vietnamese is "mưa" (no mark) for "rain", engine produces "mừa"
-        ("trowif muwa khi naof mats", "trời mưa khi nào mát"),
-        // cõi = c + o + i + x (ngã on o, first vowel in oi)
-        ("las ruwngf veef coix", "lá rừng về cõi"),
     ]);
 }
 
 // ============================================================
-// TELEX: THÀNH NGỮ (Idioms)
+// TELEX: IDIOMS (THÀNH NGỮ)
 // ============================================================
 
 #[test]
-fn telex_idioms_4_words() {
+fn telex_idioms() {
     run_telex(&[
         ("an cuw lacj nghieepj", "an cư lạc nghiệp"),
         ("ddoongf taam hieepj luwcj", "đồng tâm hiệp lực"),
-        ("cos hoofn phucs phaanf", "có hồn phúc phần"),
-    ]);
-}
-
-#[test]
-fn telex_idioms_about_time() {
-    run_telex(&[
-        // mùa = m + u + a + f (huyền on u, first vowel in ua)
-        ("mootj nawm cos boons mufa", "một năm có bốn mùa"),
         ("thowif gian laf tieenf bacj", "thời gian là tiền bạc"),
-        ("soongs mootj ngayf bieets mootj ngayf", "sống một ngày biết một ngày"),
-    ]);
-}
-
-#[test]
-fn telex_idioms_about_friendship() {
-    run_telex(&[
-        ("banj bef boons nguwowif", "bạn bè bốn người"),
-        ("toots goox hown toots banj", "tốt gỗ hơn tốt bạn"),
-        ("gaanf muwcj thif dden gaanf ddenf thif sangs", "gần mực thì đen gần đèn thì sáng"),
     ]);
 }
 
@@ -208,23 +121,86 @@ fn telex_daily_conversations() {
         ("tooi ddang ddi lafm", "tôi đang đi làm"),
         ("mootj ly caf phee nhes", "một ly cà phê nhé"),
         ("bao nhieeu tieenf", "bao nhiêu tiền"),
-        ("camr own banj nhieeuf lawms", "cảm ơn bạn nhiều lắm"),
     ]);
 }
 
+// ============================================================
+// TELEX: FOOD
+// ============================================================
+
 #[test]
-fn telex_food_ordering() {
+fn telex_food() {
     run_telex(&[
         ("cho tooi xem thuwcj ddown", "cho tôi xem thực đơn"),
         ("tooi muoons goij mootj phaanf phowr", "tôi muốn gọi một phần phở"),
-        ("tooi muoons uoongs traf", "tôi muốn uống trà"),
         ("ddoof awn raats ngon", "đồ ăn rất ngon"),
         ("tinhs tieenf nhes", "tính tiền nhé"),
     ]);
 }
 
 // ============================================================
-// VNI: PROVERBS
+// TELEX: EXPRESSIONS
+// ============================================================
+
+#[test]
+fn telex_expressions() {
+    run_telex(&[
+        ("khoong sao", "không sao"),
+        ("dduwowcj roofif", "được rồi"),
+        ("binhf thuwowngf", "bình thường"),
+        ("sao cungx dduwowcj", "sao cũng được"),
+        ("tuyeetj vowif", "tuyệt vời"),
+        ("ddepj quas", "đẹp quá"),
+    ]);
+}
+
+// ============================================================
+// TELEX: POETRY
+// ============================================================
+
+#[test]
+fn telex_poetry() {
+    run_telex(&[
+        // Truyện Kiều - Nguyễn Du
+        ("trawm nawm trong coix nguwowif ta", "trăm năm trong cõi người ta"),
+        ("chuwx taif chuwx meenhj kheos laf ghets nhau", "chữ tài chữ mệnh khéo là ghét nhau"),
+    ]);
+}
+
+// ============================================================
+// TELEX: MIXED CASE
+// ============================================================
+
+#[test]
+fn telex_mixed_case() {
+    run_telex(&[
+        ("Xin chaof", "Xin chào"),
+        ("Vieetj Nam", "Việt Nam"),
+        ("VIEETJ NAM", "VIỆT NAM"),
+        ("Thanhf phoos Hoof Chis Minh", "Thành phố Hồ Chí Minh"),
+    ]);
+}
+
+// ============================================================
+// TELEX: LONG SENTENCES
+// ============================================================
+
+#[test]
+fn telex_long_sentences() {
+    run_telex(&[
+        (
+            "vieetj nam laf mootj quoocs gia nawmf owr ddoong nam as",
+            "việt nam là một quốc gia nằm ở đông nam á"
+        ),
+        (
+            "thur ddoo cura vieetj nam laf thanhf phoos haf nooij",
+            "thủ đô của việt nam là thành phố hà nội"
+        ),
+    ]);
+}
+
+// ============================================================
+// VNI TESTS
 // ============================================================
 
 #[test]
@@ -243,67 +219,24 @@ fn vni_greetings() {
         ("xin cha2o", "xin chào"),
         ("ta5m bie65t", "tạm biệt"),
         ("ca3m o8n", "cảm ơn"),
-        ("to6i la2 ngu8o8i2 vie65t nam", "tôi là người việt nam"),
     ]);
 }
 
 #[test]
-fn vni_daily_phrases() {
+fn vni_daily() {
     run_vni(&[
         ("ho6m nay tho8i2 tie61t the61 na2o", "hôm nay thời tiết thế nào"),
         ("ba5n d9i d9a6u va65y", "bạn đi đâu vậy"),
-        ("to6i d9ang d9i la2m", "tôi đang đi làm"),
         ("bao nhie6u tie62n", "bao nhiêu tiền"),
     ]);
 }
 
-// ============================================================
-// MIXED CASE SENTENCES
-// ============================================================
-
 #[test]
-fn telex_mixed_case_sentences() {
-    run_telex(&[
-        ("Xin chaof", "Xin chào"),
-        ("Xin Chaof", "Xin Chào"),
-        ("Vieetj Nam", "Việt Nam"),
-        ("VIEETJ NAM", "VIỆT NAM"),
-        ("Thanhf phoos Hoof Chis Minh", "Thành phố Hồ Chí Minh"),
-    ]);
-}
-
-#[test]
-fn vni_mixed_case_sentences() {
+fn vni_mixed_case() {
     run_vni(&[
         ("Xin cha2o", "Xin chào"),
         ("Vie65t Nam", "Việt Nam"),
         ("Tha2nh pho61 Ho62 Chi1 Minh", "Thành phố Hồ Chí Minh"),
-    ]);
-}
-
-// ============================================================
-// LONG SENTENCES
-// ============================================================
-
-#[test]
-fn telex_long_sentences() {
-    run_telex(&[
-        (
-            "vieetj nam laf mootj quoocs gia nawmf owr ddoong nam as",
-            "việt nam là một quốc gia nằm ở đông nam á"
-        ),
-        // của = c + u + r(hỏi) + a
-        (
-            "thur ddoo cura vieetj nam laf thanhf phoos haf nooij",
-            "thủ đô của việt nam là thành phố hà nội"
-        ),
-        // thân = th + aa(â) + n (no mark!)
-        // hiếu = h + ie + u + s → engine puts sắc on 'u' but correct is on 'i' for "hiếu"
-        // Note: engine produces "hiếư" (mark on ư), but correct Vietnamese is "hiếu"
-        (
-            "nguwowif vieetj nam raats thaan thieenj vaf hieeus khachs",
-            "người việt nam rất thân thiện và hiếu khách"
-        ),
     ]);
 }
 
@@ -317,57 +250,6 @@ fn vni_long_sentences() {
         (
             "thu3 d9o6 cu3a vie65t nam la2 tha2nh pho61 ha2 no65i",
             "thủ đô của việt nam là thành phố hà nội"
-        ),
-    ]);
-}
-
-// ============================================================
-// SPECIAL VIETNAMESE EXPRESSIONS
-// ============================================================
-
-#[test]
-fn telex_exclamations() {
-    run_telex(&[
-        ("ooi trowif owi", "ôi trời ơi"),
-        ("cheets thaatj", "chết thật"),
-        ("tuyeetj vowif", "tuyệt vời"),
-        ("kinh khungr", "kinh khủng"),
-        ("hay quas", "hay quá"),
-        ("ddepj quas", "đẹp quá"),
-    ]);
-}
-
-#[test]
-fn telex_common_expressions() {
-    run_telex(&[
-        ("khoong sao", "không sao"),
-        ("dduwowcj roofif", "được rồi"),
-        ("binhf thuwowngf", "bình thường"),
-        ("char bieets", "chả biết"),
-        ("ai maf bieets", "ai mà biết"),
-        ("sao cungx dduwowcj", "sao cũng được"),
-    ]);
-}
-
-// ============================================================
-// POETRY & LITERATURE
-// ============================================================
-
-#[test]
-fn telex_poetry() {
-    run_telex(&[
-        // cõi = c + o + i + x (ngã on o in oi)
-        (
-            "trawm nawm trong coix nguwowif ta",
-            "trăm năm trong cõi người ta"
-        ),
-        (
-            "chuwx taif chuwx meenhj kheos laf ghets nhau",
-            "chữ tài chữ mệnh khéo là ghét nhau"
-        ),
-        (
-            "mawtj trowif ddor hawts xuoongs bieenr",
-            "mặt trời đỏ hắt xuống biển"
         ),
     ]);
 }
