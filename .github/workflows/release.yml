@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 
 permissions:
   contents: write
@@ -26,8 +26,8 @@ jobs:
           cargo build --release --target aarch64-apple-darwin
           cargo build --release --target x86_64-apple-darwin
           lipo -create \
-            ../target/aarch64-apple-darwin/release/libgonhanh_core.a \
-            ../target/x86_64-apple-darwin/release/libgonhanh_core.a \
+            target/aarch64-apple-darwin/release/libgonhanh_core.a \
+            target/x86_64-apple-darwin/release/libgonhanh_core.a \
             -output ../platforms/macos/libgonhanh_core.a
 
           # macOS app
