@@ -19,7 +19,7 @@ GoNhanh được xây dựng với mục tiêu trở thành bộ gõ tiếng Vi�
 
 ## Động lực
 
-Tiếp nối di sản của **UniKey**, **OpenKey** và **EVKey**, tôi (**Kha Phan**) phát triển GoNhanh để giải quyết nhu cầu về sự ổn định tuyệt đối trên các công cụ lập trình hiện đại.
+Tiếp nối di sản của **VietKey**, **UniKey**, **OpenKey** và **EVKey**, tôi (**Kha Phan**) phát triển GoNhanh để giải quyết nhu cầu về sự ổn định tuyệt đối trên các công cụ lập trình hiện đại.
 
 Dự án **phi lợi nhuận** với cam kết: **Mã nguồn mở - Miễn phí - Của cộng đồng**.
 
@@ -31,15 +31,17 @@ Dự án **phi lợi nhuận** với cam kết: **Mã nguồn mở - Miễn phí
 
 ## So sánh
 
-|                |      GoNhanh       |        EVKey        |      OpenKey      |    GoTiengViet    |     UniKey     |  IBus-Bamboo   |
-| :------------- | :----------------: | :-----------------: | :---------------: | :---------------: | :------------: | :------------: |
-| **Trạng thái** | 🟢 **Phát triển**  | 🔴 Ngừng phát triển |    🟡 Bảo trì     | 🟡 Ngừng cập nhật |   🟢 Ổn định   |   🟢 Ổn định   |
-| **Nền tảng**   |  macOS, Windows\*  |   macOS, Windows    | macOS, Win, Linux |  macOS, Windows   | Windows, Linux |     Linux      |
-| **Mã nguồn**   | ✅ **Open Source** |   ✅ Open Source    |  ✅ Open Source   |     🚫 Closed     | ✅ Core Engine | ✅ Open Source |
-| Công nghệ      | **Rust + Native**  |      C++ + Qt       |     C++ + Qt      |    Obj-C / C++    |      C++       |       Go       |
-| Bảng mã        |    **Unicode**     |     Đa bảng mã      |    Đa bảng mã     |    Đa bảng mã     |   Đa bảng mã   |   Đa bảng mã   |
-| Chi phí        |    ✅ Miễn phí     |     ✅ Miễn phí     |    ✅ Miễn phí    |   Miễn phí/Pro    |  ✅ Miễn phí   |  ✅ Miễn phí   |
-| Năm ra mắt     |        2025        |        2018         |       2019        |       2008        |      1999      |      2019      |
+|                |      GoNhanh       |        EVKey        |    OpenKey     |    GoTiengViet    |     UniKey     |  IBus-Bamboo   |
+| :------------- | :----------------: | :-----------------: | :------------: | :---------------: | :------------: | :------------: |
+| **Trạng thái** | 🟢 **Phát triển**  | 🔴 Ngừng phát triển |   🟡 Bảo trì   | 🟡 Ngừng cập nhật |   🟢 Ổn định   |   🟢 Ổn định   |
+| macOS          |         ✅         |         ✅          |       ✅       |        ✅         |       ❌       |       ❌       |
+| Windows        |     🗓️ Planned     |         ✅          |       ✅       |        ✅         |       ✅       |       ❌       |
+| Linux          |         ❌         |         ❌          |       ✅       |        ❌         |  ✅ (Engine)   |       ✅       |
+| **Mã nguồn**   | ✅ **Open Source** |   ✅ Open Source    | ✅ Open Source |     🚫 Closed     | ✅ Core Engine | ✅ Open Source |
+| Công nghệ      | **Rust + Native**  |      C++ + Qt       |    C++ + Qt    |    Obj-C / C++    |      C++       |       Go       |
+| Bảng mã        |    **Unicode**     |     Đa bảng mã      |   Đa bảng mã   |    Đa bảng mã     |   Đa bảng mã   |   Đa bảng mã   |
+| Chi phí        |    ✅ Miễn phí     |     ✅ Miễn phí     |  ✅ Miễn phí   |   Miễn phí/Pro    |  ✅ Miễn phí   |  ✅ Miễn phí   |
+| Năm ra mắt     |        2025        |        2018         |      2019      |       2008        |      1999      |      2019      |
 
 _\* Windows: đang trong lộ trình phát triển (Roadmap)._
 
