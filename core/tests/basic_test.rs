@@ -420,11 +420,14 @@ fn vni_d_stroke() {
 #[test]
 fn vni_delayed_tone_input() {
     run_vni(&[
+        // VNI: 6=^(â,ê,ô), 7=˘(ă), 8=hook(ơ,ư), 9=đ
         // tone key finds the vowel in buffer
-        ("tu72", "từ"),     // t + u + 7(ư) + 2(huyền) = từ
+        ("tu82", "từ"),     // t + u + 8(ư) + 2(huyền) = từ
         ("to61", "tố"),     // t + o + 6(ô) + 1(sắc) = tố
         ("ta71", "tắ"),     // t + a + 7(ă) + 1(sắc) = tắ
         ("nu82", "nừ"),     // n + u + 8(ư) + 2(huyền) = nừ
+        ("to82", "tờ"),     // t + o + 8(ơ) + 2(huyền) = tờ
+        ("na72", "nằ"),     // n + a + 7(ă) + 2(huyền) = nằ
     ]);
 }
 
