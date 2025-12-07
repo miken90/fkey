@@ -1,33 +1,50 @@
-.PHONY: all test lint build clean setup install release
+.PHONY: help all test lint build clean setup install release
 
 # Auto-versioning
 TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
 VER := $(subst v,,$(TAG))
 NEXT := $(shell echo $(VER) | awk -F. '{print $$1"."$$2"."$$3+1}')
 
-all: test build
+# Default target
+.DEFAULT_GOAL := help
 
-test:
+help: ## Show this help
+	@echo "GoNhanh - Vietnamese Input Method Engine"
+	@echo ""
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Development:"
+	@grep -E '^(test|lint|build|clean):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Setup & Install:"
+	@grep -E '^(setup|install):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Release:"
+	@grep -E '^(release|all):.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+all: test build ## Run test + build
+
+test: ## Run tests
 	@cd core && cargo test
 
-lint:
+lint: ## Check format & lint
 	@cd core && cargo fmt -- --check && cargo clippy -- -D warnings
 
-build:
+build: ## Build core + macos app
 	@./scripts/build-core.sh
 	@./scripts/build-macos.sh
 
-clean:
+clean: ## Clean build artifacts
 	@cd core && cargo clean
 	@rm -rf platforms/macos/build
 
-setup:
+setup: ## Setup dev environment
 	@./scripts/setup.sh
 
-install: build
+install: build ## Install app to /Applications
 	@cp -r platforms/macos/build/Release/GoNhanh.app /Applications/
 
-release:
+release: ## Tag & push new version
 	@echo "$(TAG) → v$(NEXT)"
 	@git add -A && git commit -m "release: v$(NEXT)" --allow-empty
 	@git tag v$(NEXT) && git push origin main v$(NEXT)
