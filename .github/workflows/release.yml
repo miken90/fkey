@@ -45,7 +45,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
 
           hdiutil create -volname GoNhanh -srcfolder "$APP" -ov -format UDZO \
-            "GoNhanh-${GITHUB_REF_NAME}-macos.dmg"
+            "GoNhanh.dmg"
 
       - name: Release
         uses: softprops/action-gh-release@v1
