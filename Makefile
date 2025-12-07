@@ -9,7 +9,7 @@ NEXT := $(shell echo $(VER) | awk -F. '{print $$1"."$$2"."$$3+1}')
 .DEFAULT_GOAL := help
 
 help: ## Show this help
-	@echo "🚀 GoNhanh - Vietnamese Input Method Engine"
+	@echo "⚡ GoNhanh - Vietnamese Input Method Engine"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""
