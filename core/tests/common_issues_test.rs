@@ -237,7 +237,7 @@ fn vni_real_words_mixed() {
         ("o6ng1", "ống"),      // ống (tube): o6=ô, then 1=sắc
         ("ba2n", "bàn"),       // bàn (table)
         ("nha2", "nhà"),       // nhà (house)
-        ("ho6c5", "học"),      // học (study): o6=ô, then 5=nặng
+        ("hoc5", "học"),       // học (study): 5=nặng on o
     ]);
 }
 
@@ -374,17 +374,18 @@ fn telex_real_words_mixed() {
 
 #[test]
 fn telex_uo_compound_with_marks() {
-    // ươ compound vowel patterns - mark on ơ (2nd vowel with diacritic)
+    // ươ compound vowel patterns
+    // With compound detection: single w on uo applies horn to BOTH
     run_telex(&[
-        // Full ươ with all marks
+        // Standard Telex: uwow = ư + ơ, then mark
         ("uwows", "ướ"),   // ươ + sắc → ướ
         ("uwowf", "ườ"),   // ươ + huyền → ườ
         ("uwowr", "ưở"),   // ươ + hỏi → ưở
         ("uwowx", "ưỡ"),   // ươ + ngã → ưỡ
         ("uwowj", "ượ"),   // ươ + nặng → ượ
-        // Alternate typing patterns
-        ("uowws", "ướ"),   // uo + w (on o) + w (on u) + s
-        ("uowwf", "ườ"),   // uo + ww + huyền
+        // Compound shortcut: uow = ươ (single w for both)
+        ("uows", "ướ"),    // uo + w → ươ, then s → ướ
+        ("uowf", "ườ"),    // uo + w → ươ, then f → ườ
     ]);
 }
 
