@@ -43,11 +43,12 @@ pub fn char_to_key(c: char) -> u16 {
         '8' => keys::N8,
         '9' => keys::N9,
         '<' => keys::DELETE,
+        ' ' => keys::SPACE,
         _ => 255,
     }
 }
 
-/// Simulate typing a word, returns the resulting string on screen
+/// Simulate typing a word or sentence, returns the resulting string on screen
 pub fn type_word(e: &mut Engine, input: &str) -> String {
     let mut screen = String::new();
     for c in input.chars() {
@@ -56,6 +57,12 @@ pub fn type_word(e: &mut Engine, input: &str) -> String {
 
         if key == keys::DELETE {
             screen.pop();
+            e.on_key(key, false, false);
+            continue;
+        }
+
+        if key == keys::SPACE {
+            screen.push(' ');
             e.on_key(key, false, false);
             continue;
         }
