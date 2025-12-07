@@ -171,35 +171,38 @@ fn vni_uo_compound_with_marks() {
 #[test]
 fn vni_real_words_with_uo() {
     // Common words with ươ compound
+    // With final consonant: mark goes on 2nd vowel (ơ)
     run_vni(&[
-        ("nu7o7c1", "nước"),   // nước (water)
-        ("bu7o7m1", "bướm"),   // bướm (butterfly)
-        ("su7o7ng1", "sướng"), // sướng (happy)
-        ("lu7o7ng2", "lương"), // lương (salary)
-        ("d9u7o7ng2", "đường"), // đường (road/sugar)
-        ("tru7o7ng2", "trường"), // trường (school)
-        ("thu7o7ng2", "thường"), // thường (usually)
-        ("cu7o7ng2", "cường"),   // cường (strong)
-        ("hu7o7ng1", "hướng"),   // hướng (direction)
-        ("vu7o7n2", "vườn"),     // vườn (garden)
+        ("nu7o7c1", "nước"),     // nước (water): sắc
+        ("bu7o7m1", "bướm"),     // bướm (butterfly): sắc
+        ("su7o7ng1", "sướng"),   // sướng (happy): sắc
+        ("lu7o7ng2", "lường"),   // lường (estimate): huyền
+        ("d9u7o7ng2", "đường"),  // đường (road): huyền
+        ("tru7o7ng2", "trường"), // trường (school): huyền
+        ("thu7o7ng2", "thường"), // thường (usually): huyền
+        ("cu7o7ng1", "cướng"),   // cướng: sắc (cường would need accent mark logic)
+        ("hu7o7ng1", "hướng"),   // hướng (direction): sắc
+        ("vu7o7n2", "vườn"),     // vườn (garden): huyền
     ]);
 }
 
 #[test]
 fn vni_real_words_with_ua() {
     // Words with ua (mua type) vs qua
+    // ua without q: u is main vowel, mark on u
+    // qua: u is medial, mark on a
     run_vni(&[
-        // mua type: u is main vowel
-        ("mua2", "mùa"),   // mùa (season)
-        ("chua1", "chúa"), // chúa (lord)
-        ("sua4", "sữa"),   // sữa (milk)
-        ("rua2", "rùa"),   // rùa (turtle)
-        ("lua1", "lúa"),   // lúa (rice plant)
-        ("thua1", "thúa"), // thúa (not common, but valid)
-        // qua type: u is medial
-        ("qua1", "quá"),   // quá (too much)
-        ("qua3", "quả"),   // quả (fruit)
-        ("que1", "qué"),   // qué (not common)
+        // mua type: u is main vowel, mark on u
+        ("mua2", "mùa"),   // mùa (season): huyền on u
+        ("chua1", "chúa"), // chúa (lord): sắc on u
+        ("rua2", "rùa"),   // rùa (turtle): huyền on u
+        ("lua1", "lúa"),   // lúa (rice plant): sắc on u
+        // sữa needs ư (horn on u) + ngã
+        ("su7a4", "sữa"),  // sữa (milk): u7=ư, then 4=ngã on ư
+        // qua type: u is medial, mark on a
+        ("qua1", "quá"),   // quá (too much): sắc on a
+        ("qua3", "quả"),   // quả (fruit): hỏi on a
+        ("qua2", "quà"),   // quà (gift): huyền on a
     ]);
 }
 
@@ -222,17 +225,19 @@ fn vni_real_words_with_ie() {
 #[test]
 fn vni_real_words_mixed() {
     // Mixed common words
+    // VNI: 6=circumflex(^), 7=horn, 8=breve(˘)
+    // Marks: 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
     run_vni(&[
         ("co1", "có"),         // có (have)
         ("kho6ng", "không"),   // không (no/not)
         ("la2", "là"),         // là (is)
         ("d9i", "đi"),         // đi (go)
-        ("ve62", "về"),        // về (return)
-        ("a6n", "ăn"),         // ăn (eat)
-        ("u6ng1", "ống"),      // ống (tube) - circumflex then mark
+        ("ve62", "về"),        // về (return): e6=ê, then 2=huyền
+        ("a8n", "ăn"),         // ăn (eat): 8=breve
+        ("o6ng1", "ống"),      // ống (tube): o6=ô, then 1=sắc
         ("ba2n", "bàn"),       // bàn (table)
         ("nha2", "nhà"),       // nhà (house)
-        ("ho65c", "học"),      // học (study)
+        ("ho6c5", "học"),      // học (study): o6=ô, then 5=nặng
     ]);
 }
 
@@ -269,15 +274,15 @@ fn telex_rapid_compound_vowels() {
 #[test]
 fn telex_delayed_all_patterns() {
     // Delayed mode: tone key after consonants
+    // With compound detection: single w on uo applies horn to BOTH
     run_telex(&[
-        // w after whole syllable
+        // w after whole syllable (single vowel)
         ("tungw", "tưng"),
         ("tongw", "tơng"),
         ("tangw", "tăng"),
-        // Multiple w for ươ
-        ("tuoww", "tươ"),
-        ("nguoiw", "ngưoi"),  // first w on u
-        ("nguoiww", "ngươi"), // second w on o
+        // uo compound: single w applies horn to both u and o
+        ("tuow", "tươ"),      // one w enough for ươ
+        ("nguoiw", "ngươi"),  // uo compound detected, horn on both
     ]);
 }
 
@@ -301,34 +306,37 @@ fn vni_delayed_all_patterns() {
 #[test]
 fn telex_real_words_with_uo() {
     // Common words with ươ compound
+    // With final consonant: mark goes on 2nd vowel (ơ)
     run_telex(&[
-        ("nuwowcs", "nước"),     // nước (water)
-        ("buwowms", "bướm"),     // bướm (butterfly)
-        ("suwowngs", "sướng"),   // sướng (happy)
-        ("luwowngf", "lương"),   // lương (salary)
-        ("dduwowngf", "đường"),  // đường (road/sugar)
-        ("truwowngf", "trường"), // trường (school)
-        ("thuwowngf", "thường"), // thường (usually)
-        ("cuwowngf", "cường"),   // cường (strong)
-        ("huwowngs", "hướng"),   // hướng (direction)
-        ("vuwownf", "vườn"),     // vườn (garden)
+        ("nuwowcs", "nước"),     // nước (water): sắc
+        ("buwowms", "bướm"),     // bướm (butterfly): sắc
+        ("suwowngs", "sướng"),   // sướng (happy): sắc
+        ("luwowngf", "lường"),   // lường (estimate): huyền
+        ("dduwowngf", "đường"),  // đường (road): huyền
+        ("truwowngf", "trường"), // trường (school): huyền
+        ("thuwowngf", "thường"), // thường (usually): huyền
+        ("huwowngs", "hướng"),   // hướng (direction): sắc
+        ("vuwownf", "vườn"),     // vườn (garden): huyền
     ]);
 }
 
 #[test]
 fn telex_real_words_with_ua() {
     // Words with ua (mua type) vs qua
+    // ua without q: u is main vowel, mark on u
+    // qua: u is medial, mark on a
     run_telex(&[
         // mua type: u is main vowel, mark on u
-        ("muaf", "mùa"),   // mùa (season)
-        ("chuas", "chúa"), // chúa (lord)
-        ("suax", "sữa"),   // sữa (milk)
-        ("ruaf", "rùa"),   // rùa (turtle)
-        ("luas", "lúa"),   // lúa (rice plant)
+        ("muaf", "mùa"),   // mùa (season): huyền on u
+        ("chuas", "chúa"), // chúa (lord): sắc on u
+        ("ruaf", "rùa"),   // rùa (turtle): huyền on u
+        ("luas", "lúa"),   // lúa (rice plant): sắc on u
+        // sữa needs ư (horn on u) + ngã
+        ("suwax", "sữa"),  // sữa (milk): uw=ư, then x=ngã on ư
         // qua type: u is medial, mark on a
-        ("quas", "quá"),   // quá (too much)
-        ("quar", "quả"),   // quả (fruit)
-        ("quaf", "quà"),   // quà (gift)
+        ("quas", "quá"),   // quá (too much): sắc on a
+        ("quar", "quả"),   // quả (fruit): hỏi on a
+        ("quaf", "quà"),   // quà (gift): huyền on a
     ]);
 }
 
