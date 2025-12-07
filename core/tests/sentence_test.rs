@@ -1,6 +1,13 @@
 //! Vietnamese Sentence Tests - Proverbs, Idioms, and Common Phrases
 //!
-//! Tests full sentences using Vietnamese thành ngữ (idioms) and tục ngữ (proverbs)
+//! Telex rules:
+//! - Tones: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ
+//! - Marks: s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
+//!
+//! IMPORTANT: Only double the vowel if you need the circumflex tone!
+//! - tiền = t + ie + e(ê) + n + f → "tieenf"
+//! - không = kh + o + o(ô) + ng → "khoong"
+//! - cũng = c + u + ng + x → "cungx" (NO double u!)
 
 use gonhanh_core::data::keys;
 use gonhanh_core::engine::{Action, Engine};
@@ -69,22 +76,22 @@ fn run_vni(cases: &[(&str, &str)]) {
 #[test]
 fn telex_greetings() {
     run_telex(&[
-        ("xin chaof", "xin chào"),                      // Hello
-        ("tamj bieetj", "tạm biệt"),                    // Goodbye
-        ("camr own", "cảm ơn"),                         // Thank you
-        ("xin looxix", "xin lỗi"),                      // Sorry (oo=ô, x=ngã, i, x=ngã)
-        ("raats vui dduwowcj gaawpj banj", "rất vui được gặp bạn"),  // Nice to meet you
+        ("xin chaof", "xin chào"),           // xin chào
+        ("tamj bieetj", "tạm biệt"),         // tạm biệt
+        ("camr own", "cảm ơn"),              // cảm ơn
+        ("xin looxix", "xin lỗi"),           // xin lỗi (oo=ô, x=ngã)
+        ("raats vui dduwowcj gaawpj banj", "rất vui được gặp bạn"),
     ]);
 }
 
 #[test]
 fn telex_introductions() {
     run_telex(&[
-        ("tooi teen laf", "tôi tên là"),                // My name is
-        ("tooi ddeens tufw", "tôi đến từ"),             // I come from
-        ("tooi laf nguwowif vieetj nam", "tôi là người việt nam"),  // I am Vietnamese
-        ("banj khoeer khoonng", "bạn khỏe không"),      // How are you? (oo=ô, ng)
-        ("tooi khoeer", "tôi khỏe"),                    // I'm fine
+        ("tooi teen laf", "tôi tên là"),
+        ("tooi ddeens tufw", "tôi đến từ"),
+        ("tooi laf nguwowif vieetj nam", "tôi là người việt nam"),
+        ("banj khoer khoong", "bạn khỏe không"),  // khoer = khỏe, khoong = không
+        ("tooi khoer", "tôi khỏe"),
     ]);
 }
 
@@ -95,87 +102,50 @@ fn telex_introductions() {
 #[test]
 fn telex_proverbs_about_learning() {
     run_telex(&[
-        // Học hành
-        ("hocj haanhf", "học hành"),                    // study
-        ("hocj mootj bieets muwowif", "học một biết mười"),  // Learn one, know ten
-
+        ("hocj hanhf", "học hành"),
+        ("hocj mootj bieets muwowif", "học một biết mười"),
         ("ddi mootj ngayf ddangf hocj mootj sangf khoon", "đi một ngày đàng học một sàng khôn"),
-        // Travel one day, learn a basketful of wisdom
-
-        ("khoonng thaaayf ddoos mayf laf thawngss", "không thầy đố mày là thắng"),
-        // Without a teacher, you can't succeed (khoonng=không, thaaayf=thầy)
-
-        ("hocj awn hocj nois hocj gois hocj mowsr", "học ăn học nói học gói học mở"),
-        // Learn to eat, speak, wrap, unwrap
+        ("khoong thaafy ddoos mayf laf thawngs", "không thầy đố mày là thắng"),
+        ("hocj awn hocj nois hocj gois hocj mowr", "học ăn học nói học gói học mở"),
     ]);
 }
 
 #[test]
 fn telex_proverbs_about_family() {
     run_telex(&[
-        // Gia đình
-        ("coong cha nhuw nusis thaais sown", "công cha như núi thái sơn"),
-        // Father's merit is like Thai Son mountain
-
+        ("coong cha nhuw nuis thais sown", "công cha như núi thái sơn"),
         ("nghiax mej nhuw nuwowcs trong nguoonf chayr ra", "nghĩa mẹ như nước trong nguồn chảy ra"),
-        // Mother's love is like water from the source
-
-        ("mootj giootj maus ddaof hown ao hoof nuwowcs lax", "một giọt máu đào hơn ao hồ nước lã"),
-        // One drop of blood is worth more than a pond of water
-
+        ("mootj giotj maus ddaof hown ao hoof nuwowcs lax", "một giọt máu đào hơn ao hồ nước lã"),
         ("anh em nhuw theer chaanf tay", "anh em như thể chân tay"),
-        // Siblings are like limbs
     ]);
 }
 
 #[test]
 fn telex_proverbs_about_work() {
     run_telex(&[
-        // Lao động
         ("cos coong maif sawts ngayf", "có công mài sắt ngày"),
-        // With effort, iron can be ground
-
         ("tay lafm hafm nhai", "tay làm hàm nhai"),
-        // Hands work, mouth eats
-
-        ("nawwngs gif gawtj luas", "nắng gì gặt lúa"),
-        // What sun for harvesting rice
-
-        ("muaf xuaan haasi vuuwn", "mùa xuân hái vườn"),
-        // Spring season, harvest the garden
+        ("nawngx gif gawtj luas", "nắng gì gặt lúa"),  // aw=ă + x=ngã
+        ("muaf xuaan hais vuwown", "mùa xuân hái vườn"),
     ]);
 }
 
 #[test]
 fn telex_proverbs_about_character() {
     run_telex(&[
-        // Tính cách
         ("toots goox hown ddepj nguwowif", "tốt gỗ hơn đẹp người"),
-        // Good wood is better than beautiful person
-
-        ("owr khoonng hown lafn laf ddaaays", "ở không hơn làn là đấy"),
-        // Being idle is better than doing wrong (owr=ở)
-
-        ("uoongs nuwowcs nhowsr nguoonf", "uống nước nhớ nguồn"),
-        // When drinking water, remember the source
-
-        ("awn quar nhowsr keer troongf caay", "ăn quả nhớ kẻ trồng cây"),
-        // Eating fruit, remember who planted the tree
+        ("owr khoong hown lafn laf ddaays", "ở không hơn làn là đấy"),
+        ("uoongs nuwowcs nhows nguoonf", "uống nước nhớ nguồn"),  // nhows = nhớ (ow=ơ, s=sắc)
+        ("awn quar nhows keer troongf caay", "ăn quả nhớ kẻ trồng cây"),
     ]);
 }
 
 #[test]
 fn telex_proverbs_about_nature() {
     run_telex(&[
-        // Thiên nhiên
-        ("nuwowcs chayr ddas moonf", "nước chảy đá mòn"),
-        // Water flows, stone erodes
-
-        ("troiwf muwaf khi naof mats", "trời mưa khi nào mát"),
-        // When it rains, it's cool
-
+        ("nuwowcs chayr ddas monf", "nước chảy đá mòn"),  // monf = mòn (o, n, f=huyền)
+        ("trowif muwaf khi naof mats", "trời mưa khi nào mát"),
         ("las ruwngf veef cooix", "lá rừng về cõi"),
-        // Forest leaves return to earth
     ]);
 }
 
@@ -186,40 +156,27 @@ fn telex_proverbs_about_nature() {
 #[test]
 fn telex_idioms_4_words() {
     run_telex(&[
-        // Thành ngữ 4 chữ
-        ("an cuw lacj nghieepj", "an cư lạc nghiệp"),   // Settle down and prosper
-        ("ddoongf taanm hieepj luwcj", "đồng tâm hiệp lực"),  // United in heart and strength
-        ("cos hoofn phucjs phaans", "có hồn phúc phần"), // Have soul and fortune
+        ("an cuw lacj nghieepj", "an cư lạc nghiệp"),
+        ("ddoongf taam hieepj luwcj", "đồng tâm hiệp lực"),
+        ("cos hoofn phucs phaanf", "có hồn phúc phần"),
     ]);
 }
 
 #[test]
 fn telex_idioms_about_time() {
     run_telex(&[
-        // Thời gian
         ("mootj nawm cos boons muaf", "một năm có bốn mùa"),
-        // One year has four seasons
-
-        ("thowif gian laf tieeenf bacj", "thời gian là tiền bạc"),
-        // Time is money
-
+        ("thowif gian laf tieenf bacj", "thời gian là tiền bạc"),  // tieenf = tiền
         ("soongs mootj ngayf bieets mootj ngayf", "sống một ngày biết một ngày"),
-        // Live one day, know one day
     ]);
 }
 
 #[test]
 fn telex_idioms_about_friendship() {
     run_telex(&[
-        // Tình bạn
         ("banj bef boons nguwowif", "bạn bè bốn người"),
-        // Four friends
-
         ("toots goox hown toots banj", "tốt gỗ hơn tốt bạn"),
-        // Good wood is better than good friends
-
-        ("gaawns muwcj thif dden gaawns ddenf thif sangs", "gần mực thì đen gần đèn thì sáng"),
-        // Near ink becomes black, near lamp becomes bright
+        ("gaanf muwcj thif dden gaanf ddenf thif sangs", "gần mực thì đen gần đèn thì sáng"),
     ]);
 }
 
@@ -230,45 +187,23 @@ fn telex_idioms_about_friendship() {
 #[test]
 fn telex_daily_conversations() {
     run_telex(&[
-        // Hội thoại hàng ngày
         ("hoom nay thowif tieets thees naof", "hôm nay thời tiết thế nào"),
-        // How's the weather today?
-
-        ("banj ddi ddaaau vaayj", "bạn đi đâu vậy"),
-        // Where are you going?
-
+        ("banj ddi ddaau vaayj", "bạn đi đâu vậy"),
         ("tooi ddang ddi lafm", "tôi đang đi làm"),
-        // I'm going to work
-
-        ("mootj lys caf phee nhes", "một ly cà phê nhé"),
-        // One cup of coffee please
-
-        ("bao nhieeu tieeenf", "bao nhiêu tiền"),
-        // How much?
-
+        ("mootj ly caf phee nhes", "một ly cà phê nhé"),
+        ("bao nhieeu tieenf", "bao nhiêu tiền"),  // tieenf = tiền
         ("camr own banj nhieeuf lawms", "cảm ơn bạn nhiều lắm"),
-        // Thank you very much
     ]);
 }
 
 #[test]
 fn telex_food_ordering() {
     run_telex(&[
-        // Đặt món
         ("cho tooi xem thuwcj ddown", "cho tôi xem thực đơn"),
-        // Let me see the menu
-
-        ("tooi muoons goij mootj phaanf phowrs", "tôi muốn gọi một phần phở"),
-        // I want to order pho
-
+        ("tooi muoons goij mootj phaanf phowr", "tôi muốn gọi một phần phở"),
         ("tooi muoons uoongs traf", "tôi muốn uống trà"),
-        // I want to drink tea
-
         ("ddoof awn raats ngon", "đồ ăn rất ngon"),
-        // The food is very delicious
-
-        ("tinhs tieeenf nhes", "tính tiền nhé"),
-        // Bill please
+        ("tinhs tieenf nhes", "tính tiền nhé"),
     ]);
 }
 
@@ -280,16 +215,9 @@ fn telex_food_ordering() {
 fn vni_proverbs() {
     run_vni(&[
         ("ho5c mo65t bie61t mu8o8i2", "học một biết mười"),
-        // Learn one, know ten
-
         ("uo61ng nu8o81c nho81 nguo62n", "uống nước nhớ nguồn"),
-        // When drinking water, remember the source
-
         ("to61t go64 ho8n d9e5p ngu8o8i2", "tốt gỗ hơn đẹp người"),
-        // Good wood is better than beautiful person
-
         ("nu8o81c cha3y d9a1 mo2n", "nước chảy đá mòn"),
-        // Water flows, stone erodes
     ]);
 }
 
@@ -325,7 +253,6 @@ fn telex_mixed_case_sentences() {
         ("Vieetj Nam", "Việt Nam"),
         ("VIEETJ NAM", "VIỆT NAM"),
         ("Thanhf phoos Hoof Chis Minh", "Thành phố Hồ Chí Minh"),
-        // Ho Chi Minh City
     ]);
 }
 
@@ -349,19 +276,14 @@ fn telex_long_sentences() {
             "vieetj nam laf mootj quoocs gia nawmf owr ddoong nam as",
             "việt nam là một quốc gia nằm ở đông nam á"
         ),
-        // Vietnam is a country located in Southeast Asia
-
         (
-            "thur ddoo cuar vieetj nam laf thanhf phoos haf nooij",
+            "thur ddoo curar vieetj nam laf thanhf phoos haf nooij",
             "thủ đô của việt nam là thành phố hà nội"
-        ),
-        // The capital of Vietnam is Hanoi city
-
+        ),  // curar = của (u, r=hỏi, a)
         (
             "nguwowif vieetj nam raats thaanf thieenj vaf hieeuws khachs",
             "người việt nam rất thân thiện và hiếu khách"
         ),
-        // Vietnamese people are very friendly and hospitable
     ]);
 }
 
@@ -372,7 +294,6 @@ fn vni_long_sentences() {
             "vie65t nam la2 mo65t quo61c gia na72m o83 d9o6ng nam a1",
             "việt nam là một quốc gia nằm ở đông nam á"
         ),
-
         (
             "thu3 d9o6 cu3a vie65t nam la2 tha2nh pho61 ha2 no65i",
             "thủ đô của việt nam là thành phố hà nội"
@@ -387,24 +308,24 @@ fn vni_long_sentences() {
 #[test]
 fn telex_exclamations() {
     run_telex(&[
-        ("ooi troiwf oiws", "ôi trời ơi"),              // Oh my god (ooi=ôi, troiwf=trời, oiws=ơi)
-        ("cheets thaatj", "chết thật"),                 // Really dead
-        ("tuyeetj vowif", "tuyệt vời"),                 // Wonderful
-        ("kinh khungrr", "kinh khủng"),                 // Terrible/Amazing
-        ("hay quas", "hay quá"),                        // So good
-        ("ddepj quas", "đẹp quá"),                      // So beautiful
+        ("ooi trowif owi", "ôi trời ơi"),
+        ("cheets thaatj", "chết thật"),
+        ("tuyeetj vowif", "tuyệt vời"),
+        ("kinh khungr", "kinh khủng"),
+        ("hay quas", "hay quá"),
+        ("ddepj quas", "đẹp quá"),
     ]);
 }
 
 #[test]
 fn telex_common_expressions() {
     run_telex(&[
-        ("khoonng sao", "không sao"),                   // No problem
-        ("dduwowcj roofif", "được rồi"),                // OK/Alright
-        ("binhf thuwowngf", "bình thường"),             // Normal
-        ("char bieets", "chả biết"),                    // Don't know (casual)
-        ("ai maf bieets", "ai mà biết"),                // Who knows
-        ("sao cuungx dduwowcj", "sao cũng được"),       // Whatever works
+        ("khoong sao", "không sao"),
+        ("dduwowcj roofif", "được rồi"),
+        ("binhf thuwowngf", "bình thường"),
+        ("char bieets", "chả biết"),
+        ("ai maf bieets", "ai mà biết"),
+        ("sao cungx dduwowcj", "sao cũng được"),  // cungx = cũng (NO double u)
     ]);
 }
 
@@ -415,19 +336,16 @@ fn telex_common_expressions() {
 #[test]
 fn telex_poetry() {
     run_telex(&[
-        // Truyện Kiều - Nguyễn Du
         (
             "trawm nawm trong cooix nguwowif ta",
             "trăm năm trong cõi người ta"
         ),
         (
-            "chuwx taif chuwx meenhj kheoos laf ghets nhau",
+            "chuwx taif chuwx meenhj kheos laf ghets nhau",
             "chữ tài chữ mệnh khéo là ghét nhau"
         ),
-
-        // Đoàn thuyền đánh cá - Huy Cận
         (
-            "mawtj troiwf ddor hawts xuoongs bieenr",
+            "mawtj trowif ddor hawts xuoongs bieenr",
             "mặt trời đỏ hắt xuống biển"
         ),
     ]);
