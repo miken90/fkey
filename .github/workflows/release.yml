@@ -2,92 +2,53 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 permissions:
   contents: write
 
-env:
-  APP_NAME: GoNhanh
-
 jobs:
-  build-macos:
+  build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
-
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
 
-      - name: Build Rust Core (Universal)
+      - name: Build
         run: |
+          # Rust core (universal binary)
           cd core
           cargo build --release --target aarch64-apple-darwin
           cargo build --release --target x86_64-apple-darwin
-
-          # Create universal binary
-          mkdir -p ../platforms/macos
           lipo -create \
             ../target/aarch64-apple-darwin/release/libgonhanh_core.a \
             ../target/x86_64-apple-darwin/release/libgonhanh_core.a \
             -output ../platforms/macos/libgonhanh_core.a
 
-      - name: Build macOS App
+          # macOS app
+          cd ../platforms/macos
+          xcodebuild -scheme GoNhanh -configuration Release \
+            -derivedDataPath build CODE_SIGN_IDENTITY="-"
+
+      - name: Package
         run: |
           cd platforms/macos
-          xcodebuild -scheme GoNhanh \
-            -configuration Release \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+          V="${GITHUB_REF_NAME#v}"
+          APP="build/Build/Products/Release/GoNhanh.app"
 
-      - name: Package App
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: |
-          cd platforms/macos
-          APP_PATH="build/DerivedData/Build/Products/Release/GoNhanh.app"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
 
-          # Update version in Info.plist
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION#v}" "$APP_PATH/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION#v}" "$APP_PATH/Contents/Info.plist"
+          hdiutil create -volname GoNhanh -srcfolder "$APP" -ov -format UDZO \
+            "GoNhanh-${GITHUB_REF_NAME}-macos.dmg"
 
-          # Create DMG
-          mkdir -p dist
-          hdiutil create -volname "GoNhanh" \
-            -srcfolder "$APP_PATH" \
-            -ov -format UDZO \
-            "dist/GoNhanh-${VERSION}-macos.dmg"
-
-          # Also create zip
-          cd build/DerivedData/Build/Products/Release
-          zip -r "../../../../../dist/GoNhanh-${VERSION}-macos.zip" GoNhanh.app
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-app
-          path: platforms/macos/dist/*
-
-  release:
-    needs: build-macos
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: macos-app
-          path: dist
-
-      - name: Create Release
+      - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/*
+          files: platforms/macos/*.dmg
           generate_release_notes: true
