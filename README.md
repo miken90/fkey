@@ -20,8 +20,6 @@ Kết hợp sức mạnh của <strong>Rust</strong> (Core Engine) và <strong>S
 | **Windows** | 🗓️ Planned  |                                                   —                                                    | [Xem lộ trình](docs/install-windows.md) |
 | **Linux**   | 🗓️ Planned  |                                                   —                                                    | [Xem lộ trình](docs/install-linux.md)   |
 
-> **Lưu ý:** Link tải trên trỏ đến phiên bản mới nhất (`GoNhanh.dmg`). Nếu gặp lỗi, vui lòng truy cập trang [Releases](https://github.com/khaphanspace/gonhanh.org/releases).
-
 ## 🚀 Tính năng nổi bật
 
 GoNhanh hướng tới sự **Chuẩn hóa - Hiệu suất - Tiện dụng**:
