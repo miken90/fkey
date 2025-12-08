@@ -5,13 +5,13 @@ import AppKit
 // All project metadata in one place for consistency
 
 enum AppMetadata {
-    static let name = "GoNhanh"
+    static let name = "Gõ Nhanh"
 
     // App Logo - dùng chung cho mọi nơi
     static var logo: NSImage {
         NSImage(named: "AppLogo") ?? NSApp.applicationIconImage ?? NSImage()
     }
-    static let displayName = "GoNhanh - Gõ Nhanh"
+    static let displayName = "Gõ Nhanh"
     static let tagline = "Bộ gõ tiếng Việt hiệu suất cao"
     static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     static let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
@@ -66,7 +66,6 @@ enum AppMetadata {
 enum SettingsKey {
     static let enabled = "gonhanh.enabled"
     static let method = "gonhanh.method"
-    static let modernTone = "gonhanh.modernTone"
     static let hasCompletedOnboarding = "gonhanh.onboarding.completed"
     static let permissionGranted = "gonhanh.permission.granted"
 }

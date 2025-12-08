@@ -1,4 +1,4 @@
-//! GoNhanh Vietnamese IME Core
+//! Gõ Nhanh Vietnamese IME Core
 //!
 //! Simple Vietnamese input method engine supporting Telex and VNI.
 //!
@@ -24,6 +24,10 @@ pub mod data;
 pub mod engine;
 pub mod input;
 pub mod updater;
+
+// Test utilities - available for both unit tests and integration tests
+#[doc(hidden)]
+pub mod test_utils;
 
 use engine::{Engine, Result};
 use std::sync::Mutex;
@@ -98,20 +102,6 @@ pub extern "C" fn ime_enabled(enabled: bool) {
     let mut guard = ENGINE.lock().unwrap();
     if let Some(ref mut e) = *guard {
         e.set_enabled(enabled);
-    }
-}
-
-/// Set tone placement style.
-///
-/// # Arguments
-/// * `modern` - true for modern style (hoà), false for classic (hòa)
-///
-/// No-op if engine not initialized.
-#[no_mangle]
-pub extern "C" fn ime_modern(modern: bool) {
-    let mut guard = ENGINE.lock().unwrap();
-    if let Some(ref mut e) = *guard {
-        e.set_modern(modern);
     }
 }
 

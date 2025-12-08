@@ -1,7 +1,7 @@
 //! Integration Tests - Engine state, settings, method switching
 
 mod common;
-use common::{assert_action, assert_passthrough, engine_classic, engine_modern, telex, type_word};
+use common::{assert_action, assert_passthrough, telex, type_word};
 use gonhanh_core::data::keys;
 use gonhanh_core::engine::{Action, Engine};
 
@@ -196,21 +196,14 @@ fn clear_resets_state() {
 }
 
 // ============================================================
-// ORTHOGRAPHY: Modern vs Classic
+// ORTHOGRAPHY: Modern style (hoà, not hòa)
 // ============================================================
 
 #[test]
 fn modern_orthography_hoa() {
-    let mut e = engine_modern();
+    let mut e = Engine::new();
     let result = type_word(&mut e, "hoaf");
     assert_eq!(result, "hoà"); // Modern: tone on last vowel
-}
-
-#[test]
-fn classic_orthography_hoa() {
-    let mut e = engine_classic();
-    let result = type_word(&mut e, "hoaf");
-    assert_eq!(result, "hòa"); // Classic: tone on main vowel
 }
 
 const MODERN_ORTHO_CASES: &[(&str, &str)] = &[
@@ -221,29 +214,12 @@ const MODERN_ORTHO_CASES: &[(&str, &str)] = &[
     ("hoaj", "hoạ"),
 ];
 
-const CLASSIC_ORTHO_CASES: &[(&str, &str)] = &[
-    ("hoaf", "hòa"),
-    ("hoas", "hóa"),
-    ("hoar", "hỏa"),
-    ("hoax", "hõa"),
-    ("hoaj", "họa"),
-];
-
 #[test]
 fn modern_orthography_full() {
     for (input, expected) in MODERN_ORTHO_CASES {
-        let mut e = engine_modern();
+        let mut e = Engine::new();
         let result = type_word(&mut e, input);
         assert_eq!(result, *expected, "Modern: {} → {}", input, result);
-    }
-}
-
-#[test]
-fn classic_orthography_full() {
-    for (input, expected) in CLASSIC_ORTHO_CASES {
-        let mut e = engine_classic();
-        let result = type_word(&mut e, input);
-        assert_eq!(result, *expected, "Classic: {} → {}", input, result);
     }
 }
 
@@ -321,4 +297,63 @@ fn alternating_vowel_modifier() {
     // Each pair resets: a+s=á, then new a+s=á, etc
     // But with single engine instance, buffer accumulates
     assert!(!result.is_empty());
+}
+
+// ============================================================
+// FOREIGN WORDS: Should NOT transform
+// ============================================================
+
+#[test]
+fn foreign_word_claudeco_not_transformed() {
+    let mut e = Engine::new();
+    // "claudeco" has invalid initial "cl" → stroke should NOT apply
+    let result = type_word(&mut e, "claudecod");
+    // Should remain as normal "d", not "đ"
+    assert!(
+        !result.contains('đ'),
+        "claudeco+d should not become đ, got: {}",
+        result
+    );
+}
+
+#[test]
+fn foreign_word_no_tone() {
+    let mut e = Engine::new();
+    // "expect" is invalid → tone modifiers should not apply
+    let result = type_word(&mut e, "expects");
+    assert!(
+        !result.contains('é'),
+        "expect+s should not add tone, got: {}",
+        result
+    );
+}
+
+#[test]
+fn foreign_word_exp_no_circumflex() {
+    let mut e = Engine::new();
+    // "exp" is invalid → circumflex should not apply when typing 'e'
+    let result = type_word(&mut e, "expe");
+    assert!(
+        !result.contains('ê'),
+        "exp+e should not become eêp, got: {}",
+        result
+    );
+}
+
+#[test]
+fn foreign_word_exxpe_no_transform() {
+    let mut e = Engine::new();
+    // When typing "exxpe":
+    // - 'e' → buffer="e"
+    // - 'x' → mark applied → screen="ẽ"
+    // - 'x' → revert (same key) → screen="ex", buffer="ex"
+    // - 'p' → screen="exp", buffer="exp" (invalid Vietnamese)
+    // - 'e' → buffer="expe" invalid → no circumflex applied, just adds 'e'
+    // Result: "expe" (the first x was consumed/reverted)
+    let result = type_word(&mut e, "exxpe");
+    assert_eq!(
+        result, "expe",
+        "exxpe should become expe (first x consumed by mark/revert), got: {}",
+        result
+    );
 }

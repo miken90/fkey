@@ -17,6 +17,7 @@ Tài liệu toàn diện về hệ thống chữ viết tiếng Việt (chữ Qu
 9. [Phương pháp gõ Telex](#9-phương-pháp-gõ-telex)
 10. [Bảng mã Unicode](#10-bảng-mã-unicode)
 11. [Tài liệu tham khảo](#11-tài-liệu-tham-khảo)
+12. [Thuật toán Xác nhận Âm tiết (Validation)](#12-thuật-toán-xác-nhận-âm-tiết-tiếng-việt-validation)
 
 ---
 
@@ -253,6 +254,115 @@ Tiếng Việt chỉ cho phép một số phụ âm ở vị trí cuối âm ti�
 | **Xát hữu thanh** |       | v        | d, gi, r  |           |           | g, gh    |           |
 | **Bên**           |       |          | l         |           |           |          |           |
 
+### 4.4 Quy tắc Chính tả Phụ âm (Orthographic Rules)
+
+> **Mục đích**: Các quy tắc viết chính tả bắt buộc - quan trọng cho việc validate và xử lý trong bộ gõ.
+
+#### 4.4.1 Quy tắc C / K / Q
+
+Ba chữ cái **c**, **k**, **q** đều biểu thị âm vị /k/ nhưng phân bố khác nhau:
+
+| Chữ cái | Đứng trước nguyên âm | Ví dụ |
+| ------- | -------------------- | ----- |
+| **c**   | a, ă, â, o, ô, ơ, u, ư | ca, căn, cân, co, cô, cơ, cu, cư |
+| **k**   | e, ê, i, y           | ke, kê, ki, ky |
+| **q**   | luôn đi với **u** thành **qu** | qua, quê, qui, quy |
+
+```
+QUY TẮC:
+├── C trước nguyên âm hàng sau: a, ă, â, o, ô, ơ, u, ư
+├── K trước nguyên âm hàng trước: e, ê, i, y
+└── Q + U = QU (là một đơn vị phụ âm)
+
+VÍ DỤ:
+├── ✓ ca, cô, cu, căn, cơm
+├── ✓ kẻ, kê, ki, ký
+├── ✓ qua, quê, quy, quả
+├── ✗ ce, ci (phải viết: ke, ki)
+└── ✗ ka, ko (phải viết: ca, co)
+```
+
+#### 4.4.2 Quy tắc G / GH
+
+Hai cách viết **g** và **gh** đều biểu thị âm vị /ɣ/:
+
+| Chữ cái | Đứng trước nguyên âm | Ví dụ |
+| ------- | -------------------- | ----- |
+| **g**   | a, ă, â, o, ô, ơ, u, ư | ga, găng, gân, go, gô, gơ, gu, gư |
+| **gh**  | e, ê, i              | ghe, ghế, ghi |
+
+```
+QUY TẮC:
+├── G trước nguyên âm hàng sau: a, ă, â, o, ô, ơ, u, ư
+└── GH trước nguyên âm hàng trước: e, ê, i
+
+VÍ DỤ:
+├── ✓ gà, gỗ, gương
+├── ✓ ghe, ghế, ghi
+├── ✗ ge, gi (nếu muốn âm /ɣ/, phải viết: ghe, ghi)
+└── Lưu ý: "gi" là phụ âm riêng, phát âm /z/ (Bắc) hoặc /j/ (Nam)
+```
+
+#### 4.4.3 Quy tắc NG / NGH
+
+Tương tự g/gh, hai cách viết **ng** và **ngh** đều biểu thị âm vị /ŋ/:
+
+| Chữ cái | Đứng trước nguyên âm | Ví dụ |
+| ------- | -------------------- | ----- |
+| **ng**  | a, ă, â, o, ô, ơ, u, ư | nga, ngăn, ngân, ngo, ngô, ngơ, ngu, ngư |
+| **ngh** | e, ê, i              | nghe, nghề, nghĩ |
+
+```
+QUY TẮC:
+├── NG trước nguyên âm hàng sau: a, ă, â, o, ô, ơ, u, ư
+└── NGH trước nguyên âm hàng trước: e, ê, i
+
+VÍ DỤ:
+├── ✓ ngày, ngồi, ngủ, ngưng
+├── ✓ nghe, nghề, nghỉ, nghĩa
+├── ✗ nge, ngi (phải viết: nghe, nghi)
+└── ✗ ngha, ngho (phải viết: nga, ngo)
+```
+
+#### 4.4.4 Tóm tắt Quy tắc Phân bố
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│           QUY TẮC PHÂN BỐ PHỤ ÂM THEO NGUYÊN ÂM              │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Nguyên âm hàng sau    Nguyên âm hàng trước                  │
+│  (a, ă, â, o, ô, ơ,    (e, ê, i, y)                          │
+│   u, ư)                                                       │
+│  ─────────────────     ─────────────────                      │
+│        C         ←──────────→       K                         │
+│        G         ←──────────→       GH                        │
+│        NG        ←──────────→       NGH                       │
+│                                                               │
+│  QU: luôn đi cùng, không phân biệt nguyên âm sau             │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 4.4.5 Ứng dụng cho Bộ gõ (IME Implications)
+
+```
+VALIDATION RULES:
+│
+├── Nếu buffer = "ce*" hoặc "ci*"
+│   └── Không phải tiếng Việt (phải là "ke", "ki")
+│
+├── Nếu buffer = "ge*" hoặc "gi*" (với ý muốn âm /ɣ/)
+│   └── Không hợp lệ (phải là "ghe", "ghi")
+│   └── Lưu ý: "gi" hợp lệ nhưng là phụ âm /z/, không phải /ɣ/
+│
+├── Nếu buffer = "nge*" hoặc "ngi*"
+│   └── Không hợp lệ (phải là "nghe", "nghi")
+│
+└── Nếu buffer = "gha*" hoặc "ngha*"
+    └── Không hợp lệ (phải là "ga", "nga")
+```
+
 ---
 
 ## 5. Hệ thống thanh điệu
@@ -389,6 +499,172 @@ Hoặc chi tiết hơn:
 
 > **Quy tắc**: Âm tiết kết thúc bằng p, t, c, ch chỉ mang thanh sắc hoặc nặng.
 > Ví dụ: cấp/cập (✓), cảp/cãp/càp (✗)
+
+### 6.5 Ràng buộc Âm vị học (Phonotactic Constraints)
+
+> **Mục đích**: Các quy tắc âm vị học xác định kết hợp hợp lệ - quan trọng cho validation trong bộ gõ.
+
+#### 6.5.1 Cấm Cụm Phụ âm (No Consonant Clusters)
+
+Tiếng Việt **KHÔNG** cho phép cụm phụ âm (consonant clusters) trong cùng một âm tiết:
+
+```
+KHÔNG HỢP LỆ - Các cụm phụ âm kiểu tiếng Anh/Pháp:
+│
+├── *l combinations: bl, cl, fl, gl, pl, sl
+│   └── ✗ "black" → phải mượn: "blắc" hoặc "bờ-lắc"
+│
+├── *r combinations: br, cr, dr, fr, gr, pr, str
+│   └── ✗ "press" → phải mượn: "prét" hoặc "pờ-rét"
+│
+├── s* combinations: sc, sk, sm, sn, sp, st, sw
+│   └── ✗ "stop" → phải mượn: "xtốp"
+│
+├── *w combinations: dw, tw, sw
+│   └── ✗ "dwell" → không có trong tiếng Việt
+│
+└── Cuối âm tiết: không có -nt, -nd, -lt, -lk, -mp, -sk...
+    └── Chỉ có: -c, -ch, -m, -n, -ng, -nh, -p, -t
+```
+
+#### 6.5.2 Hạn chế P ở Đầu Âm tiết
+
+Phụ âm **/p/** hầu như **KHÔNG** xuất hiện ở đầu từ thuần Việt:
+
+```
+P Ở ĐẦU:
+├── Từ mượn: pin, pê-đan, pizza
+├── Từ Hán-Việt: phòng, phố (viết PH, không phải P)
+└── Từ thuần Việt: hầu như không có
+
+P Ở CUỐI:
+├── Hợp lệ: cấp, tập, lập, giúp, kịp
+└── Chỉ với thanh sắc hoặc nặng
+```
+
+#### 6.5.3 Quy tắc Thanh điệu + Âm cuối Tắc
+
+**Quy tắc quan trọng**: Âm tiết kết thúc bằng **p, t, c, ch** chỉ được mang **thanh sắc** hoặc **thanh nặng**:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│              QUY TẮC THANH ĐIỆU + ÂM CUỐI TẮC                  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  Âm cuối    Thanh hợp lệ       Thanh KHÔNG hợp lệ             │
+│  ────────   ─────────────      ────────────────────           │
+│  -p         sắc, nặng          ngang, huyền, hỏi, ngã         │
+│  -t         sắc, nặng          ngang, huyền, hỏi, ngã         │
+│  -c         sắc, nặng          ngang, huyền, hỏi, ngã         │
+│  -ch        sắc, nặng          ngang, huyền, hỏi, ngã         │
+│                                                                │
+│  -m, -n     TẤT CẢ thanh       (không hạn chế)                │
+│  -ng, -nh   TẤT CẢ thanh       (không hạn chế)                │
+│  -i/y, -o/u TẤT CẢ thanh       (không hạn chế)                │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+
+VÍ DỤ:
+├── ✓ cấp, cập (sắc, nặng + p)
+├── ✓ mát, mạt (sắc, nặng + t)
+├── ✓ các, cạc (sắc, nặng + c)
+├── ✓ ách, ạch (sắc, nặng + ch)
+│
+├── ✗ cảp, cãp, cáp, càp (hỏi, ngã, ngang, huyền + p)
+├── ✗ mảt, mãt, mat, màt (hỏi, ngã, ngang, huyền + t)
+├── ✗ cảc, cãc, cac, càc (hỏi, ngã, ngang, huyền + c)
+└── ✗ ảch, ãch, ach, àch (hỏi, ngã, ngang, huyền + ch)
+```
+
+#### 6.5.4 Ràng buộc Nguyên âm + Âm cuối
+
+Không phải mọi nguyên âm đều kết hợp được với mọi âm cuối:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              KẾT HỢP NGUYÊN ÂM + ÂM CUỐI                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Âm cuối -ch: chỉ sau a, ê, i                                  │
+│  ├── ✓ ách, êch, ich (sách, bếch, ích)                        │
+│  └── ✗ ôch, ơch, uch, ưch                                      │
+│                                                                 │
+│  Âm cuối -nh: chỉ sau a, ê, i, y                               │
+│  ├── ✓ anh, ênh, inh, ynh (anh, bênh, xinh)                   │
+│  └── ✗ ônh, ơnh, unh, ưnh                                      │
+│                                                                 │
+│  Âm cuối -ng: không sau e, ê                                   │
+│  ├── ✓ ang, ăng, âng, ong, ông, ơng, ung, ưng                 │
+│  └── ✗ eng, êng (dùng -nh thay: anh, ênh)                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 6.5.5 Các Kết hợp KHÔNG HỢP LỆ (Invalid Combinations)
+
+Danh sách tổng hợp các pattern không tồn tại trong tiếng Việt:
+
+```
+INVALID PATTERNS - Cho Bộ gõ:
+│
+├── PHỤ ÂM ĐẦU KHÔNG HỢP LỆ:
+│   ├── Chữ không có: f, j, w, z (trừ từ mượn)
+│   ├── Cụm phụ âm: bl, cl, fl, br, cr, dr, fr, gr, pr, st, sp...
+│   └── Vi phạm c/k/g/gh/ng/ngh: ce, ci, ge(=ghe), nge, ngha...
+│
+├── THANH + ÂM CUỐI KHÔNG HỢP LỆ:
+│   ├── hỏi/ngã/ngang/huyền + p: ảp, ãp, ap, àp
+│   ├── hỏi/ngã/ngang/huyền + t: ảt, ãt, at, àt
+│   ├── hỏi/ngã/ngang/huyền + c: ảc, ãc, ac, àc
+│   └── hỏi/ngã/ngang/huyền + ch: ảch, ãch, ach, àch
+│
+├── NGUYÊN ÂM + ÂM CUỐI KHÔNG HỢP LỆ:
+│   ├── ô/ơ/u/ư + ch: ôch, ơch, uch, ưch
+│   ├── ô/ơ/u/ư + nh: ônh, ơnh, unh, ưnh
+│   └── e/ê + ng: eng, êng
+│
+└── TRƯỜNG HỢP ĐẶC BIỆT:
+    ├── "p" đầu từ thuần Việt: rất hiếm
+    ├── "qu" không theo "u": qa, qe, qi (luôn phải là qu+nguyên âm)
+    └── Nguyên âm ba chỉ giới hạn: iêu, yêu, ươi, ươu, uôi, oai, oay, oeo, uây, uyê
+```
+
+#### 6.5.6 Bảng Tham chiếu Nhanh cho Validation
+
+```rust
+// Pseudo-code cho IME validation
+
+fn is_valid_tone_final(tone: Tone, final_c: Option<&str>) -> bool {
+    match final_c {
+        // Âm cuối tắc: chỉ sắc hoặc nặng
+        Some("p") | Some("t") | Some("c") | Some("ch") => {
+            matches!(tone, Tone::Sac | Tone::Nang)
+        }
+        // Âm cuối khác: tất cả thanh đều OK
+        _ => true
+    }
+}
+
+fn is_valid_vowel_final(vowel: &str, final_c: &str) -> bool {
+    match final_c {
+        "ch" => matches!(vowel, "a" | "ă" | "ê" | "i"),
+        "nh" => matches!(vowel, "a" | "ă" | "ê" | "i" | "y"),
+        "ng" => !matches!(vowel, "e" | "ê"),  // e, ê dùng -nh
+        _ => true
+    }
+}
+
+fn is_valid_initial(initial: &str) -> bool {
+    // Single consonants
+    let single = ["b","c","d","đ","g","h","k","l","m","n","p","q","r","s","t","v","x"];
+    // Double consonants
+    let double = ["ch","gh","gi","kh","ng","nh","ph","qu","th","tr"];
+    // Triple
+    let triple = ["ngh"];
+
+    single.contains(&initial) || double.contains(&initial) || triple.contains(&initial)
+}
+```
 
 ---
 
@@ -760,7 +1036,364 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 
 ---
 
+---
+
+## 12. Thuật toán Xác nhận Âm tiết Tiếng Việt (Validation)
+
+> **Mục đích**: Xác định buffer hiện tại có phải là âm tiết tiếng Việt hợp lệ hay không trước khi áp dụng transformation.
+
+### 12.1 Tại sao cần Validation?
+
+```
+VÍ DỤ:
+│
+├── "Duoc" + j → "Được" ✓
+│   └── "Duoc" là âm tiết hợp lệ → cho phép replace
+│
+├── "Clau" + s → "Claus" (giữ nguyên)
+│   └── "Cl" không phải phụ âm đầu hợp lệ → không replace
+│
+├── "HTTP" + s → "HTTPs" (giữ nguyên)
+│   └── Không có nguyên âm → không phải tiếng Việt
+│
+└── "John" + s → "Johns" (giữ nguyên)
+    └── "J" không phải phụ âm đầu tiếng Việt
+```
+
+### 12.2 Cấu trúc Âm tiết Tiếng Việt (Review)
+
+```
+Âm tiết = (C₁)(G)V(C₂)
+
+Trong đó:
+├── C₁ = Phụ âm đầu (Initial consonant) - TÙY CHỌN
+├── G  = Âm đệm (Glide/Medial) - TÙY CHỌN
+├── V  = Nguyên âm chính (Main vowel) - BẮT BUỘC
+└── C₂ = Âm cuối (Final) - TÙY CHỌN
+```
+
+### 12.3 Danh sách Phụ âm đầu Hợp lệ (C₁)
+
+#### 12.3.1 Phụ âm đơn (17)
+
+```
+VALID_INITIAL_SINGLE = {
+    'b', 'c', 'd', 'đ', 'g', 'h', 'k', 'l', 'm',
+    'n', 'p', 'q', 'r', 's', 't', 'v', 'x'
+}
+```
+
+#### 12.3.2 Phụ âm đôi (11)
+
+```
+VALID_INITIAL_DOUBLE = {
+    'ch', 'gh', 'gi', 'kh', 'ng', 'nh', 'ph', 'qu', 'th', 'tr'
+}
+
+Lưu ý đặc biệt:
+├── 'gh' chỉ đứng trước: e, ê, i (ghe, ghế, ghi)
+├── 'gi' = phụ âm, không phải g + i riêng
+├── 'qu' luôn đi cùng, 'u' không phải âm đệm
+└── 'ng' vs 'ngh': 'ngh' trước e, ê, i
+```
+
+#### 12.3.3 Phụ âm ba (1)
+
+```
+VALID_INITIAL_TRIPLE = {
+    'ngh'  // Chỉ trước e, ê, i (nghe, nghề, nghĩ)
+}
+```
+
+#### 12.3.4 KHÔNG hợp lệ (Ví dụ)
+
+```
+INVALID_INITIALS = {
+    'cl', 'bl', 'fl', 'gl', 'pl', 'sl',  // *l combinations
+    'br', 'cr', 'dr', 'fr', 'gr', 'pr',  // *r combinations
+    'sc', 'sk', 'sm', 'sn', 'sp', 'st',  // s* combinations
+    'tw', 'dw', 'sw',                     // *w combinations
+    'j', 'f', 'w', 'z'                    // Không có trong TV
+}
+```
+
+### 12.4 Danh sách Âm đệm Hợp lệ (G)
+
+```
+VALID_MEDIALS = {
+    'o': trước a, ă, e (hoa, hoặc, hoe)
+    'u': trước a, â, ê, y, yê (qua, quân, quê, quy, khuyên)
+}
+
+QUY TẮC:
+├── 'o' làm âm đệm: chỉ trước a, ă, e
+├── 'u' làm âm đệm:
+│   ├── Sau 'q': qua, quê, quy
+│   └── Sau các phụ âm khác + trước â, ê, y: huân, xuê, thúy
+│
+└── KHÔNG có âm đệm sau: b, đ, g, l, m, n, p, r, s, v, x
+    (Ví dụ: "bua" - u là nguyên âm chính, không phải âm đệm)
+```
+
+### 12.5 Danh sách Nguyên âm Hợp lệ (V)
+
+#### 12.5.1 Nguyên âm đơn (12)
+
+```
+VALID_VOWELS_SINGLE = {
+    'a', 'ă', 'â', 'e', 'ê', 'i', 'o', 'ô', 'ơ', 'u', 'ư', 'y'
+}
+```
+
+#### 12.5.2 Nguyên âm đôi (25+)
+
+```
+VALID_VOWELS_DOUBLE = {
+    // Âm đệm + Âm chính
+    'oa', 'oă', 'oe', 'ua', 'uâ', 'uê', 'uy',
+
+    // Âm chính + Bán nguyên âm
+    'ai', 'ay', 'ao', 'au', 'âu', 'ây',
+    'eo', 'êu',
+    'ia', 'iê', 'iu',
+    'oi', 'ôi', 'ơi',
+    'ui', 'ưi', 'uo', 'uô', 'ươ', 'ưa'
+}
+```
+
+#### 12.5.3 Nguyên âm ba (10)
+
+```
+VALID_VOWELS_TRIPLE = {
+    'iêu', 'yêu', 'ươi', 'ươu', 'uôi',
+    'oai', 'oay', 'oeo', 'uây', 'uyê'
+}
+```
+
+### 12.6 Danh sách Âm cuối Hợp lệ (C₂)
+
+#### 12.6.1 Phụ âm cuối (8)
+
+```
+VALID_FINALS_CONSONANT = {
+    'c', 'ch', 'm', 'n', 'ng', 'nh', 'p', 't'
+}
+```
+
+#### 12.6.2 Bán nguyên âm cuối (4)
+
+```
+VALID_FINALS_SEMIVOWEL = {
+    'i', 'y',   // sau a, â, ă, e, ê, o, ô, ơ, u, ư
+    'o', 'u'    // sau a, â, ă, e, ê, i
+}
+```
+
+#### 12.6.3 Quy tắc thanh điệu với âm cuối
+
+```
+ÂM CUỐI TẮC (p, t, c, ch) → CHỈ thanh SẮC hoặc NẶNG
+│
+├── ✓ cấp, cập, cát, cạt, các, cạc, ách, ạch
+└── ✗ cảp, cãp, càp, cảt, cãt, cát
+```
+
+### 12.7 Thuật toán Validation
+
+```
+is_valid_vietnamese_syllable(buffer)
+│
+├── STEP 1: Tách thành phần
+│   │
+│   │   input = normalize(buffer)  // lowercase, remove existing marks
+│   │
+│   │   parse_syllable(input) → {
+│   │       initial: Option<String>,   // C₁
+│   │       medial: Option<char>,      // G
+│   │       vowel: String,             // V (required)
+│   │       final: Option<String>      // C₂
+│   │   }
+│   │
+│   └── Nếu không parse được → return false
+│
+├── STEP 2: Validate Phụ âm đầu (C₁)
+│   │
+│   ├── Nếu có C₁:
+│   │   ├── Kiểm tra C₁ ∈ VALID_INITIALS
+│   │   ├── Kiểm tra quy tắc đặc biệt:
+│   │   │   ├── 'gh', 'ngh' → phải trước e, ê, i
+│   │   │   └── 'k' → phải trước e, ê, i, y
+│   │   └── Nếu vi phạm → return false
+│   │
+│   └── Nếu không có C₁ → OK (âm tiết mở đầu bằng nguyên âm)
+│
+├── STEP 3: Validate Nguyên âm (V)
+│   │
+│   ├── V phải tồn tại (bắt buộc)
+│   ├── V ∈ VALID_VOWELS
+│   └── Nếu vi phạm → return false
+│
+├── STEP 4: Validate Âm đệm (G)
+│   │
+│   ├── Nếu có G:
+│   │   ├── G ∈ {'o', 'u'}
+│   │   ├── Kiểm tra kết hợp G + V hợp lệ
+│   │   └── Nếu vi phạm → return false
+│   │
+│   └── Nếu không có G → OK
+│
+├── STEP 5: Validate Âm cuối (C₂)
+│   │
+│   ├── Nếu có C₂:
+│   │   ├── C₂ ∈ VALID_FINALS
+│   │   ├── Kiểm tra kết hợp V + C₂ hợp lệ
+│   │   └── Nếu vi phạm → return false
+│   │
+│   └── Nếu không có C₂ → OK (âm tiết mở)
+│
+└── STEP 6: return true (hợp lệ)
+```
+
+### 12.8 Ví dụ Validation
+
+```
+VALIDATION EXAMPLES
+│
+├── "duoc" (được)
+│   ├── Parse: C₁="d", G=none, V="uo", C₂="c"
+│   ├── C₁="d" ∈ VALID_INITIALS ✓
+│   ├── V="uo" ∈ VALID_VOWELS_DOUBLE ✓
+│   ├── C₂="c" ∈ VALID_FINALS ✓
+│   └── Result: VALID ✓
+│
+├── "clau"
+│   ├── Parse attempt: C₁="cl"?
+│   ├── C₁="cl" ∉ VALID_INITIALS ✗
+│   └── Result: INVALID ✗
+│
+├── "nguoi" (người)
+│   ├── Parse: C₁="ng", G=none, V="uoi", C₂=none
+│   ├── C₁="ng" ∈ VALID_INITIALS ✓
+│   ├── V="uoi"? → Cần kiểm tra: u+o+i
+│   │   └── "ươi" là nguyên âm ba ∈ VALID_VOWELS_TRIPLE ✓
+│   └── Result: VALID ✓
+│
+├── "john"
+│   ├── Parse attempt: C₁="j"?
+│   ├── C₁="j" ∉ VALID_INITIALS ✗
+│   └── Result: INVALID ✗
+│
+├── "http"
+│   ├── Parse attempt: No vowel found
+│   └── Result: INVALID ✗
+│
+├── "truong" (trường)
+│   ├── Parse: C₁="tr", G=none, V="uo", C₂="ng"
+│   ├── C₁="tr" ∈ VALID_INITIALS ✓
+│   ├── V="uo" ∈ VALID_VOWELS ✓
+│   │   └── Sẽ thành "ươ" khi thêm dấu móc
+│   ├── C₂="ng" ∈ VALID_FINALS ✓
+│   └── Result: VALID ✓
+│
+└── "qua" (quá)
+    ├── Parse: C₁="qu", G=none, V="a", C₂=none
+    ├── C₁="qu" ∈ VALID_INITIALS ✓
+    │   └── Lưu ý: "qu" là một đơn vị, 'u' không phải âm đệm
+    ├── V="a" ∈ VALID_VOWELS ✓
+    └── Result: VALID ✓
+```
+
+### 12.9 Bảng Kết hợp Hợp lệ (Quick Reference)
+
+#### 12.9.1 Phụ âm đầu + Âm đệm
+
+```
+┌─────────┬─────────────────────────────────────┐
+│ Âm đệm  │ Phụ âm đầu có thể đứng trước        │
+├─────────┼─────────────────────────────────────┤
+│ o       │ h, kh, l, ng, ngh, t, th, x, ch     │
+│         │ (hoa, khoa, loa, ngoa, toa, xoa)    │
+├─────────┼─────────────────────────────────────┤
+│ u       │ h, kh, l, ng, ngh, t, th, x, ch,    │
+│         │ q(đặc biệt), s, d, n                │
+│         │ (qua, thua, khuy, nguy)             │
+└─────────┴─────────────────────────────────────┘
+```
+
+#### 12.9.2 Nguyên âm + Âm cuối
+
+```
+┌───────────┬────────────────────────────────────┐
+│ Âm cuối   │ Nguyên âm có thể đứng trước        │
+├───────────┼────────────────────────────────────┤
+│ -c        │ a, ă, â, e, ê, i, o, ô, u, ư       │
+│ -ch       │ a, ê, i                            │
+│ -m        │ a, ă, â, e, ê, i, o, ô, ơ, u, ư    │
+│ -n        │ a, ă, â, e, ê, i, o, ô, ơ, u, ư, y │
+│ -ng       │ a, ă, â, e, ô, o, ơ, u, ư          │
+│ -nh       │ a, ê, i, y                         │
+│ -p        │ a, ă, â, e, ê, i, o, ô, ơ, u, ư    │
+│ -t        │ a, ă, â, e, ê, i, o, ô, ơ, u, ư, y │
+├───────────┼────────────────────────────────────┤
+│ -i/-y     │ a, â, ă, e, ê, o, ô, ơ, u, ư       │
+│ -o/-u     │ a, â, ă, e, ê, i                   │
+└───────────┴────────────────────────────────────┘
+```
+
+### 12.10 Implementation Notes
+
+```rust
+// Suggested data structures for engine
+
+/// Valid initial consonants (phụ âm đầu)
+const INITIALS_SINGLE: &[&str] = &[
+    "b", "c", "d", "g", "h", "k", "l", "m",
+    "n", "p", "q", "r", "s", "t", "v", "x"
+];
+
+const INITIALS_DOUBLE: &[&str] = &[
+    "ch", "gh", "gi", "kh", "ng", "nh", "ph", "qu", "th", "tr"
+];
+
+const INITIALS_TRIPLE: &[&str] = &["ngh"];
+
+/// Valid finals (âm cuối)
+const FINALS: &[&str] = &[
+    "c", "ch", "m", "n", "ng", "nh", "p", "t",
+    "i", "y", "o", "u"
+];
+
+/// Check if buffer is valid Vietnamese syllable
+fn is_valid_vietnamese(buffer: &[Char]) -> bool {
+    // 1. Must have at least one vowel
+    // 2. Initial consonant (if any) must be valid
+    // 3. Vowel combination must be valid
+    // 4. Final (if any) must be valid
+    // 5. Check special rules (gh/ngh before e,ê,i, etc.)
+    todo!()
+}
+```
+
+---
+
 ## Changelog
+
+- **2025-12-08**: Bổ sung Quy tắc Chính tả và Ràng buộc Âm vị học
+  - Thêm mục 4.4: Quy tắc Chính tả Phụ âm (c/k/q, g/gh, ng/ngh)
+  - Thêm mục 6.5: Ràng buộc Âm vị học (Phonotactic Constraints)
+    - Cấm cụm phụ âm (no consonant clusters)
+    - Hạn chế P ở đầu âm tiết
+    - Quy tắc thanh điệu + âm cuối tắc (p,t,c,ch chỉ sắc/nặng)
+    - Ràng buộc nguyên âm + âm cuối (-ch, -nh, -ng)
+    - Danh sách các kết hợp không hợp lệ
+  - Thêm pseudo-code validation functions cho bộ gõ
+
+- **2025-12-08**: Bổ sung Thuật toán Xác nhận Âm tiết (Section 12)
+  - Thêm validation algorithm để xác định từ tiếng Việt hợp lệ
+  - Danh sách đầy đủ phụ âm đầu, nguyên âm, âm cuối hợp lệ
+  - Ví dụ validation: "Duoc" vs "Clau" vs "HTTP"
+  - Bảng kết hợp hợp lệ (phụ âm + âm đệm, nguyên âm + âm cuối)
+  - Implementation notes cho engine
 
 - **2025-12-07**: Bổ sung quy tắc đặt dấu thanh
   - Thêm mục 7.4: Hai trường phái đặt dấu (kiểu cũ vs kiểu mới)

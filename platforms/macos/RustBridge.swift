@@ -4,28 +4,22 @@ import AppKit
 
 // MARK: - Debug Logging
 
-#if DEBUG
+// Only log when /tmp/gonhanh_debug.log exists (touch /tmp/gonhanh_debug.log to enable)
 func debugLog(_ message: String) {
+    let logPath = "/tmp/gonhanh_debug.log"
+    guard FileManager.default.fileExists(atPath: logPath) else { return }
+
     let timestamp = ISO8601DateFormatter().string(from: Date())
     let logMessage = "[\(timestamp)] \(message)\n"
-    print(message)
 
-    // Also write to file
-    let logPath = "/tmp/gonhanh_debug.log"
     if let handle = FileHandle(forWritingAtPath: logPath) {
         handle.seekToEndOfFile()
         if let data = logMessage.data(using: .utf8) {
             handle.write(data)
         }
         handle.closeFile()
-    } else {
-        FileManager.default.createFile(atPath: logPath, contents: logMessage.data(using: .utf8))
     }
 }
-#else
-@inline(__always)
-func debugLog(_ message: String) {}
-#endif
 
 // MARK: - FFI Result Struct (must match Rust #[repr(C)])
 
@@ -53,9 +47,6 @@ func ime_method(_ method: UInt8)
 
 @_silgen_name("ime_enabled")
 func ime_enabled(_ enabled: Bool)
-
-@_silgen_name("ime_modern")
-func ime_modern(_ modern: Bool)
 
 @_silgen_name("ime_clear")
 func ime_clear()
@@ -125,11 +116,6 @@ class RustBridge {
     static func setEnabled(_ enabled: Bool) {
         ime_enabled(enabled)
         debugLog("[RustBridge] Engine enabled: \(enabled)")
-    }
-
-    /// Set modern orthography (true=oà, false=òa)
-    static func setModern(_ modern: Bool) {
-        ime_modern(modern)
     }
 
     /// Clear buffer (new session, e.g., on mouse click)
@@ -322,19 +308,24 @@ private func keyboardCallback(
 
     // Process key through Rust engine
     if let (backspace, chars) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl) {
-        debugLog("[KeyboardHook] Output: backspace=\(backspace), chars=\(chars)")
+        let charsStr = String(chars)
+        debugLog("[KeyboardHook] Rust returned: backspace=\(backspace), chars=\"\(charsStr)\" (count=\(chars.count))")
 
         // Use atomic text replacement to fix Chrome/Excel autocomplete issues
         // Instead of backspace+type (which can cause "dính chữ"), we:
         // 1. Select text with Shift+Left
         // 2. Type replacement (automatically replaces selection)
+        let useSelection = needsSelectionWorkaround()
+        debugLog("[KeyboardHook] Method: \(useSelection ? "Selection" : "Backspace")")
         sendTextReplacement(backspaceCount: backspace, chars: chars)
 
         // Consume original event
+        debugLog("[KeyboardHook] Original event CONSUMED (returning nil)")
         return nil
     }
 
     // Pass through
+    debugLog("[KeyboardHook] Pass through (no transform)")
     return Unmanaged.passUnretained(event)
 }
 
@@ -382,6 +373,8 @@ private enum KeyCode {
 /// - Default: Use backspace (works for most apps including Terminal)
 /// - Autocomplete apps (Chrome/Excel): Use Shift+Left selection (fixes "dính chữ")
 private func sendTextReplacement(backspaceCount: Int, chars: [Character]) {
+    // Run synchronously to ensure events are sent before callback returns
+    // This prevents race condition where next key arrives before backspace is processed
     if needsSelectionWorkaround() {
         sendTextReplacementWithSelection(backspaceCount: backspaceCount, chars: chars)
     } else {
@@ -389,37 +382,56 @@ private func sendTextReplacement(backspaceCount: Int, chars: [Character]) {
     }
 }
 
-/// Terminal-friendly: backspace then type
+/// Default method: backspace then type
 private func sendTextReplacementWithBackspace(backspaceCount: Int, chars: [Character]) {
+    let string = String(chars)
+    debugLog("[Send:BS] START - backspace=\(backspaceCount), chars=\"\(string)\" (len=\(chars.count))")
+
     guard let source = CGEventSource(stateID: .privateState) else {
-        debugLog("[Send] Failed to create CGEventSource")
+        debugLog("[Send:BS] FAILED - Cannot create CGEventSource")
         return
     }
+    debugLog("[Send:BS] CGEventSource created OK")
 
-    // Send backspaces
+    // Send backspaces with micro-delay between each
     for i in 0..<backspaceCount {
         guard let down = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.backspace, keyDown: true),
               let up = CGEvent(keyboardEventSource: source, virtualKey: KeyCode.backspace, keyDown: false) else {
-            debugLog("[Send] Failed to create backspace event \(i)")
+            debugLog("[Send:BS] FAILED - Cannot create backspace event \(i)")
             continue
         }
         down.post(tap: .cgSessionEventTap)
         up.post(tap: .cgSessionEventTap)
+        // Micro-delay between backspaces to ensure each is processed
+        if i < backspaceCount - 1 {
+            usleep(200) // 0.2ms between backspaces
+        }
+        debugLog("[Send:BS] Backspace \(i+1)/\(backspaceCount) sent")
+    }
+
+    // Delay after all backspaces before typing replacement
+    if backspaceCount > 0 {
+        usleep(800) // 0.8ms delay
+        debugLog("[Send:BS] Delay after backspaces")
     }
 
     // Send new characters
-    let string = String(chars)
     let utf16 = Array(string.utf16)
+    debugLog("[Send:BS] Sending unicode: \(utf16.map { String(format: "0x%04X", $0) }.joined(separator: " "))")
 
     guard let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true),
           let up = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) else {
-        debugLog("[Send] Failed to create unicode event for: \(string)")
+        debugLog("[Send:BS] FAILED - Cannot create unicode event for: \(string)")
         return
     }
     down.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
     up.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
     down.post(tap: .cgSessionEventTap)
     up.post(tap: .cgSessionEventTap)
+
+    // Small delay after posting to let events propagate before next key
+    usleep(500) // 0.5ms
+    debugLog("[Send:BS] DONE - Unicode event posted")
 }
 
 /// GUI app-friendly: select then replace (atomic, fixes Chrome/Excel autocomplete)

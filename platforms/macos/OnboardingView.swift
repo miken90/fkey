@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var step = 0
     @State private var hasPermission = false
     @State private var selectedMode: InputMode = .telex
@@ -11,11 +12,11 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            content.frame(height: 340)
+            content.frame(height: 320)
             Divider()
             footer
         }
-        .frame(width: 480)
+        .frame(width: 440)
         .onAppear {
             hasPermission = AXIsProcessTrusted()
             if UserDefaults.standard.bool(forKey: SettingsKey.permissionGranted) && hasPermission {
@@ -50,11 +51,13 @@ struct OnboardingView: View {
                 }
             }
             Spacer()
-            if step == 1 { Button("Quay lại") { step = 0 } }
+            if step == 1 {
+                Button("Quay lại") { step = 0 }
+            }
             primaryButton
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, 16)
     }
 
     @ViewBuilder
@@ -97,9 +100,15 @@ struct OnboardingView: View {
 private struct WelcomeStep: View {
     var body: some View {
         StepLayout {
-            Image(nsImage: AppMetadata.logo).resizable().frame(width: 80, height: 80)
-            Text("Chào mừng đến với \(AppMetadata.name)").font(.system(size: 22, weight: .bold))
-            Text(AppMetadata.tagline).foregroundStyle(.secondary)
+            Image(nsImage: AppMetadata.logo)
+                .resizable()
+                .frame(width: 80, height: 80)
+
+            Text("Chào mừng đến với \(AppMetadata.name)")
+                .font(.title2.bold())
+
+            Text(AppMetadata.tagline)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -107,15 +116,24 @@ private struct WelcomeStep: View {
 private struct PermissionStep: View {
     var body: some View {
         StepLayout {
-            Image(systemName: "hand.raised.fill").font(.system(size: 40)).foregroundStyle(.orange)
-            Text("Cấp quyền Accessibility").font(.system(size: 22, weight: .bold))
+            Image(systemName: "hand.raised.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(.orange)
+
+            Text("Cấp quyền Accessibility")
+                .font(.title2.bold())
+
             Text("Bật \(AppMetadata.name) trong System Settings để gõ tiếng Việt.")
-                .foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
             VStack(alignment: .leading, spacing: 8) {
                 Label("Mở Privacy & Security → Accessibility", systemImage: "1.circle.fill")
                 Label("Bật công tắc bên cạnh \(AppMetadata.name)", systemImage: "2.circle.fill")
             }
-            .font(.callout).foregroundStyle(.secondary).padding(.top, 8)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.top, 4)
         }
     }
 }
@@ -123,9 +141,15 @@ private struct PermissionStep: View {
 private struct ReadyStep: View {
     var body: some View {
         StepLayout {
-            Image(systemName: "checkmark.shield.fill").font(.system(size: 40)).foregroundStyle(.green)
-            Text("Đã cấp quyền").font(.system(size: 22, weight: .bold))
-            Text("Nhấn \"Khởi động lại\" để áp dụng.").foregroundStyle(.secondary)
+            Image(systemName: "checkmark.shield.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(.green)
+
+            Text("Đã cấp quyền")
+                .font(.title2.bold())
+
+            Text("Nhấn \"Khởi động lại\" để áp dụng.")
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -133,9 +157,15 @@ private struct ReadyStep: View {
 private struct SuccessStep: View {
     var body: some View {
         StepLayout {
-            Image(systemName: "checkmark.circle.fill").font(.system(size: 48)).foregroundStyle(.green)
-            Text("Sẵn sàng hoạt động").font(.system(size: 22, weight: .bold))
-            Text("\(AppMetadata.name) đã được cấp quyền thành công.").foregroundStyle(.secondary)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.green)
+
+            Text("Sẵn sàng hoạt động")
+                .font(.title2.bold())
+
+            Text("\(AppMetadata.name) đã được cấp quyền thành công.")
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -145,31 +175,26 @@ private struct SetupStep: View {
 
     var body: some View {
         StepLayout {
-            Image(systemName: "keyboard").font(.system(size: 40)).foregroundStyle(.blue)
-            Text("Chọn kiểu gõ").font(.system(size: 22, weight: .bold))
-            Text("Có thể thay đổi sau trong menu.").foregroundStyle(.secondary)
+            Image(systemName: "keyboard")
+                .font(.system(size: 40))
+                .foregroundStyle(.blue)
+
+            Text("Chọn kiểu gõ")
+                .font(.title2.bold())
+
+            Text("Có thể thay đổi sau trong menu.")
+                .foregroundStyle(.secondary)
+
             VStack(spacing: 8) {
                 ForEach(InputMode.allCases, id: \.rawValue) { mode in
-                    ModeOption(mode: mode, isSelected: selectedMode == mode) { selectedMode = mode }
+                    ModeOption(mode: mode, isSelected: selectedMode == mode) {
+                        selectedMode = mode
+                    }
                 }
             }
-            .frame(maxWidth: 260).padding(.top, 8)
+            .frame(maxWidth: 260)
+            .padding(.top, 8)
         }
-    }
-}
-
-// MARK: - Components
-
-private struct StepLayout<Content: View>: View {
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            content
-            Spacer()
-        }
-        .padding(.horizontal, 40)
     }
 }
 
@@ -180,20 +205,46 @@ private struct ModeOption: View {
 
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(mode.name).font(.headline)
-                    Text(mode.description).font(.caption).foregroundStyle(.secondary)
+                    Text(mode.name)
+                        .font(.headline)
+                    Text(mode.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? .blue : .secondary.opacity(0.4))
+                    .font(.system(size: 20))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.4))
             }
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: 8).fill(isSelected ? Color.blue.opacity(0.1) : Color.secondary.opacity(0.05)))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? Color.blue.opacity(0.5) : .clear))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.accentColor.opacity(0.5) : .clear, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Components
+
+private struct StepLayout<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            content
+            Spacer()
+        }
+        .padding(.horizontal, 40)
     }
 }
 

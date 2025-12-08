@@ -32,11 +32,11 @@ class MenuBarController {
     private var statusItem: NSStatusItem!
     private var onboardingWindow: NSWindow?
     private var aboutWindow: NSWindow?
+    private var updateWindow: NSWindow?
     private var toggleState: ToggleState?
 
     private var isEnabled = true
     private var currentMethod: InputMode = .telex
-    private var isModernTone = true
 
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -79,7 +79,6 @@ class MenuBarController {
     private func loadSettings() {
         isEnabled = UserDefaults.standard.object(forKey: SettingsKey.enabled) as? Bool ?? true
         currentMethod = InputMode(rawValue: UserDefaults.standard.integer(forKey: SettingsKey.method)) ?? .telex
-        isModernTone = UserDefaults.standard.object(forKey: SettingsKey.modernTone) as? Bool ?? true
     }
 
     private func startEngine() {
@@ -87,7 +86,6 @@ class MenuBarController {
         KeyboardHookManager.shared.start()
         RustBridge.setEnabled(isEnabled)
         RustBridge.setMethod(currentMethod.rawValue)
-        RustBridge.setModern(isModernTone)
 
         // Check for updates in background after a short delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -112,14 +110,15 @@ class MenuBarController {
     }
 
     private func createStatusIcon(text: String) -> NSImage {
-        let size: CGFloat = 18
-        let image = NSImage(size: NSSize(width: size, height: size))
+        let width: CGFloat = 22
+        let height: CGFloat = 16
+        let image = NSImage(size: NSSize(width: width, height: height))
 
         image.lockFocus()
 
-        // Background trắng bo góc
-        let rect = NSRect(x: 0, y: 0, width: size, height: size)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4)
+        // Background trắng bo góc nhẹ
+        let rect = NSRect(x: 0, y: 0, width: width, height: height)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3)
         NSColor.white.setFill()
         path.fill()
 
@@ -131,8 +130,8 @@ class MenuBarController {
         ]
         let textSize = text.size(withAttributes: attrs)
         let textRect = NSRect(
-            x: (size - textSize.width) / 2,
-            y: (size - textSize.height) / 2,
+            x: (width - textSize.width) / 2,
+            y: (height - textSize.height) / 2,
             width: textSize.width,
             height: textSize.height
         )
@@ -170,18 +169,6 @@ class MenuBarController {
         vni.target = self
         vni.tag = 11
         menu.addItem(vni)
-        menu.addItem(.separator())
-
-        // Tone style
-        let modernTone = NSMenuItem(title: "Kiểu mới (hoà)", action: #selector(selectModernTone), keyEquivalent: "")
-        modernTone.target = self
-        modernTone.tag = 20
-        menu.addItem(modernTone)
-
-        let classicTone = NSMenuItem(title: "Kiểu cũ (hòa)", action: #selector(selectClassicTone), keyEquivalent: "")
-        classicTone.target = self
-        classicTone.tag = 21
-        menu.addItem(classicTone)
         menu.addItem(.separator())
 
         // About & Help
@@ -235,8 +222,6 @@ class MenuBarController {
         menu.item(withTag: 1)?.view = createHeaderView()
         menu.item(withTag: 10)?.state = currentMethod == .telex ? .on : .off
         menu.item(withTag: 11)?.state = currentMethod == .vni ? .on : .off
-        menu.item(withTag: 20)?.state = isModernTone ? .on : .off
-        menu.item(withTag: 21)?.state = isModernTone ? .off : .on
     }
 
     // MARK: - Actions
@@ -260,16 +245,6 @@ class MenuBarController {
         UserDefaults.standard.set(mode.rawValue, forKey: SettingsKey.method)
         RustBridge.setMethod(mode.rawValue)
         updateStatusButton()
-        updateMenu()
-    }
-
-    @objc private func selectModernTone() { setToneStyle(modern: true) }
-    @objc private func selectClassicTone() { setToneStyle(modern: false) }
-
-    private func setToneStyle(modern: Bool) {
-        isModernTone = modern
-        UserDefaults.standard.set(modern, forKey: SettingsKey.modernTone)
-        RustBridge.setModern(modern)
         updateMenu()
     }
 
@@ -315,6 +290,20 @@ class MenuBarController {
     }
 
     @objc private func checkForUpdates() {
+        if updateWindow == nil {
+            let controller = NSHostingController(rootView: UpdateView())
+            let window = NSWindow(contentViewController: controller)
+            window.title = "Kiểm tra cập nhật"
+            window.styleMask = [.titled, .closable]
+            window.setContentSize(controller.view.fittingSize)
+            window.center()
+            window.isReleasedWhenClosed = false
+            updateWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        updateWindow?.makeKeyAndOrderFront(nil)
+
+        // Trigger update check when window opens
         UpdateManager.shared.checkForUpdatesManually()
     }
 }
