@@ -35,6 +35,7 @@ format: ## Format & lint
 build: format ## Build core + macos app
 	@./scripts/build-core.sh
 	@./scripts/build-macos.sh
+	@./scripts/build-windows.sh
 
 clean: ## Clean build artifacts
 	@cd core && cargo clean

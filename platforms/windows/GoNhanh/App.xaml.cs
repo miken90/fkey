@@ -59,7 +59,7 @@ public partial class App : System.Windows.Application
         _mutex = new System.Threading.Mutex(true, "GoNhanh_SingleInstance", out bool createdNew);
         if (!createdNew)
         {
-            MessageBox.Show(
+            System.Windows.MessageBox.Show(
                 $"{AppMetadata.Name} đang chạy.\nKiểm tra khay hệ thống (system tray).",
                 AppMetadata.Name,
                 MessageBoxButton.OK,

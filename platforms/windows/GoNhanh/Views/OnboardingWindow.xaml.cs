@@ -55,8 +55,8 @@ public partial class OnboardingWindow : Window
     {
         // Save selected method
         _settings.CurrentMethod = OnboardTelexRadio.IsChecked == true
-            ? InputMethod.Telex
-            : InputMethod.VNI;
+            ? Core.InputMethod.Telex
+            : Core.InputMethod.VNI;
         _settings.Save();
 
         Close();
@@ -65,7 +65,7 @@ public partial class OnboardingWindow : Window
     private void UpdateDots()
     {
         var activeBrush = (SolidColorBrush)FindResource("PrimaryBrush");
-        var inactiveBrush = new SolidColorBrush(Color.FromRgb(229, 231, 235)); // #E5E7EB
+        var inactiveBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(229, 231, 235)); // #E5E7EB
 
         for (int i = 0; i < _dots.Length; i++)
         {
