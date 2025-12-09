@@ -265,16 +265,12 @@ impl Engine {
         // Validate: is this valid Vietnamese?
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
         if is_valid(&buffer_keys) {
-            let pos = self.buf.len() - 1;
             self.last_transform = Some(Transform::WAsVowel);
 
-            // If buffer was empty, no backspace needed (nothing to replace)
-            if was_empty {
-                let vowel_char = chars::to_char(keys::U, caps, tone::HORN, 0).unwrap();
-                return Some(Result::send(0, &[vowel_char]));
-            }
-
-            return Some(self.rebuild_from(pos));
+            // W shortcut adds ư without replacing anything on screen
+            // (the raw 'w' key was never output, so no backspace needed)
+            let vowel_char = chars::to_char(keys::U, caps, tone::HORN, 0).unwrap();
+            return Some(Result::send(0, &[vowel_char]));
         }
 
         // Invalid - remove the U we added
