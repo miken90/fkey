@@ -135,7 +135,23 @@ impl Engine {
     }
 
     /// Handle key event - main entry point
+    ///
+    /// # Arguments
+    /// * `key` - macOS virtual keycode
+    /// * `caps` - true if Caps Lock is active (for uppercase letters)
+    /// * `ctrl` - true if Cmd/Ctrl/Alt is pressed (bypasses IME)
     pub fn on_key(&mut self, key: u16, caps: bool, ctrl: bool) -> Result {
+        self.on_key_ext(key, caps, ctrl, false)
+    }
+
+    /// Handle key event with extended parameters
+    ///
+    /// # Arguments
+    /// * `key` - macOS virtual keycode
+    /// * `caps` - true if Caps Lock is active (for uppercase letters)
+    /// * `ctrl` - true if Cmd/Ctrl/Alt is pressed (bypasses IME)
+    /// * `shift` - true if Shift key is pressed (for symbols like @, #, $)
+    pub fn on_key_ext(&mut self, key: u16, caps: bool, ctrl: bool, shift: bool) -> Result {
         if !self.enabled || ctrl {
             self.buf.clear();
             self.last_transform = None;
@@ -156,7 +172,7 @@ impl Engine {
             return Result::none();
         }
 
-        self.process(key, caps)
+        self.process(key, caps, shift)
     }
 
     /// Main processing pipeline - pattern-based
