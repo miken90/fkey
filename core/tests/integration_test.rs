@@ -433,3 +433,96 @@ fn foreign_word_exxpe_no_transform() {
         result
     );
 }
+
+// ============================================================
+// VNI: SHIFT+NUMBER PASSTHROUGH (for symbols like @, #, $)
+// ============================================================
+
+#[test]
+fn vni_shift_2_passes_through_for_at_symbol() {
+    // VNI: "hi" + Shift+2 should NOT apply huyền mark
+    // User wants to type "hi@", not "hì"
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+
+    // Type "hi"
+    e.on_key(keys::H, false, false);
+    e.on_key(keys::I, false, false);
+
+    // Shift+2 (for @) - should pass through, not apply mark
+    let r = e.on_key_ext(keys::N2, true, false, true); // caps=true, ctrl=false, shift=true
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "Shift+2 should pass through in VNI"
+    );
+}
+
+#[test]
+fn vni_shift_numbers_all_pass_through() {
+    // All Shift+number combinations should pass through in VNI
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+
+    // Type a vowel first
+    e.on_key(keys::A, false, false);
+
+    // All number keys with shift should pass through
+    let number_keys = [
+        keys::N1,
+        keys::N2,
+        keys::N3,
+        keys::N4,
+        keys::N5,
+        keys::N6,
+        keys::N7,
+        keys::N8,
+        keys::N9,
+        keys::N0,
+    ];
+
+    for &key in &number_keys {
+        let r = e.on_key_ext(key, true, false, true); // shift=true
+        assert_eq!(
+            r.action,
+            Action::None as u8,
+            "Shift+{} should pass through in VNI",
+            key
+        );
+    }
+}
+
+#[test]
+fn vni_without_shift_still_applies_marks() {
+    // VNI: Without shift, number keys should still apply marks
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+
+    // Type "a" + "2" (no shift) = à
+    e.on_key(keys::A, false, false);
+    let r = e.on_key_ext(keys::N2, false, false, false); // shift=false
+
+    assert_eq!(
+        r.action,
+        Action::Send as u8,
+        "VNI mark should apply without shift"
+    );
+    assert_eq!(r.chars[0], 'à' as u32, "a2 should produce à");
+}
+
+#[test]
+fn telex_shift_not_affected() {
+    // Telex mode should not be affected by the shift parameter
+    // (Telex doesn't use number keys for marks)
+    let mut e = Engine::new();
+    e.set_method(0); // Telex
+
+    // Type "a" + Shift+2 - should just pass through (2 is not a Telex modifier)
+    e.on_key(keys::A, false, false);
+    let r = e.on_key_ext(keys::N2, true, false, true);
+    assert_eq!(
+        r.action,
+        Action::None as u8,
+        "Telex should ignore number keys"
+    );
+}
