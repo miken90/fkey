@@ -44,6 +44,12 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Setup Rust (for C#)
+      if: matrix.language == 'csharp'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-msvc
+
     - name: Setup ImageMagick (for C#)
       if: matrix.language == 'csharp'
       run: choco install imagemagick
@@ -71,6 +77,7 @@ jobs:
       if: matrix.language == 'csharp'
       shell: pwsh
       run: |
+        ./scripts/build-core-windows.ps1
         cd platforms/windows/GoNhanh
         # Convert logo.png to app.ico using ImageMagick
         if (Get-Command magick -ErrorAction SilentlyContinue) {
