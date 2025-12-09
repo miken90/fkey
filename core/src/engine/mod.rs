@@ -23,7 +23,7 @@ use crate::data::{
 };
 use crate::input::{self, ToneType};
 use buffer::{Buffer, Char, MAX};
-use shortcut::ShortcutTable;
+use shortcut::{InputMethod, ShortcutTable};
 use validation::is_valid;
 
 /// Convert key code to character
@@ -145,7 +145,7 @@ impl Engine {
             method: 0,
             enabled: true,
             last_transform: None,
-            shortcuts: ShortcutTable::new(),
+            shortcuts: ShortcutTable::with_defaults(),
         }
     }
 
@@ -162,6 +162,15 @@ impl Engine {
 
     pub fn shortcuts_mut(&mut self) -> &mut ShortcutTable {
         &mut self.shortcuts
+    }
+
+    /// Get current input method as InputMethod enum
+    fn current_input_method(&self) -> InputMethod {
+        match self.method {
+            0 => InputMethod::Telex,
+            1 => InputMethod::Vni,
+            _ => InputMethod::All,
+        }
     }
 
     /// Handle key event - main entry point
@@ -187,6 +196,7 @@ impl Engine {
     /// Main processing pipeline - pattern-based
     fn process(&mut self, key: u16, caps: bool) -> Result {
         let m = input::get(self.method);
+        let input_method = self.current_input_method();
 
         // Check modifiers by scanning buffer for patterns
 
@@ -218,8 +228,41 @@ impl Engine {
             return self.handle_remove();
         }
 
+        // 5. Try shortcut match (after Vietnamese modifiers fail)
+        // This handles cases like standalone "w" → "ư" in Telex
+        // when "w" is not used as a tone modifier (no vowel to modify)
+        if let Some(result) = self.try_shortcut(key, caps, input_method) {
+            return result;
+        }
+
         // Not a modifier - normal letter
         self.handle_normal_letter(key, caps)
+    }
+
+    /// Try to match shortcut from buffer
+    fn try_shortcut(&mut self, key: u16, caps: bool, input_method: InputMethod) -> Option<Result> {
+        // Add the current key to buffer temporarily for matching
+        self.buf.push(Char::new(key, caps));
+        let buffer_str = self.buf.to_string_preserve_case();
+
+        // Check for immediate shortcut match
+        let key_char = key_to_char(key, caps);
+        let shortcut_match =
+            self.shortcuts
+                .try_match_for_method(&buffer_str, key_char, false, input_method);
+
+        if let Some(m) = shortcut_match {
+            // Shortcut matched! Clear buffer and return result
+            self.buf.clear();
+            self.last_transform = None;
+
+            let output: Vec<char> = m.output.chars().collect();
+            return Some(Result::send(m.backspace_count as u8, &output));
+        }
+
+        // No match - remove the key we added (it will be added by handle_normal_letter)
+        self.buf.pop();
+        None
     }
 
     /// Try to apply stroke transformation by scanning buffer

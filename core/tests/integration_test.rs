@@ -130,8 +130,21 @@ fn tone_without_vowel_passes_through() {
 }
 
 #[test]
-fn mark_without_vowel_passes_through() {
+fn standalone_w_becomes_u_horn_in_telex() {
+    // In Telex mode, standalone "w" is shortcut for "ư"
+    // This is a shortcut, not passthrough
     let mut e = Engine::new();
+    let result = e.on_key(keys::W, false, false);
+    assert_eq!(result.action, 1); // Action::Send
+    assert_eq!(result.count, 1);
+    assert_eq!(result.chars[0], 'ư' as u32);
+}
+
+#[test]
+fn standalone_w_passes_through_in_vni() {
+    // In VNI mode, "w" should pass through (no shortcut)
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
     assert_passthrough(&mut e, keys::W);
 }
 

@@ -117,8 +117,12 @@ impl Shortcut {
             // Shortcut for All → matches any query
             InputMethod::All => true,
             // Shortcut for specific method → matches if query is same method OR query is All
-            InputMethod::Telex => query_method == InputMethod::Telex || query_method == InputMethod::All,
-            InputMethod::Vni => query_method == InputMethod::Vni || query_method == InputMethod::All,
+            InputMethod::Telex => {
+                query_method == InputMethod::Telex || query_method == InputMethod::All
+            }
+            InputMethod::Vni => {
+                query_method == InputMethod::Vni || query_method == InputMethod::All
+            }
         }
     }
 }
