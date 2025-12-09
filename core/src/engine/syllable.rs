@@ -6,6 +6,7 @@
 //! - V: Vowel nucleus (nguyên âm chính) - REQUIRED
 //! - C₂: Final consonant (âm cuối)
 
+use crate::data::constants;
 use crate::data::keys;
 
 /// Parsed syllable structure
@@ -46,18 +47,7 @@ const FINALS_2: &[[u16; 2]] = &[
     [keys::N, keys::H], // nh
 ];
 
-const FINALS_1: &[u16] = &[
-    keys::C,
-    keys::M,
-    keys::N,
-    keys::P,
-    keys::T,
-    // Semi-vowels as finals
-    keys::I,
-    keys::Y,
-    keys::O,
-    keys::U,
-];
+
 
 /// Parse buffer keys into syllable structure
 ///
@@ -186,7 +176,7 @@ fn match_final(keys: &[u16], start: usize, syllable: &mut Syllable) {
     }
 
     // Try 1-char finals
-    if remaining >= 1 && FINALS_1.contains(&keys[start]) {
+    if remaining >= 1 && constants::VALID_FINALS_1.contains(&keys[start]) {
         syllable.final_c = vec![start];
     }
 }

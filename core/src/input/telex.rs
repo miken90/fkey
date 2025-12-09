@@ -6,11 +6,8 @@
 //! - Stroke: d
 //! - Remove: z
 
-use super::{Method, ToneType};
+use super::{Method, ToneType, HORN_TARGETS_TELEX};
 use crate::data::keys;
-
-/// Vowels that can receive horn/breve (w key)
-const HORN_TARGETS: &[u16] = &[keys::A, keys::O, keys::U];
 
 pub struct Telex;
 
@@ -39,7 +36,7 @@ impl Method for Telex {
             keys::A => &[keys::A],
             keys::E => &[keys::E],
             keys::O => &[keys::O],
-            keys::W => HORN_TARGETS,
+            keys::W => HORN_TARGETS_TELEX,
             _ => &[],
         }
     }
@@ -77,6 +74,6 @@ mod tests {
     fn test_tone_targets() {
         let t = Telex;
         assert_eq!(t.tone_targets(keys::A), &[keys::A]);
-        assert_eq!(t.tone_targets(keys::W), HORN_TARGETS);
+        assert_eq!(t.tone_targets(keys::W), HORN_TARGETS_TELEX);
     }
 }

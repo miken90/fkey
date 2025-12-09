@@ -6,17 +6,8 @@
 //! - Stroke: 9
 //! - Remove: 0
 
-use super::{Method, ToneType};
+use super::{Method, ToneType, CIRCUMFLEX_TARGETS, HORN_TARGETS_VNI, BREVE_TARGETS};
 use crate::data::keys;
-
-/// Vowels that can receive circumflex (^)
-const CIRCUMFLEX_TARGETS: &[u16] = &[keys::A, keys::E, keys::O];
-
-/// Vowels that can receive horn
-const HORN_TARGETS: &[u16] = &[keys::O, keys::U];
-
-/// Vowels that can receive breve
-const BREVE_TARGETS: &[u16] = &[keys::A];
 
 pub struct Vni;
 
@@ -44,7 +35,7 @@ impl Method for Vni {
     fn tone_targets(&self, key: u16) -> &'static [u16] {
         match key {
             keys::N6 => CIRCUMFLEX_TARGETS,
-            keys::N7 => HORN_TARGETS,
+            keys::N7 => HORN_TARGETS_VNI,
             keys::N8 => BREVE_TARGETS,
             _ => &[],
         }

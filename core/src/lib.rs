@@ -24,6 +24,7 @@ pub mod data;
 pub mod engine;
 pub mod input;
 pub mod updater;
+pub mod utils;
 
 // Test utilities - available for both unit tests and integration tests
 #[doc(hidden)]

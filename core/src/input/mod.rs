@@ -10,6 +10,13 @@ pub use telex::Telex;
 pub use vni::Vni;
 
 use crate::data::chars::tone;
+use crate::data::keys;
+
+/// Shared tone target constants
+pub const CIRCUMFLEX_TARGETS: &[u16] = &[keys::A, keys::E, keys::O];
+pub const HORN_TARGETS_TELEX: &[u16] = &[keys::A, keys::O, keys::U];
+pub const HORN_TARGETS_VNI: &[u16] = &[keys::O, keys::U];
+pub const BREVE_TARGETS: &[u16] = &[keys::A];
 
 /// Tone modifier type
 #[derive(Debug, Clone, Copy, PartialEq)]

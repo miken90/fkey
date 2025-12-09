@@ -9,6 +9,7 @@ use crate::data::{
     chars::{mark, tone},
     keys,
 };
+use crate::utils;
 
 /// Modifier type detected from key
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -190,15 +191,15 @@ fn find_horn_targets(buffer_keys: &[u16], vowel_positions: &[usize]) -> Vec<usiz
 
 /// Apply mark transformation (sắc, huyền, hỏi, ngã, nặng)
 pub fn apply_mark(buf: &mut Buffer, mark_value: u8, modern: bool) -> TransformResult {
-    let vowels = collect_vowels(buf);
+    let vowels = utils::collect_vowels(buf);
     if vowels.is_empty() {
         return TransformResult::none();
     }
 
     // Find position using phonology rules
     let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
-    let has_final = has_final_consonant(buf, last_vowel_pos);
-    let has_qu = has_qu_initial(buf);
+    let has_final = utils::has_final_consonant(buf, last_vowel_pos);
+    let has_qu = utils::has_qu_initial(buf);
     let pos = Phonology::find_tone_position(&vowels, has_final, modern, has_qu);
 
     // Clear any existing mark first
@@ -306,42 +307,11 @@ pub fn revert_stroke(buf: &mut Buffer) -> TransformResult {
     TransformResult::none()
 }
 
-/// Collect vowels from buffer with phonological info
-fn collect_vowels(buf: &Buffer) -> Vec<Vowel> {
-    buf.iter()
-        .enumerate()
-        .filter(|(_, c)| keys::is_vowel(c.key))
-        .map(|(pos, c)| {
-            let modifier = match c.tone {
-                tone::CIRCUMFLEX => Modifier::Circumflex,
-                tone::HORN => Modifier::Horn,
-                _ => Modifier::None,
-            };
-            Vowel::new(c.key, modifier, pos)
-        })
-        .collect()
-}
 
-/// Check if there's a consonant after position
-fn has_final_consonant(buf: &Buffer, after_pos: usize) -> bool {
-    (after_pos + 1..buf.len()).any(|i| {
-        buf.get(i)
-            .map(|c| keys::is_consonant(c.key))
-            .unwrap_or(false)
-    })
-}
 
-/// Check if 'q' precedes 'u' in buffer
-fn has_qu_initial(buf: &Buffer) -> bool {
-    for (i, c) in buf.iter().enumerate() {
-        if c.key == keys::U && i > 0 {
-            if let Some(prev) = buf.get(i - 1) {
-                return prev.key == keys::Q;
-            }
-        }
-    }
-    false
-}
+
+
+
 
 /// Reposition mark after tone change if needed
 fn reposition_mark_if_needed(buf: &mut Buffer) {
@@ -353,14 +323,14 @@ fn reposition_mark_if_needed(buf: &mut Buffer) {
         .map(|(i, c)| (i, c.mark));
 
     if let Some((old_pos, mark_value)) = mark_info {
-        let vowels = collect_vowels(buf);
+        let vowels = utils::collect_vowels(buf);
         if vowels.is_empty() {
             return;
         }
 
         let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
-        let has_final = has_final_consonant(buf, last_vowel_pos);
-        let has_qu = has_qu_initial(buf);
+        let has_final = utils::has_final_consonant(buf, last_vowel_pos);
+        let has_qu = utils::has_qu_initial(buf);
         let new_pos = Phonology::find_tone_position(&vowels, has_final, true, has_qu);
 
         if new_pos != old_pos {

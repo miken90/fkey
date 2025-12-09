@@ -4,6 +4,7 @@
 //! Each rule is a simple function that returns Some(error) if invalid, None if OK.
 
 use super::syllable::{parse, Syllable};
+use crate::data::constants;
 use crate::data::keys;
 
 /// Validation result
@@ -59,8 +60,8 @@ fn rule_valid_initial(keys: &[u16], syllable: &Syllable) -> Option<ValidationRes
     let initial: Vec<u16> = syllable.initial.iter().map(|&i| keys[i]).collect();
 
     let is_valid = match initial.len() {
-        1 => VALID_INITIALS_1.contains(&initial[0]),
-        2 => VALID_INITIALS_2
+        1 => constants::VALID_INITIALS_1.contains(&initial[0]),
+        2 => constants::VALID_INITIALS_2
             .iter()
             .any(|p| p[0] == initial[0] && p[1] == initial[1]),
         3 => initial[0] == keys::N && initial[1] == keys::G && initial[2] == keys::H,
@@ -96,7 +97,7 @@ fn rule_spelling(keys: &[u16], syllable: &Syllable) -> Option<ValidationResult> 
     let first_vowel = keys[syllable.glide.unwrap_or(syllable.vowel[0])];
 
     // Check all spelling rules
-    for &(consonant, vowels, _msg) in SPELLING_RULES {
+    for &(consonant, vowels, _msg) in constants::SPELLING_RULES {
         if initial == consonant && vowels.contains(&first_vowel) {
             return Some(ValidationResult::InvalidSpelling);
         }
@@ -114,8 +115,8 @@ fn rule_valid_final(keys: &[u16], syllable: &Syllable) -> Option<ValidationResul
     let final_c: Vec<u16> = syllable.final_c.iter().map(|&i| keys[i]).collect();
 
     let is_valid = match final_c.len() {
-        1 => VALID_FINALS_1.contains(&final_c[0]),
-        2 => VALID_FINALS_2
+        1 => constants::VALID_FINALS_1.contains(&final_c[0]),
+        2 => constants::VALID_FINALS_2
             .iter()
             .any(|p| p[0] == final_c[0] && p[1] == final_c[1]),
         _ => false,
@@ -127,88 +128,7 @@ fn rule_valid_final(keys: &[u16], syllable: &Syllable) -> Option<ValidationResul
     None
 }
 
-// =============================================================================
-// DATA TABLES
-// =============================================================================
 
-/// Valid single initial consonants
-const VALID_INITIALS_1: &[u16] = &[
-    keys::B,
-    keys::C,
-    keys::D,
-    keys::G,
-    keys::H,
-    keys::K,
-    keys::L,
-    keys::M,
-    keys::N,
-    keys::P,
-    keys::Q,
-    keys::R,
-    keys::S,
-    keys::T,
-    keys::V,
-    keys::X,
-];
-
-/// Valid double initial consonants
-const VALID_INITIALS_2: &[[u16; 2]] = &[
-    [keys::C, keys::H], // ch
-    [keys::G, keys::H], // gh
-    [keys::G, keys::I], // gi
-    [keys::K, keys::H], // kh
-    [keys::N, keys::G], // ng
-    [keys::N, keys::H], // nh
-    [keys::P, keys::H], // ph
-    [keys::Q, keys::U], // qu
-    [keys::T, keys::H], // th
-    [keys::T, keys::R], // tr
-];
-
-/// Valid single final consonants
-const VALID_FINALS_1: &[u16] = &[
-    keys::C,
-    keys::M,
-    keys::N,
-    keys::P,
-    keys::T,
-    keys::I,
-    keys::Y,
-    keys::O,
-    keys::U, // semi-vowels
-];
-
-/// Valid double final consonants
-const VALID_FINALS_2: &[[u16; 2]] = &[
-    [keys::C, keys::H], // ch
-    [keys::N, keys::G], // ng
-    [keys::N, keys::H], // nh
-];
-
-/// Spelling rules: (consonant, invalid_vowels, description)
-/// If consonant + vowel matches, it's INVALID
-const SPELLING_RULES: &[(&[u16], &[u16], &str)] = &[
-    // c before e, i, y → invalid (should use k)
-    (&[keys::C], &[keys::E, keys::I, keys::Y], "c before e/i/y"),
-    // k before a, o, u → invalid (should use c)
-    (&[keys::K], &[keys::A, keys::O, keys::U], "k before a/o/u"),
-    // g before e → invalid (should use gh)
-    (&[keys::G], &[keys::E], "g before e"),
-    // ng before e, i → invalid (should use ngh)
-    (&[keys::N, keys::G], &[keys::E, keys::I], "ng before e/i"),
-    // gh before a, o, u → invalid (should use g)
-    (
-        &[keys::G, keys::H],
-        &[keys::A, keys::O, keys::U],
-        "gh before a/o/u",
-    ),
-    // ngh before a, o, u → invalid (should use ng)
-    (
-        &[keys::N, keys::G, keys::H],
-        &[keys::A, keys::O, keys::U],
-        "ngh before a/o/u",
-    ),
-];
 
 // =============================================================================
 // PUBLIC API

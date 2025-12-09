@@ -22,53 +22,12 @@ use crate::data::{
     vowel::{Modifier, Phonology, Vowel},
 };
 use crate::input::{self, ToneType};
+use crate::utils;
 use buffer::{Buffer, Char, MAX};
 use shortcut::{InputMethod, ShortcutTable};
 use validation::is_valid;
 
-/// Convert key code to character
-fn key_to_char(key: u16, caps: bool) -> Option<char> {
-    let ch = match key {
-        keys::A => 'a',
-        keys::B => 'b',
-        keys::C => 'c',
-        keys::D => 'd',
-        keys::E => 'e',
-        keys::F => 'f',
-        keys::G => 'g',
-        keys::H => 'h',
-        keys::I => 'i',
-        keys::J => 'j',
-        keys::K => 'k',
-        keys::L => 'l',
-        keys::M => 'm',
-        keys::N => 'n',
-        keys::O => 'o',
-        keys::P => 'p',
-        keys::Q => 'q',
-        keys::R => 'r',
-        keys::S => 's',
-        keys::T => 't',
-        keys::U => 'u',
-        keys::V => 'v',
-        keys::W => 'w',
-        keys::X => 'x',
-        keys::Y => 'y',
-        keys::Z => 'z',
-        keys::N0 => return Some('0'),
-        keys::N1 => return Some('1'),
-        keys::N2 => return Some('2'),
-        keys::N3 => return Some('3'),
-        keys::N4 => return Some('4'),
-        keys::N5 => return Some('5'),
-        keys::N6 => return Some('6'),
-        keys::N7 => return Some('7'),
-        keys::N8 => return Some('8'),
-        keys::N9 => return Some('9'),
-        _ => return None,
-    };
-    Some(if caps { ch.to_ascii_uppercase() } else { ch })
-}
+
 
 /// Engine action result
 #[repr(u8)]
@@ -519,7 +478,7 @@ impl Engine {
         // Build output from position (includes new key)
         let output: Vec<char> = (pos..self.buf.len())
             .filter_map(|i| self.buf.get(i))
-            .filter_map(|c| key_to_char(c.key, c.caps))
+            .filter_map(|c| utils::key_to_char(c.key, c.caps))
             .collect();
 
         Result::send(backspace, &output)
@@ -600,41 +559,17 @@ impl Engine {
 
     /// Collect vowels from buffer
     fn collect_vowels(&self) -> Vec<Vowel> {
-        self.buf
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| keys::is_vowel(c.key))
-            .map(|(pos, c)| {
-                let modifier = match c.tone {
-                    tone::CIRCUMFLEX => Modifier::Circumflex,
-                    tone::HORN => Modifier::Horn,
-                    _ => Modifier::None,
-                };
-                Vowel::new(c.key, modifier, pos)
-            })
-            .collect()
+        utils::collect_vowels(&self.buf)
     }
 
     /// Check for final consonant after position
     fn has_final_consonant(&self, after_pos: usize) -> bool {
-        (after_pos + 1..self.buf.len()).any(|i| {
-            self.buf
-                .get(i)
-                .map(|c| keys::is_consonant(c.key))
-                .unwrap_or(false)
-        })
+        utils::has_final_consonant(&self.buf, after_pos)
     }
 
     /// Check for qu initial
     fn has_qu_initial(&self) -> bool {
-        for (i, c) in self.buf.iter().enumerate() {
-            if c.key == keys::U && i > 0 {
-                if let Some(prev) = self.buf.get(i - 1) {
-                    return prev.key == keys::Q;
-                }
-            }
-        }
-        false
+        utils::has_qu_initial(&self.buf)
     }
 
     /// Rebuild output from position
@@ -650,7 +585,7 @@ impl Engine {
                     output.push(chars::get_d(c.caps));
                 } else if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
                     output.push(ch);
-                } else if let Some(ch) = key_to_char(c.key, c.caps) {
+                } else if let Some(ch) = utils::key_to_char(c.key, c.caps) {
                     output.push(ch);
                 }
             }

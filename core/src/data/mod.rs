@@ -6,9 +6,11 @@
 //! - `vowel`: Vietnamese vowel phonology system
 
 pub mod chars;
+pub mod constants;
 pub mod keys;
 pub mod vowel;
 
 pub use chars::{get_d, mark, to_char, tone};
+pub use constants::*;
 pub use keys::{is_break, is_letter, is_vowel};
 pub use vowel::{Modifier, Phonology, Role, Vowel};
