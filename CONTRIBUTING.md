@@ -5,7 +5,7 @@ Thank you for your interest in contributing! 🎉
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/gonhanh.org`
+2. Clone your fork: `git clone https://github.com/khaphanspace/gonhanh.org`
 3. Run setup: `./scripts/setup.sh`
 4. Create a branch: `git checkout -b feature/my-feature`
 
@@ -77,18 +77,22 @@ test: add engine tests
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 How did you test this?
 
 ## Checklist
+
 - [ ] Tests pass
 - [ ] Documentation updated
 - [ ] CHANGELOG.md updated
