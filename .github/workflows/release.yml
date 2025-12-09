@@ -18,13 +18,12 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - run: npm ci
       - run: npm run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-macos:
   build-macos:
     runs-on: macos-latest
     steps:
@@ -110,5 +109,3 @@ jobs:
         with:
           name: windows-zip
           path: platforms/windows/*.zip
-
-
