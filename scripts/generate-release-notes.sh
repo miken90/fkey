@@ -1,17 +1,32 @@
 #!/bin/bash
 # Generate release notes using AI (opencode CLI)
+# Usage: ./generate-release-notes.sh [version] [from-commit]
+# Examples:
+#   ./generate-release-notes.sh                    # từ last release đến HEAD
+#   ./generate-release-notes.sh v1.0.18            # từ last release đến HEAD, version v1.0.18
+#   ./generate-release-notes.sh v1.0.18 abc123     # từ commit abc123 đến HEAD
 
-LAST_RELEASE=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
-VERSION="$1"
+VERSION="${1:-next}"
+FROM_COMMIT="$2"
 
-if [ -n "$LAST_RELEASE" ]; then
-    COMMITS=$(git log "$LAST_RELEASE"..HEAD --pretty=format:"%s" 2>/dev/null)
+if [ -n "$FROM_COMMIT" ]; then
+    # Từ commit được chỉ định
+    COMMITS=$(git log "$FROM_COMMIT"..HEAD --pretty=format:"%s" 2>/dev/null)
 else
+    # Từ last GitHub release
+    LAST_RELEASE=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
+    if [ -n "$LAST_RELEASE" ]; then
+        COMMITS=$(git log "$LAST_RELEASE"..HEAD --pretty=format:"%s" 2>/dev/null)
+    fi
+fi
+
+# Fallback: 20 commits gần nhất
+if [ -z "$COMMITS" ]; then
     COMMITS=$(git log --pretty=format:"%s" -20 2>/dev/null)
 fi
 
 if [ -z "$COMMITS" ]; then
-    echo "No commits found"
+    echo "Không tìm thấy commits"
     exit 1
 fi
 
