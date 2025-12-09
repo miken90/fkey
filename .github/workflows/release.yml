@@ -111,19 +111,4 @@ jobs:
           name: windows-zip
           path: platforms/windows/*.zip
 
-  release:
-    needs: [build-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
 
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/macos-dmg/*.dmg
-            artifacts/windows-zip/*.zip
-          generate_release_notes: true
