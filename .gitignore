@@ -3,6 +3,9 @@ target/
 Cargo.lock
 **/*.rs.bk
 
+# Node
+node_modules/
+
 # macOS
 *.xcuserstate
 xcuserdata/
@@ -40,4 +43,3 @@ obj/
 .opencode/
 plans/
 CLAUDE.md
-
