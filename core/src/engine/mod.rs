@@ -19,15 +19,13 @@ pub mod validation;
 use crate::data::{
     chars::{self, mark, tone},
     keys,
-    vowel::{Modifier, Phonology, Vowel},
+    vowel::{Phonology, Vowel},
 };
 use crate::input::{self, ToneType};
 use crate::utils;
 use buffer::{Buffer, Char, MAX};
 use shortcut::{InputMethod, ShortcutTable};
 use validation::is_valid;
-
-
 
 /// Engine action result
 #[repr(u8)]

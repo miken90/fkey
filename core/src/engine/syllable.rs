@@ -47,8 +47,6 @@ const FINALS_2: &[[u16; 2]] = &[
     [keys::N, keys::H], // nh
 ];
 
-
-
 /// Parse buffer keys into syllable structure
 ///
 /// Uses longest-match-first algorithm:

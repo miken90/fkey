@@ -6,7 +6,7 @@
 //! - Stroke: 9
 //! - Remove: 0
 
-use super::{Method, ToneType, CIRCUMFLEX_TARGETS, HORN_TARGETS_VNI, BREVE_TARGETS};
+use super::{Method, ToneType, BREVE_TARGETS, CIRCUMFLEX_TARGETS, HORN_TARGETS_VNI};
 use crate::data::keys;
 
 pub struct Vni;

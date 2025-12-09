@@ -406,7 +406,11 @@ mod tests {
         method: InputMethod,
     ) {
         let result = table.try_match_for_method(buffer, key_char, is_boundary, method);
-        assert!(result.is_some(), "Shortcut should match for buffer: {}", buffer);
+        assert!(
+            result.is_some(),
+            "Shortcut should match for buffer: {}",
+            buffer
+        );
         let m = result.unwrap();
         assert_eq!(m.output, expected_output);
         assert_eq!(m.backspace_count, expected_backspace);
@@ -421,13 +425,25 @@ mod tests {
         method: InputMethod,
     ) {
         let result = table.try_match_for_method(buffer, key_char, is_boundary, method);
-        assert!(result.is_none(), "Shortcut should NOT match for buffer: {}", buffer);
+        assert!(
+            result.is_none(),
+            "Shortcut should NOT match for buffer: {}",
+            buffer
+        );
     }
 
     #[test]
     fn test_basic_shortcut() {
         let table = table_with_shortcut("vn", "Việt Nam");
-        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
+        assert_shortcut_match(
+            &table,
+            "vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::All,
+        );
     }
 
     #[test]
@@ -435,13 +451,37 @@ mod tests {
         let table = table_with_shortcut("vn", "Việt Nam");
 
         // Lowercase
-        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
+        assert_shortcut_match(
+            &table,
+            "vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::All,
+        );
 
         // Uppercase
-        assert_shortcut_match(&table, "VN", Some(' '), true, "VIỆT NAM ", 2, InputMethod::All);
+        assert_shortcut_match(
+            &table,
+            "VN",
+            Some(' '),
+            true,
+            "VIỆT NAM ",
+            2,
+            InputMethod::All,
+        );
 
         // Title case
-        assert_shortcut_match(&table, "Vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
+        assert_shortcut_match(
+            &table,
+            "Vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::All,
+        );
     }
 
     #[test]
@@ -464,7 +504,15 @@ mod tests {
         assert_no_match(&table, "vn", Some('a'), false, InputMethod::All);
 
         // With word boundary - should match
-        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
+        assert_shortcut_match(
+            &table,
+            "vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::All,
+        );
     }
 
     #[test]
@@ -519,13 +567,37 @@ mod tests {
         let table = table_with_shortcut("vn", "Việt Nam");
 
         // Should match for Telex
-        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::Telex);
+        assert_shortcut_match(
+            &table,
+            "vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::Telex,
+        );
 
         // Should match for VNI
-        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::Vni);
+        assert_shortcut_match(
+            &table,
+            "vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::Vni,
+        );
 
         // Should match for All
-        assert_shortcut_match(&table, "vn", Some(' '), true, "Việt Nam ", 2, InputMethod::All);
+        assert_shortcut_match(
+            &table,
+            "vn",
+            Some(' '),
+            true,
+            "Việt Nam ",
+            2,
+            InputMethod::All,
+        );
     }
 
     #[test]

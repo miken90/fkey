@@ -4,7 +4,7 @@
 //! Scans entire buffer instead of case-by-case processing.
 
 use super::buffer::Buffer;
-use crate::data::vowel::{Modifier, Phonology, Vowel};
+use crate::data::vowel::Phonology;
 use crate::data::{
     chars::{mark, tone},
     keys,
@@ -306,12 +306,6 @@ pub fn revert_stroke(buf: &mut Buffer) -> TransformResult {
     }
     TransformResult::none()
 }
-
-
-
-
-
-
 
 /// Reposition mark after tone change if needed
 fn reposition_mark_if_needed(buf: &mut Buffer) {

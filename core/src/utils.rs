@@ -224,10 +224,3 @@ mod test_utils {
 
 // Re-export test utilities for use in other test modules
 pub use test_utils::*;
-
-// Export for integration tests
-pub use test_utils::*;
-
-// Also export for integration tests
-#[cfg(feature = "test")]
-pub use test_utils::*;
