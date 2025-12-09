@@ -26,10 +26,6 @@ pub mod input;
 pub mod updater;
 pub mod utils;
 
-// Test utilities - available for both unit tests and integration tests
-#[doc(hidden)]
-pub mod test_utils;
-
 use engine::{Engine, Result};
 use std::sync::Mutex;
 

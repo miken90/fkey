@@ -6,7 +6,7 @@
 #![allow(dead_code)]
 
 // Re-export core test utilities
-pub use gonhanh_core::test_utils::{telex, type_word, vni};
+pub use gonhanh_core::utils::{telex, type_word, vni};
 
 use gonhanh_core::engine::{Action, Engine};
 

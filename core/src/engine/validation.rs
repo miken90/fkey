@@ -164,7 +164,7 @@ pub fn is_valid(buffer_keys: &[u16]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::keys_from_str;
+    use crate::utils::keys_from_str;
 
     /// Valid Vietnamese syllables
     const VALID: &[&str] = &[

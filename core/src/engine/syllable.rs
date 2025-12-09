@@ -230,7 +230,7 @@ pub fn is_valid_structure(buffer_keys: &[u16]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::keys_from_str;
+    use crate::utils::keys_from_str;
 
     #[test]
     fn parse_simple_syllable() {

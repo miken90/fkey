@@ -607,7 +607,7 @@ impl Engine {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::{telex, vni};
+    use crate::utils::{telex, vni};
 
     const TELEX_BASIC: &[(&str, &str)] = &[
         ("as", "á"),
