@@ -15,7 +15,7 @@ if [ -z "$COMMITS" ]; then
     exit 1
 fi
 
-PROMPT="Generate concise release notes for version $VERSION of 'Gõ Nhanh' (Vietnamese IME for macOS).
+opencode run --format json "Generate concise release notes for version $VERSION of 'Gõ Nhanh' (Vietnamese IME for macOS).
 
 Commits:
 $COMMITS
@@ -25,6 +25,4 @@ Rules:
 - Skip empty sections
 - Each item: one line, start with emoji (✨ feat, 🐛 fix, ⚡ perf, 📝 docs, 🔧 chore)
 - Be concise, no fluff
-- Output markdown only, no explanation"
-
-echo "$PROMPT" | opencode run --print 2>/dev/null
+- Output markdown only, no explanation" 2>/dev/null | jq -r 'select(.type == "text") | .content' | tr -d '\n' | sed 's/$/\n/'

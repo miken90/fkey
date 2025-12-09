@@ -48,11 +48,19 @@ jobs:
           # Create beautiful DMG with custom layout
           ../../scripts/create-dmg.sh "$APP"
 
+      - name: Get tag message
+        id: tag_message
+        run: |
+          TAG_MSG=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAG_MSG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: platforms/macos/build/*.dmg
-          generate_release_notes: true
+          body: ${{ steps.tag_message.outputs.message }}
 
   build-windows:
     if: false
