@@ -10,7 +10,7 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       actions: read
       contents: read
@@ -19,7 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'rust', 'swift', 'csharp' ]
+        include:
+          - language: rust
+            os: ubuntu-latest
+          - language: swift
+            os: macos-latest
+          - language: csharp
+            os: windows-latest
 
     steps:
     - name: Checkout repository
@@ -30,8 +36,34 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    - name: Setup .NET (for C#)
+      if: matrix.language == 'csharp'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Setup Rust (for Rust)
+      if: matrix.language == 'rust'
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup Rust (for Swift)
+      if: matrix.language == 'swift'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+    - name: Build Rust (for Swift)
+      if: matrix.language == 'swift'
+      run: |
+        cd core
+        cargo build --release --target aarch64-apple-darwin
+        cargo build --release --target x86_64-apple-darwin
+
+    - name: Build C#
+      if: matrix.language == 'csharp'
+      run: |
+        cd platforms/windows/GoNhanh
+        dotnet build -c Release
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
