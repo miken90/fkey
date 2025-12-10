@@ -44,6 +44,12 @@ fi
 echo "📊 Found $(echo "$COMMITS" | wc -l | tr -d ' ') commits" >&2
 
 opencode run --format json "Tạo release notes cho version $VERSION của 'Gõ Nhanh' (Vietnamese IME for macOS).
+Quy tắc:
+- Phân tích code changes để hiểu thay đổi thực sự, không chỉ dựa vào commit message
+- Nhóm theo: 🐛 Sửa lỗi, ⚡ Cải thiện, 🔧 Khác (bỏ section rỗng)
+- Mỗi item: 1 dòng, súc tích, mô tả user-facing changes
+- Viết tiếng Việt (có thể dùng keywords tiếng Anh như build, config, API...)
+- Chỉ output markdown, không giải thích thêm" 2>/dev/null | jq -r 'select(.type == "text") | .part.text
 
 ## Commits:
 $COMMITS
@@ -53,10 +59,4 @@ $DIFF_STAT
 
 ## Code changes (snippet):
 $DIFF_CONTENT
-
-Quy tắc:
-- Phân tích code changes để hiểu thay đổi thực sự, không chỉ dựa vào commit message
-- Nhóm theo: 🐛 Sửa lỗi, ⚡ Cải thiện, 🔧 Khác (bỏ section rỗng)
-- Mỗi item: 1 dòng, súc tích, mô tả user-facing changes
-- Viết tiếng Việt (có thể dùng keywords tiếng Anh như build, config, API...)
-- Chỉ output markdown, không giải thích thêm" 2>/dev/null | jq -r 'select(.type == "text") | .part.text'
+'
