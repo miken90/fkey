@@ -305,6 +305,7 @@ pub extern "C" fn ime_key(key: u16, caps: bool, ctrl: bool) -> *mut Result { }
 - **MINOR**: New features, backward compatible
 - **PATCH**: Bug fixes only
 - **Release**: Tag with `v` prefix (e.g., `v1.2.3`)
+- **Current Version**: v1.0.21+ (macOS + Windows production-ready)
 
 ## Pull Request Guidelines
 
