@@ -145,12 +145,14 @@ Chi tiết: [docs/vietnamese-language-system.md](docs/vietnamese-language-system
 
 ## Tài liệu
 
-| Tài liệu                                                                 | Mô tả                                                          |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| [Hệ thống chữ viết & Phương pháp gõ](docs/vietnamese-language-system.md) | Cơ sở lý thuyết ngữ âm và quy tắc đặt dấu.                     |
-| [System Architecture](docs/system-architecture.md)                       | Kiến trúc hệ thống, FFI, và luồng dữ liệu.                     |
-| [Development Guide](docs/development.md)                                 | Hướng dẫn build, test, và đóng góp mã nguồn.                   |
-| [Các lỗi thường gặp](docs/common-issues.md)                              | Tổng hợp lỗi bộ gõ (Chrome, Word, Terminal) và cách khắc phục. |
+| Tài liệu | Mô tả |
+| -------- | ----- |
+| [Ngữ âm tiếng Việt](docs/vietnamese-language-system.md) | Lý thuyết ngữ âm, quy tắc đặt dấu |
+| [Kiến trúc hệ thống](docs/system-architecture.md) | FFI, luồng dữ liệu, pipeline |
+| [Thuật toán Core](docs/core-engine-algorithm.md) | 7-stage pipeline, xử lý keystroke |
+| [Thuật toán Validation](docs/validation-algorithm.md) | 5 quy tắc kiểm tra âm tiết |
+| [Phát triển](docs/development.md) | Build, test, đóng góp |
+| [Lỗi thường gặp](docs/common-issues.md) | Chrome, Word, Terminal fixes |
 
 ## Star History
 
