@@ -192,23 +192,17 @@ fn vni_w_passes_through() {
 
 #[test]
 fn word_boundary_shortcut_vn() {
-    // "vn" + space → "Việt Nam "
+    // Default shortcuts are currently disabled
+    // This test verifies that "vn" + space just passes through
     let mut e = Engine::new();
 
     // Type "vn"
     e.on_key(keys::V, false, false);
     e.on_key(keys::N, false, false);
 
-    // Space triggers word boundary shortcut
+    // Space - no shortcut expansion (shortcuts disabled)
     let result = e.on_key(keys::SPACE, false, false);
-    assert_eq!(result.action, 1); // Action::Send
-    assert_eq!(result.backspace, 2); // delete "vn"
-
-    // Output should be "Việt Nam " (with trailing space)
-    let output: String = (0..result.count as usize)
-        .map(|i| char::from_u32(result.chars[i]).unwrap())
-        .collect();
-    assert_eq!(output, "Việt Nam ");
+    assert_eq!(result.action, 0); // Action::None (passthrough)
 }
 
 #[test]

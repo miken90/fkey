@@ -606,11 +606,14 @@ mod tests {
     fn test_with_defaults_has_common_shortcuts() {
         let table = ShortcutTable::with_defaults();
 
-        // "vn" → "Việt Nam" should exist
-        let result = table.lookup_for_method("vn", InputMethod::All);
-        assert!(result.is_some());
+        // Default shortcuts are currently disabled - table should be empty
+        assert!(table.is_empty());
 
-        // "w" is NOT a shortcut anymore (handled by engine)
+        // "vn" → "Việt Nam" should NOT exist (disabled)
+        let result = table.lookup_for_method("vn", InputMethod::All);
+        assert!(result.is_none());
+
+        // "w" is NOT a shortcut (handled by engine)
         let result = table.lookup_for_method("w", InputMethod::Telex);
         assert!(result.is_none());
     }
