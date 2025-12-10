@@ -106,7 +106,7 @@ gonhanh.org/
 ### Engine Modules (core/src/engine/)
 
 #### `engine/mod.rs` - Main Processing Pipeline
-**Lines**: ~500 | **Complexity**: High
+**Lines**: ~500 | **Complexity**: High | **Source**: `core/src/engine/mod.rs`
 
 Central `Engine` struct orchestrating 7-stage keystroke processing:
 1. **Stroke detection** (đ/Đ) - Single key transformation
@@ -128,19 +128,9 @@ Central `Engine` struct orchestrating 7-stage keystroke processing:
 - `pub fn set_shortcuts(&mut self, shortcuts: Vec<Shortcut>)` - User abbreviations
 
 #### `engine/buffer.rs` - Circular Typing Buffer
-**Lines**: ~300 | **Complexity**: Medium
+**Lines**: ~300 | **Complexity**: Medium | **Source**: `core/src/engine/buffer.rs`
 
 Fixed 64-character circular buffer for multi-keystroke context. Tracks tone mark, vowel mark, and stroke for each character. Implements tone/mark repositioning (e.g., "hoaf" → "hoà").
-
-**Key Structures**:
-```rust
-pub struct CharBuffer {
-    chars: [char; 64],
-    tones: [ToneType; 64],      // Sắc, Huyền, Hỏi, Ngã, Nặng
-    marks: [VowelMark; 64],     // Circumflex, Horn, Breve
-    position: usize,             // Current write position
-}
-```
 
 **Key Methods**:
 - `append_char(&mut self, ch: char, tone: ToneType, mark: VowelMark)`
@@ -149,7 +139,7 @@ pub struct CharBuffer {
 - `last_vowel_pos(&self) -> Option<usize>` - Find tone anchor point
 
 #### `engine/syllable.rs` - Vietnamese Syllable Parsing
-**Lines**: ~400 | **Complexity**: Medium-High
+**Lines**: ~400 | **Complexity**: Medium-High | **Source**: `core/src/engine/syllable.rs`
 
 Parses buffer into syllable components: (C₁)(G)V(C₂)
 - C₁ = initial consonant
@@ -160,17 +150,17 @@ Parses buffer into syllable components: (C₁)(G)V(C₂)
 Identifies vowel position for tone/mark placement based on linguistic rules.
 
 #### `engine/validation.rs` - Vietnamese Phonology Rules
-**Lines**: ~350 | **Complexity**: High
+**Lines**: ~350 | **Complexity**: High | **Source**: `core/src/engine/validation.rs`
 
 **5 Validation Rules** (applied BEFORE transformation, validation-first approach):
 1. **Must have vowel**: Every valid syllable contains at least one vowel
-2. **Valid initials**: Only 16 single consonants + 6 pairs + 1 triple allowed at start
+2. **Valid initials**: Only 16 single consonants + 10 pairs + ngh allowed at start
 3. **All chars parsed**: Every character fits syllable pattern (C+G+V+C)
-4. **Spelling rules**: Enforce c/k/g restrictions (c→e/i only, k→non-e/i only)
-5. **Valid finals**: Only c,ch,m,n,ng,nh,p,t,ng allowed at end
+4. **Spelling rules**: Enforce c/k/g restrictions (c→e/i only, k→non-e/i only, etc.)
+5. **Valid finals**: Only c,ch,m,n,ng,nh,p,t allowed at end
 
 #### `engine/transform.rs` - Diacritic & Tone Application
-**Lines**: ~600 | **Complexity**: Very High
+**Lines**: ~600 | **Complexity**: Very High | **Source**: `core/src/engine/transform.rs`
 
 Pattern-based transformation (not case-by-case). Applies tones and vowel marks with special handling:
 - **UO Compound**: "duoc" + horn → "dươc" (both u,o receive horn)
@@ -179,32 +169,23 @@ Pattern-based transformation (not case-by-case). Applies tones and vowel marks w
 - **Last-transform tracking**: For intelligent reverting
 
 #### `engine/shortcut.rs` - User-Defined Abbreviations
-**Lines**: ~500 | **Complexity**: Medium
+**Lines**: ~500 | **Complexity**: Medium | **Source**: `core/src/engine/shortcut.rs`
 
 Priority-based matching system. Supports arbitrary abbreviation → expansion (e.g., "hv" → "không"). Longest-match-first strategy to avoid conflicts.
-
-**Key Structures**:
-```rust
-pub struct Shortcut {
-    abbrev: String,
-    expanded: String,
-    priority: u8,
-}
-```
 
 ### Input Method Modules (core/src/input/)
 
 #### `input/telex.rs` - Telex Input Method
-**Lines**: ~200 | **Complexity**: Medium
+**Lines**: ~200 | **Complexity**: Medium | **Source**: `core/src/input/telex.rs`
 
 Vietnamese VIQR-style: a+s → á, a+f → à, a+r → ả, a+x → ã, a+j → ạ
 
 Tone marks: s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
-Vowel marks: w=ư (horn on u)
+Vowel marks: w=ư (horn on u), a→â (circumflex), e→ê, o→ô
 Special: dd → đ, w alone → ư, nhw → như
 
 #### `input/vni.rs` - VNI Input Method
-**Lines**: ~200 | **Complexity**: Medium
+**Lines**: ~200 | **Complexity**: Medium | **Source**: `core/src/input/vni.rs`
 
 Vietnamese numeric: a+1 → á, a+2 → à, etc.
 
@@ -216,24 +197,30 @@ Symbol typing: Shift+number skips normal letter, triggers mark directly
 ### Data Modules (core/src/data/)
 
 #### `data/vowel.rs` - Vowel Transformation Table
-**Lines**: ~300 | **Complexity**: Low
+**Lines**: ~300 | **Complexity**: Low | **Source**: `core/src/data/vowel.rs`
 
 Pre-computed 72-entry table: 12 base vowels × 6 tone marks
 Maps (vowel_char, tone_type) → transformed_char
 Supports case preservation (à ↔ À)
 
 #### `data/keys.rs` - Input Method Keycode Mappings
+**Source**: `core/src/data/keys.rs`
+
 Maps virtual keycodes to character representation, handles shift/caps lock modifiers.
 
 #### `data/chars.rs` - Character Constants
+**Source**: `core/src/data/chars.rs`
+
 Pre-computed UTF-32 codepoints for all Vietnamese characters, used for FFI output.
 
 #### `data/constants.rs` - Vietnamese Phonology Constants
+**Source**: `core/src/data/constants.rs`
+
 Valid initial consonants, final consonants, consonant clusters, vowel groups.
 
 ### FFI Layer (core/src/lib.rs)
 
-**Lines**: ~300 | **Complexity**: High (unsafe)
+**Lines**: ~300 | **Complexity**: High (unsafe) | **Source**: `core/src/lib.rs`
 
 Exports 6 C ABI functions (thread-safe via Mutex). Critical: Must maintain `#[repr(C)]` struct layout exactly.
 
@@ -265,16 +252,18 @@ pub struct Result {
 ### macOS Platform (platforms/macos/)
 
 #### `RustBridge.swift` - FFI Bridge (CRITICAL)
-**Lines**: ~250 | **Responsibility**: Bridge Rust ↔ Swift
+**Lines**: ~250 | **Responsibility**: Bridge Rust ↔ Swift | **Source**: `platforms/macos/RustBridge.swift`
 
 Must declare `ImeResult` struct matching Rust `Result` byte-for-byte. Wraps all 6 Rust FFI functions. Handles pointer safety with `defer { ime_free(ptr) }`.
 
 #### `MenuBar.swift` - Status Bar UI
-**Lines**: ~350 | **Responsibility**: Main app UI
+**Lines**: ~350 | **Responsibility**: Main app UI | **Source**: `platforms/macos/MenuBar.swift`
 
 Creates NSStatusBar, manages menu items: Enable/Disable, Input Method, Settings, About, Quit. Handles global Ctrl+Space hotkey.
 
 #### `App.swift` - Application Delegate
+**Source**: `platforms/macos/App.swift`
+
 AppDelegate for NSApplication. First-run detection, MenuBarController initialization, accessibility permission checking.
 
 #### Other Swift Files
@@ -283,36 +272,45 @@ AppDelegate for NSApplication. First-run detection, MenuBarController initializa
 - `UpdateManager.swift` - DMG download + mounting
 - `UpdateChecker.swift` - GitHub release checking
 - `SettingsView.swift`, `AboutView.swift`, `UpdateView.swift` - UI components
+- `AppMetadata.swift` - Shared app constants
 
 ### Windows Platform (platforms/windows/)
 
 #### `Core/RustBridge.cs` - FFI Bridge
+**Source**: `platforms/windows/Core/RustBridge.cs`
+
 P/Invoke signatures matching Rust FFI, UTF-32 interop, memory management.
 
 #### `Core/KeyboardHook.cs` - Keyboard Interception
+**Source**: `platforms/windows/Core/KeyboardHook.cs`
+
 SetWindowsHookEx for system-wide WH_KEYBOARD_LL hook, WM_KEYDOWN processing.
 
 #### `Services/SettingsService.cs` - Registry Persistence
+**Source**: `platforms/windows/Services/SettingsService.cs`
+
 Stores user preferences, input method selection, enable/disable state.
 
 #### `Views/TrayIcon.cs` - System Tray UI
+**Source**: `platforms/windows/Views/TrayIcon.cs`
+
 NotifyIcon creation, context menu: Enable/Disable, Input Method, Settings, About.
 
 ## Test Coverage
 
 ### Test Files (core/tests/)
 
-| File | Purpose | Test Count |
-|------|---------|-----------|
-| `unit_test.rs` | Module unit tests | ~30 |
-| `typing_test.rs` | Full keystroke sequences | ~60 |
-| `engine_test.rs` | Engine initialization + state | ~20 |
-| `integration_test.rs` | End-to-end keystroke→output | ~35 |
-| `paragraph_test.rs` | Multi-word paragraphs | ~15 |
+| File | Purpose | Test Count | Source |
+|------|---------|-----------|--------|
+| `unit_test.rs` | Module unit tests | ~30 | `core/tests/unit_test.rs` |
+| `typing_test.rs` | Full keystroke sequences | ~60 | `core/tests/typing_test.rs` |
+| `engine_test.rs` | Engine initialization + state | ~20 | `core/tests/engine_test.rs` |
+| `integration_test.rs` | End-to-end keystroke→output | ~35 | `core/tests/integration_test.rs` |
+| `paragraph_test.rs` | Multi-word paragraphs | ~15 | `core/tests/paragraph_test.rs` |
 
 **Total**: 160+ test cases, 2100+ lines of test code
 
-**Test Utilities** (common/mod.rs):
+**Test Utilities** (core/tests/common/mod.rs):
 - `ImeHelper` struct for convenient test setup
 - `assert_output()` macro for comparing expected results
 - Test data constants
@@ -419,4 +417,5 @@ RustBridge.cs (Windows)
 
 **Last Updated**: 2025-12-10
 **Total Lines**: ~16,000 (Rust + Swift + Windows)
+**Total Tokens**: 99,444 (per repomix analysis)
 **Coverage**: 100% of directories documented
