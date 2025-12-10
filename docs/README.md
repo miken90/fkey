@@ -188,5 +188,6 @@ Always include documentation updates in the same PR as code changes.
 ---
 
 **Last Updated**: 2025-12-10
-**Status**: Ready for team review and contributor onboarding
+**Status**: Production-ready for team development
 **Platforms**: macOS (v1.0.21+), Windows (production), Linux (planned)
+**Repository**: https://github.com/khaphanspace/gonhanh.org
