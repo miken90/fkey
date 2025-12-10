@@ -71,7 +71,7 @@ Chi tiết: [Các lỗi thường gặp](docs/common-issues.md)
 
 ---
 
-## 💡 Động lực
+## ❤️‍🔥 Động lực
 
 Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
 
