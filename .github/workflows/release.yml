@@ -54,16 +54,30 @@ jobs:
       - name: Get tag message
         id: tag_message
         run: |
-          TAG_MSG=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo "$TAG_MSG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Fetch tag with annotation
+          git fetch origin tag ${{ github.ref_name }} --force
+
+          # Get message from annotated tag
+          TAG_MSG=$(git for-each-ref --format='%(contents)' refs/tags/${{ github.ref_name }})
+
+          # Debug
+          echo "=== Tag message ==="
+          echo "$TAG_MSG"
+          echo "==================="
+
+          # Output for next step
+          {
+            echo "message<<EOF"
+            echo "$TAG_MSG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: platforms/macos/build/*.dmg
           body: ${{ steps.tag_message.outputs.message }}
+          generate_release_notes: ${{ steps.tag_message.outputs.message == '' }}
 
   build-windows:
     if: false
