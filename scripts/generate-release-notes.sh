@@ -43,6 +43,7 @@ fi
 
 echo "📊 Found $(echo "$COMMITS" | wc -l | tr -d ' ') commits" >&2
 
+# Try AI-generated release notes first
 PROMPT="Tạo release notes cho version $VERSION của 'Gõ Nhanh' (Vietnamese IME for macOS).
 Quy tắc:
 - Phân tích code changes để hiểu thay đổi thực sự, không chỉ dựa vào commit message
@@ -61,4 +62,21 @@ $DIFF_STAT
 $DIFF_CONTENT
 "
 
-opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text'
+# Try opencode first, with timeout
+AI_OUTPUT=""
+if command -v opencode &> /dev/null; then
+    AI_OUTPUT=$(timeout 60 opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text' 2>/dev/null || echo "")
+fi
+
+# If AI output is valid (non-empty and has actual content), use it
+if [ -n "$AI_OUTPUT" ] && [ ${#AI_OUTPUT} -gt 20 ]; then
+    echo "$AI_OUTPUT"
+else
+    # Fallback: generate simple release notes from commits
+    echo "⚠️  AI generation failed, using fallback" >&2
+    echo "## What's Changed"
+    echo ""
+    echo "$COMMITS"
+    echo ""
+    echo "**Full Changelog**: https://github.com/khaphanspace/gonhanh.org/compare/$FROM_REF...$VERSION"
+fi
