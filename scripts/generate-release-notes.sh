@@ -62,10 +62,11 @@ $DIFF_STAT
 $DIFF_CONTENT
 "
 
-# Try opencode first, with timeout
+# Try opencode first, with timeout (macOS compatible)
 AI_OUTPUT=""
 if command -v opencode &> /dev/null; then
-    AI_OUTPUT=$(timeout 60 opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text' 2>/dev/null || echo "")
+    # Use perl timeout for macOS compatibility (no coreutils needed)
+    AI_OUTPUT=$(perl -e 'alarm 60; exec @ARGV' opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text' 2>/dev/null || echo "")
 fi
 
 # If AI output is valid (non-empty and has actual content), use it
