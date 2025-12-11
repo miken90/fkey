@@ -125,21 +125,33 @@ class UpdateManager: NSObject, ObservableObject {
         let destApp = "/Applications/\(appName)"
         let pid = ProcessInfo.processInfo.processIdentifier
 
-        // Unmount any existing GoNhanh volume first
-        shell("hdiutil detach /Volumes/GoNhanh -quiet -force 2>/dev/null")
+        // Unmount any existing GoNhanh volumes
+        shell("hdiutil detach /Volumes/GoNhanh -force 2>/dev/null")
+        shell("for v in /Volumes/GoNhanh*; do hdiutil detach \"$v\" -force 2>/dev/null; done")
 
-        // Mount DMG (let system choose mount point)
-        let mountResult = shell("hdiutil attach '\(dmgPath.path)' -nobrowse -quiet")
-        guard mountResult.ok else {
+        // Mount DMG and capture mount point from output
+        let mountOutput = shell("hdiutil attach '\(dmgPath.path)' -nobrowse")
+        guard mountOutput.ok else {
             return "Không thể mở file cài đặt."
         }
 
-        // Find the actual mount point
-        let mountPoint = shell("hdiutil info | grep -A1 '\(dmgPath.path)' | tail -1 | awk '{print $NF}'").output
+        // Parse mount point from hdiutil output (last column of last line)
+        // Output format: "/dev/disk4s2  Apple_HFS  /Volumes/GoNhanh"
+        let lines = mountOutput.output.components(separatedBy: "\n")
+        var mountPoint = ""
+        for line in lines.reversed() {
+            if line.contains("/Volumes/") {
+                if let range = line.range(of: "/Volumes/") {
+                    mountPoint = String(line[range.lowerBound...]).trimmingCharacters(in: .whitespaces)
+                    break
+                }
+            }
+        }
+
         let sourceApp = "\(mountPoint)/\(appName)"
 
         guard !mountPoint.isEmpty, FileManager.default.fileExists(atPath: sourceApp) else {
-            shell("hdiutil detach '\(mountPoint)' -quiet -force 2>/dev/null")
+            shell("hdiutil detach '\(mountPoint)' -force 2>/dev/null")
             return "File cài đặt bị lỗi."
         }
 
@@ -147,12 +159,12 @@ class UpdateManager: NSObject, ObservableObject {
         let tempApp = "/tmp/GoNhanh-update.app"
         shell("rm -rf '\(tempApp)'")
         guard shell("cp -R '\(sourceApp)' '\(tempApp)'").ok else {
-            shell("hdiutil detach '\(mountPoint)' -quiet -force")
+            shell("hdiutil detach '\(mountPoint)' -force")
             return "Không thể chuẩn bị cài đặt."
         }
 
         // Unmount DMG
-        shell("hdiutil detach '\(mountPoint)' -quiet -force")
+        shell("hdiutil detach '\(mountPoint)' -force")
 
         // Background script: wait for app quit → replace → relaunch
         let script = """
