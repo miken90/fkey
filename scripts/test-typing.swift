@@ -41,15 +41,17 @@ func setConfig(_ config: String) {
 
 // TELEX: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ | s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
 // người=nguwowif, được=dduwowcj, trường=truwowngf, bình=binhf, định=ddinhj
-let telexInput = "vieejt nam xin chaof camr own nguwowif dduwowcj truwowngf khoong thaatj tooi laf developer code vieejt nam debug laf fix bugs nguwowngj khuyeenr chuyeenj quyeets ddinhj thuwowngf xuyeen hoaf binhf giaos ducj kinh tees xin looix tooi khoong bieets function nayf return gias trij variable tuwj ddoongj"
+// variable=varriable (varr để cancel dấu hỏi)
+let telexInput = "vieejt nam xin chaof camr own nguwowif dduwowcj truwowngf khoong thaatj tooi laf developer code vieejt nam debug laf fix bugs nguwowngj khuyeenr chuyeenj quyeets ddinhj thuwowngf xuyeen hoaf binhf giaos ducj kinh tees xin looix tooi khoong bieets function nayf return gias trij varriable tuwj ddoongj"
 
 // VNI: 6=^(â,ê,ô), 7=ơ/ư, 8=ă, 9=đ | 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
 let vniInput = "vie65t nam xin cha2o ca3m o7n ngu7o72i d9u7o75c tru7o72ng kho6ng tha65t to6i la2 developer code vie65t nam debug la2 fix bugs ngu7o75ng khuye63n chuye65n quye61t d9i5nh thu7o72ng xuye6n ho2a bi2nh gia1o du5c kinh te61 xin lo64i, to6i kho6ng bie61t. function na2y return gia1 tri5 variable tu75 d9o65ng"
 
 // Test configs: name, config value, test typing delay (µs)
 let testConfigs: [(String, String, UInt32)] = [
-    ("fast", "electron,8000,15000,8000", 30000),
-    ("slow", "electron,8000,15000,8000", 50000),
+    ("40ms", "electron,8000,15000,8000", 40000),
+    ("50ms", "electron,8000,15000,8000", 50000),
+    ("60ms", "electron,8000,15000,8000", 60000),
 ]
 
 func runTest(mode: String) {
