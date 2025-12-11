@@ -73,7 +73,7 @@ fi
 if [ -n "$AI_OUTPUT" ] && [ ${#AI_OUTPUT} -gt 20 ]; then
     echo "$AI_OUTPUT"
     echo ""
-    echo "> Release note được tạo bởi AI. Cảm ơn bạn đã sử dụng Gõ Nhanh."
+    echo "> Release note được tạo tự động bởi AI. Cảm ơn bạn đã sử dụng Gõ Nhanh."
 else
     # Fallback: generate simple release notes from commits
     echo "⚠️  AI generation failed, using fallback" >&2
