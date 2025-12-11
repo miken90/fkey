@@ -34,7 +34,7 @@
 |-----------|-------|
 | **Telex & VNI** | Chọn kiểu gõ quen thuộc của bạn |
 | **Đặt dấu thông minh** | Tự động đặt dấu đúng vị trí theo quy tắc ngữ âm (`hoà` hoặc `hòa`) |
-| **Tự nhận diện tiếng Anh** | Gõ `Claus`, `Windows`, `John` không bị thêm dấu — engine nhận diện từ không hợp lệ |
+| **Tự nhận diện tiếng Anh** | Gõ `Claus`, `Windows`, `Developer` không bị thêm dấu — engine nhận diện từ không hợp lệ |
 | **Gõ tắt** | Tạo phím tắt riêng (`vn` → `Việt Nam`, `ko` → `không`) |
 | **Gõ linh hoạt** | `Dod` → `Đo`, `duocwj` → `được` — thứ tự phím không quan trọng |
 | **Nhấn đúp để hủy** | `aa` → `â`, nhấn `a` thêm lần nữa → `aa` |
