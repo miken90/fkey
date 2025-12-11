@@ -65,8 +65,8 @@ func runTest(mode: String) {
 
         print(" [\(configName.uppercased())] Đang gõ...")
 
-        // Type config prefix first
-        typeString("[\(configName)] ")
+        // Type prefix with mode and config: [telex:medium:12000,25000,12000]
+        typeString("[\(mode):\(configName):\(configValue.replacingOccurrences(of: "electron,", with: ""))] ")
 
         // Type test input
         for char in testInput.lowercased() {
