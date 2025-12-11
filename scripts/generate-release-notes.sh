@@ -9,15 +9,15 @@
 VERSION="${1:-next}"
 FROM_REF="$2"
 
-# Determine starting point - prefer local tag (GitHub release may not exist yet)
+# Determine starting point - prefer GitHub release (actual published release)
 if [ -z "$FROM_REF" ]; then
-    # Get most recent tag from local git
-    FROM_REF=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+    # Get most recent release from GitHub (not local tags which may not be released yet)
+    FROM_REF=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
 fi
 
-# Fallback: get from GitHub release
+# Fallback: get from local tag
 if [ -z "$FROM_REF" ]; then
-    FROM_REF=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
+    FROM_REF=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 fi
 
 # Final fallback: last 20 commits
