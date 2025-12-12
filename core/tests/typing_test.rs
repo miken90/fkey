@@ -473,7 +473,7 @@ const TELEX_DELAYED_TONE: &[(&str, &str)] = &[
     ("tangx", "tãng"),
     ("sangj", "sạng"),
     // Words with circumflex (ô/ê/â) - need double vowel first
-    ("khoongf", "không"),
+    ("khoongf", "khồng"),
     ("hoongf", "hồng"),
     ("coongs", "công"),
     ("toongs", "tống"),
