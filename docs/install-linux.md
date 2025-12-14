@@ -25,6 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scrip
 | `gn telex` | Chuyển sang Telex |
 | `gn status` | Xem trạng thái |
 | `gn update` | Cập nhật phiên bản mới |
+| `gn uninstall` | Gỡ cài đặt |
+| `gn version` | Xem phiên bản |
 | `gn help` | Hiển thị trợ giúp |
 
 ---
@@ -32,11 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scrip
 ## Gỡ cài đặt
 
 ```bash
-rm -f ~/.local/lib/fcitx5/gonhanh.so ~/.local/lib/libgonhanh_core.so
-rm -f ~/.local/share/fcitx5/addon/gonhanh.conf ~/.local/share/fcitx5/inputmethod/gonhanh.conf
-rm -f ~/.local/bin/gn
-rm -rf ~/.config/gonhanh
-fcitx5 -r
+gn uninstall
 ```
 
 ---

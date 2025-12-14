@@ -55,6 +55,15 @@ case "$1" in
         echo -e "${B}[*]${N} Đang cập nhật..."
         curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scripts/install-linux.sh | bash
         ;;
+    uninstall)
+        echo -e "${Y}[!]${N} Gỡ cài đặt Gõ Nhanh..."
+        rm -f ~/.local/lib/fcitx5/gonhanh.so ~/.local/lib/libgonhanh_core.so
+        rm -f ~/.local/share/fcitx5/addon/gonhanh.conf ~/.local/share/fcitx5/inputmethod/gonhanh.conf
+        rm -rf ~/.local/share/gonhanh ~/.config/gonhanh
+        rm -f ~/.local/bin/gn
+        fcitx5 -r 2>/dev/null || true
+        echo -e "${G}[✓]${N} Đã gỡ cài đặt"
+        ;;
     help|-h|--help|*)
         echo -e "${B}Gõ Nhanh${N} v$VERSION - Vietnamese Input Method"
         echo ""
@@ -68,6 +77,7 @@ case "$1" in
         echo "  vni          Chuyển sang VNI"
         echo "  status       Xem trạng thái"
         echo "  update       Cập nhật phiên bản mới"
+        echo "  uninstall    Gỡ cài đặt"
         echo "  version      Xem phiên bản"
         echo "  help         Hiển thị trợ giúp"
         ;;
