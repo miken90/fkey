@@ -180,13 +180,8 @@ print_summary() {
     echo "    gn status    Xem trạng thái"
     echo "    gn help      Trợ giúp"
     echo ""
-
-    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        echo -e "  ${YELLOW}Chạy lệnh sau để dùng ngay:${NC}"
-        echo "    source ~/.bashrc"
-        echo ""
-    fi
-
+    echo -e "  ${YELLOW}Để dùng ngay, chạy:${NC}  source ~/.bashrc"
+    echo ""
     log_warn "Đăng xuất/đăng nhập lại để áp dụng đầy đủ"
     echo ""
 }
