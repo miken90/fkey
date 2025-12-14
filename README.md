@@ -71,7 +71,7 @@ Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại th
 
 Từ nhu cầu giải quyết vấn đề cá nhân, Gõ Nhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối và kế thừa từ **UniKey**, **OpenKey** và **EVKey**.
 
-Hy vọng dự án này truyền cảm hứng cho các sản phẩm Việt mã nguồn mở khác trong tương lai.
+Hy vọng Gõ Nhanh góp phần truyền cảm hứng cho cộng đồng mã nguồn mở tại Việt Nam.
 
 ---
 
