@@ -70,7 +70,7 @@ $DIFF_CONTENT
 AI_OUTPUT=""
 if command -v opencode &> /dev/null; then
     # Use perl timeout for macOS compatibility (no coreutils needed)
-    AI_OUTPUT=$(perl -e 'alarm 60; exec @ARGV' opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text' 2>/dev/null || echo "")
+    AI_OUTPUT=$(perl -e 'alarm 180; exec @ARGV' opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text' 2>/dev/null || echo "")
 fi
 
 # Validate AI output: must start with markdown header (## or emoji) not thinking text
