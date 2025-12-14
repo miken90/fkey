@@ -8,19 +8,33 @@ fi
 
 # Parse arguments
 CLEAN_INSTALL=false
-for arg in "$@"; do
-    case $arg in
+CUSTOM_VERSION=""
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --clean)
             CLEAN_INSTALL=true
             shift
+            ;;
+        --version|-v)
+            CUSTOM_VERSION="$2"
+            shift 2
             ;;
         --help|-h)
             echo "Usage: build-macos.sh [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --clean    Remove existing GoNhanh app and clear permissions before building"
-            echo "  --help     Show this help message"
+            echo "  --version, -v VERSION  Build with custom version (e.g., 0.9.0 for testing updates)"
+            echo "  --clean                Remove existing GoNhanh app and clear permissions before building"
+            echo "  --help                 Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  ./build-macos.sh                    # Build with version from git tag"
+            echo "  ./build-macos.sh -v 0.9.0           # Build with version 0.9.0 (test update)"
+            echo "  ./build-macos.sh --version 1.0.0   # Build with version 1.0.0"
             exit 0
+            ;;
+        *)
+            shift
             ;;
     esac
 done
@@ -86,10 +100,15 @@ fi
 
 echo "🍎 Building macOS app..."
 
-# Get version from git tag
-GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-VERSION=${GIT_TAG#v}  # Remove 'v' prefix
-echo "📌 Version from git tag: $VERSION"
+# Get version
+if [ -n "$CUSTOM_VERSION" ]; then
+    VERSION="$CUSTOM_VERSION"
+    echo "📌 Version (custom): $VERSION"
+else
+    GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+    VERSION=${GIT_TAG#v}  # Remove 'v' prefix
+    echo "📌 Version (git tag): $VERSION"
+fi
 
 # Build macOS app with xcodebuild
 cd "$(dirname "$0")/../platforms/macos"
