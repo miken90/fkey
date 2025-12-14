@@ -1043,14 +1043,6 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
   - Xóa mục 12 (Thuật toán Xác nhận Âm tiết) - đã có trong [validation-algorithm.md](./validation-algorithm.md)
 
 - **2025-12-08**: Bổ sung Quy tắc Chính tả và Ràng buộc Âm vị học
-│
-├── "Duoc" + j → "Được" ✓
-│   └── "Duoc" là âm tiết hợp lệ → cho phép replace
-│
-├── "Clau" + s → "Claus" (giữ nguyên)
-│   └── "Cl" không phải phụ âm đầu hợp lệ → không replace
-│
-├── "HTTP" + s → "HTTPs" (giữ nguyên)
 │   └── Không có nguyên âm → không phải tiếng Việt
 │
 └── "John" + s → "Johns" (giữ nguyên)
