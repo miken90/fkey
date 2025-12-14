@@ -27,22 +27,6 @@ curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scrip
 | `gn update` | Cập nhật phiên bản mới |
 | `gn help` | Hiển thị trợ giúp |
 
-### Telex (mặc định)
-
-| Gõ | Kết quả |
-|----|---------|
-| `as`, `af`, `ar`, `ax`, `aj` | á, à, ả, ã, ạ |
-| `aa`, `aw`, `ee`, `oo` | â, ă, ê, ô |
-| `ow`, `uw`, `dd` | ơ, ư, đ |
-
-### VNI
-
-| Gõ | Kết quả |
-|----|---------|
-| `a1`, `a2`, `a3`, `a4`, `a5` | á, à, ả, ã, ạ |
-| `a6`, `a8`, `o6`, `e6` | â, ă, ô, ê |
-| `o7`, `u7`, `d9` | ơ, ư, đ |
-
 ---
 
 ## Gỡ cài đặt
