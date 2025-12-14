@@ -19,6 +19,8 @@ curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scrip
 | Lệnh | Chức năng |
 |------|-----------|
 | `gn` | Toggle bật/tắt |
+| `gn on` | Bật tiếng Việt |
+| `gn off` | Tắt tiếng Việt |
 | `gn vni` | Chuyển sang VNI |
 | `gn telex` | Chuyển sang Telex |
 | `gn status` | Xem trạng thái |
