@@ -43,22 +43,23 @@ fi
 
 echo "📊 Found $(echo "$COMMITS" | wc -l | tr -d ' ') commits" >&2
 
-# Try AI-generated release notes first
-PROMPT="Tạo release notes cho version $VERSION của 'Gõ Nhanh' (Vietnamese IME for macOS).
-Quy tắc:
-- Phân tích code changes để hiểu thay đổi thực sự, không chỉ dựa vào commit message
-- Nhóm theo: 🐛 Sửa lỗi, ⚡ Cải thiện, 🔧 Khác (bỏ section rỗng)
-- Mỗi item: 1 dòng, súc tích, mô tả user-facing changes
-- Viết tiếng Việt (có thể dùng keywords tiếng Anh như build, config, API...)
-- Chỉ output markdown, không giải thích thêm
+# Build AI prompt
+PROMPT="Generate release notes for 'Gõ Nhanh' $VERSION (Vietnamese IME for macOS).
 
-## Commits:
+Rules:
+- Analyze actual code changes, not just commit messages
+- Group by: ✨ New (new features), 🐛 Fixed (bug fixes), ⚡ Improved (enhancements) - skip empty sections
+- Each item: 1 line, concise, describe user-facing impact
+- Write in Vietnamese (technical terms in English OK)
+- Output markdown only, no explanations
+
+Commits:
 $COMMITS
 
-## Files changed:
+Files changed:
 $DIFF_STAT
 
-## Code changes (snippet):
+Code diff (truncated):
 $DIFF_CONTENT
 "
 
@@ -72,8 +73,6 @@ fi
 # If AI output is valid (non-empty and has actual content), use it
 if [ -n "$AI_OUTPUT" ] && [ ${#AI_OUTPUT} -gt 20 ]; then
     echo "$AI_OUTPUT"
-    echo ""
-    echo "> Release note được tạo tự động bởi AI. Cảm ơn bạn đã sử dụng Gõ Nhanh."
 else
     # Fallback: generate simple release notes from commits
     echo "⚠️  AI generation failed, using fallback" >&2
