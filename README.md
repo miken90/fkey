@@ -23,11 +23,23 @@
 
 ## 📥 Tải về & Cài đặt
 
-| Nền tảng | Trạng thái | Tải xuống | Hướng dẫn |
-|:---------|:----------:|:---------:|:----------|
-| **macOS** | ✅ Sẵn sàng | [📥 **Tải GoNhanh.dmg**](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md) |
-| **Linux** | ✅ Sẵn sàng | `curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scripts/install-linux.sh \| bash` | [Xem hướng dẫn](docs/install-linux.md) |
-| **Windows** | 🗓️ Sắp ra mắt | — | [Xem lộ trình](docs/install-windows.md) |
+### macOS
+
+[![Download macOS](https://img.shields.io/badge/Tải_GoNhanh.dmg-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg)
+
+→ [Hướng dẫn cài đặt](docs/install-macos.md)
+
+### Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scripts/install-linux.sh | bash
+```
+
+→ [Hướng dẫn cài đặt](docs/install-linux.md)
+
+### Windows
+
+🗓️ Sắp ra mắt → [Xem lộ trình](docs/install-windows.md)
 
 ## ✨ Tính năng chính
 
