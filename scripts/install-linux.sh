@@ -22,11 +22,14 @@ install_fcitx5() {
     echo "→ Đang cài đặt Fcitx5..."
     if command -v apt &>/dev/null; then
         sudo apt update -qq
-        sudo apt install -y -qq fcitx5 fcitx5-configtool im-config
+        sudo apt install -y -qq fcitx5 im-config || sudo apt install -y -qq fcitx5
+        sudo apt install -y -qq fcitx5-configtool 2>/dev/null || true
     elif command -v dnf &>/dev/null; then
-        sudo dnf install -y -q fcitx5 fcitx5-configtool
+        sudo dnf install -y -q fcitx5
+        sudo dnf install -y -q fcitx5-configtool 2>/dev/null || true
     elif command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm --quiet fcitx5 fcitx5-configtool
+        sudo pacman -S --noconfirm --quiet fcitx5
+        sudo pacman -S --noconfirm --quiet fcitx5-configtool 2>/dev/null || true
     else
         echo "✗ Không hỗ trợ distro này. Vui lòng cài fcitx5 thủ công."
         exit 1
