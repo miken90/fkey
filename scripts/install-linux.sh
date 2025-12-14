@@ -3,8 +3,8 @@
 # curl -fsSL https://raw.githubusercontent.com/khaphanspace/gonhanh.org/main/scripts/install-linux.sh | bash
 
 REPO="khaphanspace/gonhanh.org"
-VERSION="1.0.0"
 TMP=$(mktemp -d)
+VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/' || echo "1.0.0")
 trap "rm -rf $TMP" EXIT
 
 # Colors
@@ -21,9 +21,9 @@ log_error() { echo -e "${RED}[✗]${NC} $1"; }
 
 header() {
     echo ""
-    echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║${NC}       Gõ Nhanh v$VERSION - Linux        ${GREEN}║${NC}"
-    echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}  Gõ Nhanh v${VERSION} - Linux Installer${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 }
 
@@ -166,9 +166,9 @@ start_fcitx5() {
 # Print final summary
 print_summary() {
     echo ""
-    echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║${NC}         Cài đặt hoàn tất!             ${GREEN}║${NC}"
-    echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}  Cài đặt hoàn tất!${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     echo -e "  ${BLUE}Phím tắt:${NC}  Ctrl+Space hoặc Super+Space"
     echo ""
