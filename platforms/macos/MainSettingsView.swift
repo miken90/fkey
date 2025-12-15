@@ -189,7 +189,7 @@ struct ExcludedApp: Identifiable {
 // MARK: - Main Settings View
 
 struct MainSettingsView: View {
-    @StateObject private var appState = AppState.shared
+    @ObservedObject private var appState = AppState.shared
     @State private var selectedPage: NavigationPage = .settings
     @Environment(\.colorScheme) private var colorScheme
 
