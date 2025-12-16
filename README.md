@@ -40,7 +40,7 @@
 - 🔍 **Fix lỗi Chrome/Spotlight/Claude Code/JetBrains** - Tự động sửa dính chữ trong address bar, thanh tìm kiếm
 - 🔤 **Tự nhận diện** — `fix` `just` `fuji` `shisa` → giữ nguyên. Tự phân biệt Anh/Việt
 - ⎋ **Gõ ESC tự khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`. Không cần tắt bộ gõ khi gõ tiếng Anh!
-- ⚡ **Siêu nhanh** — <1ms latency · ~5MB RAM. Hỗ trợ đa nền tảng trên cùng 1 core
+- ⚡ **Siêu nhanh** — <1ms latency · ~5MB RAM. Hỗ trợ đa nền tảng trên cùng một engine
 
 ### 📋 Đầy đủ
 
