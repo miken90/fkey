@@ -143,21 +143,30 @@ struct UpdateView: View {
             .padding(.top, 28)
             .padding(.bottom, 20)
 
-            // Release notes
-            let notes = info.releaseNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !notes.isEmpty {
+            // Release notes - strip markdown headers for cleaner display
+            let rawNotes = info.releaseNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            let cleanNotes = rawNotes
+                .replacingOccurrences(of: "## What's Changed\n\n", with: "")
+                .replacingOccurrences(of: "### ✨ New Features\n", with: "✨ Tính năng mới:\n")
+                .replacingOccurrences(of: "### 🐛 Bug Fixes\n", with: "\n🐛 Sửa lỗi:\n")
+                .replacingOccurrences(of: "### ⚡ Improvements\n", with: "\n⚡ Cải thiện:\n")
+                .replacingOccurrences(of: "**Full Changelog**:", with: "")
+                .replacingOccurrences(of: #"https://github\.com/[^\s]+"#, with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if !cleanNotes.isEmpty {
                 ScrollView {
-                    Text(notes)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                    Text(cleanNotes)
+                        .font(.system(size: 11))
+                        .foregroundStyle(colorScheme == .dark ? .white.opacity(0.8) : .primary.opacity(0.8))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .lineSpacing(3)
+                        .lineSpacing(4)
                 }
-                .frame(maxHeight: 100)
+                .frame(maxHeight: 120)
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
+                        .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 20)
