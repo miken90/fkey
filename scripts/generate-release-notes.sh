@@ -1,97 +1,137 @@
 #!/bin/bash
-# Generate release notes using AI (opencode CLI)
+# Generate release notes using Claude Code CLI
 # Usage: ./generate-release-notes.sh [version] [from-ref]
 # Examples:
-#   ./generate-release-notes.sh                    # from last local tag to HEAD
-#   ./generate-release-notes.sh v1.0.18            # from last local tag to HEAD
+#   ./generate-release-notes.sh                    # from last GitHub release to HEAD
+#   ./generate-release-notes.sh v1.0.18            # from last GitHub release to HEAD
 #   ./generate-release-notes.sh v1.0.18 v1.0.17   # from v1.0.17 to HEAD
+#
+# STRICT MODE: Script will FAIL if release notes cannot be generated properly.
+# No fallbacks - ensures every release has quality notes.
+
+set -e  # Exit on any error
 
 VERSION="${1:-next}"
 FROM_REF="$2"
 
-# Determine starting point - prefer GitHub release (actual published release)
+# Colors for terminal output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+error() { echo -e "${RED}❌ $1${NC}" >&2; exit 1; }
+info() { echo -e "${YELLOW}$1${NC}" >&2; }
+success() { echo -e "${GREEN}$1${NC}" >&2; }
+
+# Check required tools
+command -v claude &> /dev/null || error "Claude Code CLI not found. Install: https://docs.anthropic.com/en/docs/claude-code"
+command -v gh &> /dev/null || error "GitHub CLI (gh) not found"
+
+# Determine FROM_REF - strictly from GitHub releases only
 if [ -z "$FROM_REF" ]; then
-    # Get most recent release from GitHub (not local tags which may not be released yet)
-    FROM_REF=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
+    info "📍 Getting last release from GitHub..."
+    FROM_REF=$(gh release view --json tagName -q .tagName 2>/dev/null) || error "No previous release found on GitHub. Use: $0 $VERSION <from-ref>"
 fi
 
-# Fallback: get from local tag
-if [ -z "$FROM_REF" ]; then
-    FROM_REF=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+info "📝 Generating release notes: $FROM_REF → HEAD"
+
+# Validate FROM_REF exists
+git rev-parse "$FROM_REF" &>/dev/null || error "Reference '$FROM_REF' not found in git history"
+
+# Get commit list (exclude release commits and merge commits)
+COMMITS=$(git log "$FROM_REF"..HEAD --pretty=format:"%s|%h|%an" --no-merges 2>/dev/null | grep -v "^release:" || true)
+
+if [ -z "$COMMITS" ]; then
+    error "No commits found between $FROM_REF and HEAD (excluding release commits)"
 fi
 
-# Final fallback: last 20 commits
-if [ -z "$FROM_REF" ]; then
-    FROM_REF="HEAD~20"
-fi
+COMMIT_COUNT=$(echo "$COMMITS" | wc -l | tr -d ' ')
+info "📊 Found $COMMIT_COUNT commits"
 
-echo "📝 Generating release notes: $FROM_REF → HEAD" >&2
+# Format commits for readability
+FORMATTED_COMMITS=$(echo "$COMMITS" | while IFS='|' read -r msg hash author; do
+    echo "- $msg ($hash) by $author"
+done)
 
-# Get commit list
-COMMITS=$(git log "$FROM_REF"..HEAD --pretty=format:"- %s (%h)" 2>/dev/null)
-
-# Get diff summary (files changed + stats)
+# Get diff summary
 DIFF_STAT=$(git diff "$FROM_REF"..HEAD --stat 2>/dev/null)
 
-# Get detailed diff (limited to avoid being too long)
-DIFF_CONTENT=$(git diff "$FROM_REF"..HEAD --no-color 2>/dev/null | head -500)
+# Get detailed diff (limited)
+DIFF_CONTENT=$(git diff "$FROM_REF"..HEAD --no-color 2>/dev/null | head -800)
 
-if [ -z "$COMMITS" ] && [ -z "$DIFF_STAT" ]; then
-    echo "No changes found from $FROM_REF to HEAD" >&2
-    exit 1
-fi
+# Build prompt for Claude
+PROMPT="Generate release notes for 'Gõ Nhanh' $VERSION (Vietnamese IME for macOS/Linux).
 
-echo "📊 Found $(echo "$COMMITS" | wc -l | tr -d ' ') commits" >&2
+OUTPUT FORMAT - Follow this EXACTLY:
+## What's Changed
 
-# Build AI prompt
-PROMPT="Generate release notes for 'Gõ Nhanh' $VERSION (Vietnamese IME for macOS).
+### ✨ New Features
+- Feature description here
 
-CRITICAL: Output ONLY the markdown release notes. NO preamble, NO explanation, NO thinking.
-Start directly with ## or emoji header.
+### 🐛 Bug Fixes
+- Fix description here
 
-Rules:
-- Analyze actual code changes, not just commit messages
-- Group by: ✨ New (new features), 🐛 Fixed (bug fixes), ⚡ Improved (enhancements) - skip empty sections
-- Each item: 1 line, concise, describe user-facing impact
-- Write in Vietnamese (technical terms in English OK)
-- Output markdown only, no explanations, no intro text
+### ⚡ Improvements
+- Improvement description here
 
-Commits:
-$COMMITS
+**Full Changelog**: https://github.com/khaphanspace/gonhanh.org/compare/$FROM_REF...$VERSION
 
-Files changed:
+RULES:
+1. Output ONLY markdown, start with '## What's Changed'
+2. Group by type: Features (new), Fixes (bugs), Improvements (refactor/perf/docs)
+3. Skip empty sections - only include sections with actual changes
+4. Each item: 1 line, user-facing impact, Vietnamese preferred (tech terms in English OK)
+5. Platform prefix if applicable: (macOS), (Linux)
+6. Combine related commits into single items
+7. Ignore: release commits, version bumps, trivial changes
+
+COMMITS ($COMMIT_COUNT):
+$FORMATTED_COMMITS
+
+FILES CHANGED:
 $DIFF_STAT
 
-Code diff (truncated):
-$DIFF_CONTENT
-"
+CODE DIFF (truncated):
+$DIFF_CONTENT"
 
-# Try opencode first, with timeout (macOS compatible)
-AI_OUTPUT=""
-if command -v opencode &> /dev/null; then
-    # Use perl timeout for macOS compatibility (no coreutils needed)
-    AI_OUTPUT=$(perl -e 'alarm 180; exec @ARGV' opencode run --format json "$PROMPT" 2>/dev/null | jq -r 'select(.type == "text") | .part.text' 2>/dev/null || echo "")
-fi
+info "🤖 Calling Claude Code..."
 
-# Validate AI output: must start with markdown header (## or emoji) not thinking text
-is_valid_release_notes() {
+# Call Claude Code with strict settings
+AI_OUTPUT=$(claude -p --output-format text --dangerously-skip-permissions "$PROMPT" 2>/dev/null) || error "Claude Code failed to execute"
+
+# Validate output quality
+validate_release_notes() {
     local text="$1"
-    # Check if starts with ## or common emoji headers (✨🐛⚡)
-    if echo "$text" | head -1 | grep -qE '^(##|✨|🐛|⚡|\*\*)'; then
-        return 0
-    fi
-    return 1
+
+    # Must not be empty
+    [ -z "$text" ] && return 1
+
+    # Must be at least 50 chars (meaningful content)
+    [ ${#text} -lt 50 ] && return 1
+
+    # Must start with proper header
+    echo "$text" | head -1 | grep -qE '^##' || return 1
+
+    # Must contain at least one section (✨ or 🐛 or ⚡)
+    echo "$text" | grep -qE '(✨|🐛|⚡|###)' || return 1
+
+    # Must contain changelog link
+    echo "$text" | grep -q "Full Changelog" || return 1
+
+    # Must not contain AI preamble/thinking
+    echo "$text" | head -3 | grep -qiE '(here|let me|i will|certainly|sure)' && return 1
+
+    return 0
 }
 
-# If AI output is valid (non-empty, has content, and looks like release notes)
-if [ -n "$AI_OUTPUT" ] && [ ${#AI_OUTPUT} -gt 20 ] && is_valid_release_notes "$AI_OUTPUT"; then
+if validate_release_notes "$AI_OUTPUT"; then
+    success "✅ Release notes generated successfully"
     echo "$AI_OUTPUT"
 else
-    # Fallback: generate simple release notes from commits
-    echo "⚠️  AI generation failed, using fallback" >&2
-    echo "## What's Changed"
-    echo ""
-    echo "$COMMITS"
-    echo ""
-    echo "**Full Changelog**: https://github.com/khaphanspace/gonhanh.org/compare/$FROM_REF...$VERSION"
+    error "Generated release notes failed validation. Output was:
+---
+$AI_OUTPUT
+---
+Please check Claude Code configuration or generate manually."
 fi
