@@ -688,6 +688,20 @@ impl Engine {
 
     /// Handle normal letter input
     fn handle_normal_letter(&mut self, key: u16, caps: bool) -> Result {
+        // Special case: "o" after "w→ư" should form "ươ" compound
+        // This allows typing "ddwocj" → "được" instead of "đưọc"
+        if key == keys::O && matches!(self.last_transform, Some(Transform::WAsVowel)) {
+            // Add O with horn to form ươ compound
+            let mut c = Char::new(key, caps);
+            c.tone = tone::HORN;
+            self.buf.push(c);
+            self.last_transform = None;
+
+            // Return the ơ character (o with horn)
+            let vowel_char = chars::to_char(keys::O, caps, tone::HORN, 0).unwrap();
+            return Result::send(0, &[vowel_char]);
+        }
+
         self.last_transform = None;
         if keys::is_letter(key) {
             self.buf.push(Char::new(key, caps));

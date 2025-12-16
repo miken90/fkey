@@ -260,6 +260,12 @@ const TELEX_COMMON_ISSUES: &[(&str, &str)] = &[
     ("DD", "Đ"),
     // Issue 2.4: Lặp chữ (được -> đđược)
     ("dduwowcj", "được"),
+    // Issue #14: Alternative typing with wo → ươ compound
+    ("ddwocj", "được"),
+    ("nwocj", "nược"),
+    ("swongs", "sướng"),
+    ("bwomf", "bườm"),
+    ("twoir", "tưởi"),
     ("ddif", "đì"),
     ("ddi", "đi"),
     ("ddang", "đang"),
