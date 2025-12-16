@@ -668,125 +668,111 @@ struct AuthorLink: View {
 
 // MARK: - Shortcut Recorder
 
+/// System shortcuts that cannot be overridden by apps
+private let systemShortcuts: Set<String> = [
+    "⌘Space", "⌘⇥", "⌘Q", "⌘W", "⌘H", "⌘M",  // App shortcuts
+    "⌘⇧3", "⌘⇧4", "⌘⇧5",                      // Screenshots
+    "⌃↑", "⌃↓", "⌃←", "⌃→",                    // Spaces navigation
+]
+
 struct ShortcutRecorderRow: View {
     @Binding var shortcut: KeyboardShortcut
     @Binding var isRecording: Bool
 
     @State private var hovered = false
-    @State private var didCancel = false
-    @State private var keyMonitor: Any?
-    @State private var globalMonitor: Any?
-    @State private var clickMonitor: Any?
-    @State private var focusObserver: Any?
+    @State private var eventMonitors: [Any] = []
+    @State private var notificationObserver: NSObjectProtocol?
+
+    private var hasConflict: Bool { systemShortcuts.contains(shortcut.displayParts.joined()) }
 
     var body: some View {
         HStack {
             Text("Phím tắt bật/tắt")
                 .font(.system(size: 13))
-                .foregroundColor(Color(NSColor.labelColor))
             Spacer()
-
-            ZStack {
-                if isRecording {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 6, height: 6)
-                        Text("Nhấn phím...")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundColor(Color.accentColor)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                } else {
-                    HStack(spacing: 4) {
-                        ForEach(shortcut.displayParts, id: \.self) { part in
-                            KeyCap(text: part)
-                        }
-                    }
-                }
-            }
-            .frame(minWidth: 80, alignment: .trailing)
+            shortcutDisplay
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(hovered ? Color(NSColor.controlBackgroundColor).opacity(0.3) : Color.clear)
+        .background((hovered || isRecording) ? Color(NSColor.controlBackgroundColor).opacity(0.3) : .clear)
         .contentShape(Rectangle())
         .onHover { hovered = $0 }
-        .onTapGesture {
-            if didCancel {
-                didCancel = false
-                return
-            }
-            if !isRecording { startRecording() }
-        }
+        .onTapGesture { isRecording ? stopRecording() : startRecording() }
         .onDisappear { stopRecording() }
     }
 
+    @ViewBuilder
+    private var shortcutDisplay: some View {
+        HStack(spacing: 4) {
+            if isRecording {
+                Text("Nhấn phím...")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.accentColor)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(RoundedRectangle(cornerRadius: 4).stroke(Color.accentColor, lineWidth: 1))
+            } else {
+                ForEach(shortcut.displayParts, id: \.self) { KeyCap(text: $0) }
+                if hasConflict {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.orange)
+                        .help("Phím tắt này có thể xung đột với hệ thống")
+                }
+            }
+        }
+    }
+
+    // MARK: - Recording
+
     private func startRecording() {
-        guard !isRecording else { return }
         isRecording = true
+        let events: NSEvent.EventTypeMask = [.keyDown, .flagsChanged]
 
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            handleKey(event)
-            return nil
-        }
+        eventMonitors = [
+            NSEvent.addLocalMonitorForEvents(matching: events) { handleKey($0); return nil },
+            NSEvent.addGlobalMonitorForEvents(matching: events) { handleKey($0) }
+        ].compactMap { $0 }
 
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            handleKey(event)
-        }
-
-        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { event in
-            stopRecording()
-            return event
-        }
-
-        focusObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            stopRecording()
-        }
+        notificationObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: nil, queue: .main
+        ) { [self] _ in stopRecording() }
     }
 
     private func handleKey(_ event: NSEvent) {
-        if event.keyCode == 0x35 {
-            stopRecording()
+        if event.keyCode == 0x35 { stopRecording(); return }  // ESC cancels
+
+        let mods = event.modifierFlags.intersection([.control, .option, .shift, .command])
+        let flags = modifiersToFlags(mods)
+        let count = [mods.contains(.control), mods.contains(.option), mods.contains(.shift), mods.contains(.command)].filter { $0 }.count
+
+        if event.type == .flagsChanged {
+            guard count >= 2 else { return }  // Modifier-only: require 2+ modifiers
+            shortcut = KeyboardShortcut(keyCode: 0xFFFF, modifiers: flags)
+        } else if !mods.isEmpty {
+            shortcut = KeyboardShortcut(keyCode: event.keyCode, modifiers: flags)
+        } else {
             return
         }
-
-        let modifiers = event.modifierFlags.intersection([.control, .option, .shift, .command])
-        guard !modifiers.isEmpty else { return }
-
-        var flags: UInt64 = 0
-        if modifiers.contains(.control) { flags |= CGEventFlags.maskControl.rawValue }
-        if modifiers.contains(.option) { flags |= CGEventFlags.maskAlternate.rawValue }
-        if modifiers.contains(.shift) { flags |= CGEventFlags.maskShift.rawValue }
-        if modifiers.contains(.command) { flags |= CGEventFlags.maskCommand.rawValue }
-
-        shortcut = KeyboardShortcut(keyCode: event.keyCode, modifiers: flags)
         stopRecording()
     }
 
-    private func stopRecording() {
-        didCancel = true
+    private func modifiersToFlags(_ mods: NSEvent.ModifierFlags) -> UInt64 {
+        var flags: UInt64 = 0
+        if mods.contains(.control) { flags |= CGEventFlags.maskControl.rawValue }
+        if mods.contains(.option) { flags |= CGEventFlags.maskAlternate.rawValue }
+        if mods.contains(.shift) { flags |= CGEventFlags.maskShift.rawValue }
+        if mods.contains(.command) { flags |= CGEventFlags.maskCommand.rawValue }
+        return flags
+    }
 
-        if let monitor = keyMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyMonitor = nil
-        }
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalMonitor = nil
-        }
-        if let monitor = clickMonitor {
-            NSEvent.removeMonitor(monitor)
-            clickMonitor = nil
-        }
-        if let observer = focusObserver {
+    private func stopRecording() {
+        eventMonitors.forEach { NSEvent.removeMonitor($0) }
+        eventMonitors.removeAll()
+
+        if let observer = notificationObserver {
             NotificationCenter.default.removeObserver(observer)
-            focusObserver = nil
+            notificationObserver = nil
         }
 
         isRecording = false

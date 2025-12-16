@@ -93,6 +93,8 @@ pub struct Engine {
     shortcuts: ShortcutTable,
     /// Raw keystroke history for ESC restore (key, caps)
     raw_input: Vec<(u16, bool)>,
+    /// Raw mode: skip Vietnamese transforms after prefix chars (@ # $ ^ : > ?)
+    raw_mode: bool,
 }
 
 impl Default for Engine {
@@ -110,6 +112,7 @@ impl Engine {
             last_transform: None,
             shortcuts: ShortcutTable::with_defaults(),
             raw_input: Vec::with_capacity(64),
+            raw_mode: false,
         }
     }
 
@@ -151,6 +154,25 @@ impl Engine {
         self.on_key_ext(key, caps, ctrl, false)
     }
 
+    /// Check if key+shift combo is a raw mode prefix character
+    /// Raw prefixes: @ # : /
+    fn is_raw_prefix(key: u16, shift: bool) -> bool {
+        // / doesn't need shift
+        if key == keys::SLASH && !shift {
+            return true;
+        }
+        // @ # : need shift
+        if !shift {
+            return false;
+        }
+        matches!(
+            key,
+            keys::N2              // @ = Shift+2
+                | keys::N3        // # = Shift+3
+                | keys::SEMICOLON // : = Shift+;
+        )
+    }
+
     /// Handle key event with extended parameters
     ///
     /// # Arguments
@@ -161,6 +183,13 @@ impl Engine {
     pub fn on_key_ext(&mut self, key: u16, caps: bool, ctrl: bool, shift: bool) -> Result {
         if !self.enabled || ctrl {
             self.clear();
+            return Result::none();
+        }
+
+        // Raw mode prefix detection: when buffer is empty and user types @ # $ ^ : > ?
+        // Enable raw mode to skip Vietnamese transforms for subsequent letters
+        if self.buf.is_empty() && Self::is_raw_prefix(key, shift) {
+            self.raw_mode = true;
             return Result::none();
         }
 
@@ -201,6 +230,12 @@ impl Engine {
 
     /// Main processing pipeline - pattern-based
     fn process(&mut self, key: u16, caps: bool, shift: bool) -> Result {
+        // Raw mode: skip all Vietnamese transforms, just pass through letters
+        // Enabled by typing @ # $ ^ : > ? at start of input (like JOKey)
+        if self.raw_mode {
+            return self.handle_normal_letter(key, caps);
+        }
+
         let m = input::get(self.method);
 
         // In VNI mode, if Shift is pressed with a number key, skip all modifiers
@@ -911,6 +946,7 @@ impl Engine {
         self.buf.clear();
         self.raw_input.clear();
         self.last_transform = None;
+        self.raw_mode = false;
     }
 
     /// Restore buffer to raw ASCII (undo all Vietnamese transforms)
@@ -951,7 +987,7 @@ impl Engine {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::{telex, vni};
+    use crate::utils::{raw_mode, telex, vni};
 
     const TELEX_BASIC: &[(&str, &str)] = &[
         ("as", "á"),
@@ -1003,6 +1039,23 @@ mod tests {
         ("d9\x1b", "d9"),         // đ → d9
     ];
 
+    // Raw mode test cases: typing prefix (@, #, :, /) at start skips Vietnamese transforms
+    // Like JOKey's feature: @gox → @gox (NOT @gõ)
+    const RAW_MODE_PREFIX: &[(&str, &str)] = &[
+        ("@gox", "@gox"),         // @ prefix: "gox" stays raw
+        ("@text", "@text"),       // @ prefix: "text" stays raw
+        ("#hashtag", "#hashtag"), // # prefix
+        (":smile:", ":smile:"),   // : prefix (emoji shortcut)
+        ("/command", "/command"), // / prefix (slash command)
+    ];
+
+    // Normal mode (without prefix): Vietnamese transforms apply
+    const RAW_MODE_NORMAL: &[(&str, &str)] = &[
+        ("gox", "gõ"),      // Without prefix: "gox" → "gõ"
+        ("text", "tẽt"),    // Without prefix: Vietnamese transforms
+        ("vieejt", "việt"), // Normal Vietnamese typing
+    ];
+
     #[test]
     fn test_telex_basic() {
         telex(TELEX_BASIC);
@@ -1026,5 +1079,16 @@ mod tests {
     #[test]
     fn test_vni_esc_restore() {
         vni(VNI_ESC_RESTORE);
+    }
+
+    #[test]
+    fn test_raw_mode_prefix() {
+        raw_mode(RAW_MODE_PREFIX);
+    }
+
+    #[test]
+    fn test_raw_mode_normal() {
+        // Without prefix, Vietnamese transforms should still apply
+        telex(RAW_MODE_NORMAL);
     }
 }

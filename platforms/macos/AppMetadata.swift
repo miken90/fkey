@@ -89,7 +89,8 @@ struct KeyboardShortcut: Codable, Equatable {
         if flags.contains(.maskAlternate) { parts.append("⌥") }
         if flags.contains(.maskShift) { parts.append("⇧") }
         if flags.contains(.maskCommand) { parts.append("⌘") }
-        parts.append(keyCodeToString(keyCode))
+        let keyStr = keyCodeToString(keyCode)
+        if !keyStr.isEmpty { parts.append(keyStr) }  // Skip for modifier-only shortcuts
         return parts
     }
 
@@ -151,6 +152,7 @@ struct KeyboardShortcut: Codable, Equatable {
         case 0x2E: return "M"
         case 0x2F: return "."
         case 0x32: return "`"
+        case 0xFFFF: return ""  // Modifier-only shortcut (no key)
         default: return "?"
         }
     }

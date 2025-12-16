@@ -367,7 +367,7 @@ class KeyboardHookManager {
 // MARK: - Keyboard Callback
 
 private let kEventMarker: Int64 = 0x474E4820  // "GNH "
-private var wasCtrlShiftPressed = false  // Track Ctrl+Shift state for toggle detection
+private var wasModifierShortcutPressed = false  // Track modifier-only shortcut state for toggle detection
 private var currentShortcut = KeyboardShortcut.load()  // Load saved shortcut
 
 // Observer for shortcut changes
@@ -384,7 +384,10 @@ func setupShortcutObserver() {
     }
 }
 
+/// Check if a key+modifier combination matches the saved toggle shortcut
 private func matchesToggleShortcut(keyCode: UInt16, flags: CGEventFlags) -> Bool {
+    // Skip modifier-only shortcuts here (handled in flagsChanged)
+    guard currentShortcut.keyCode != 0xFFFF else { return false }
     guard keyCode == currentShortcut.keyCode else { return false }
 
     let savedFlags = CGEventFlags(rawValue: currentShortcut.modifiers)
@@ -401,6 +404,22 @@ private func matchesToggleShortcut(keyCode: UInt16, flags: CGEventFlags) -> Bool
     return true
 }
 
+/// Check if current modifier flags match a modifier-only shortcut
+private func matchesModifierOnlyShortcut(flags: CGEventFlags) -> Bool {
+    // Only for modifier-only shortcuts (keyCode = 0xFFFF)
+    guard currentShortcut.keyCode == 0xFFFF else { return false }
+
+    let savedFlags = CGEventFlags(rawValue: currentShortcut.modifiers)
+
+    // Check exact modifier match
+    let ctrl = savedFlags.contains(.maskControl) == flags.contains(.maskControl)
+    let alt = savedFlags.contains(.maskAlternate) == flags.contains(.maskAlternate)
+    let shift = savedFlags.contains(.maskShift) == flags.contains(.maskShift)
+    let cmd = savedFlags.contains(.maskCommand) == flags.contains(.maskCommand)
+
+    return ctrl && alt && shift && cmd
+}
+
 private func keyboardCallback(
     proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
@@ -412,14 +431,13 @@ private func keyboardCallback(
 
     let flags = event.flags
 
-    // Handle Ctrl+Shift toggle (modifier-only shortcut)
+    // Handle modifier-only shortcuts (Ctrl+Shift, Cmd+Option, etc.)
     if type == .flagsChanged {
-        let isCtrlShift = flags.contains(.maskControl) && flags.contains(.maskShift) && !flags.contains(.maskCommand)
-        if isCtrlShift {
-            wasCtrlShiftPressed = true
-        } else if wasCtrlShiftPressed {
-            // Ctrl+Shift was pressed and now one is released - toggle
-            wasCtrlShiftPressed = false
+        if matchesModifierOnlyShortcut(flags: flags) {
+            wasModifierShortcutPressed = true
+        } else if wasModifierShortcutPressed {
+            // Modifier combo was pressed and now released - toggle
+            wasModifierShortcutPressed = false
             DispatchQueue.main.async { NotificationCenter.default.post(name: .toggleVietnamese, object: nil) }
         }
         return Unmanaged.passUnretained(event)
@@ -427,8 +445,8 @@ private func keyboardCallback(
 
     guard type == .keyDown else { return Unmanaged.passUnretained(event) }
 
-    // Reset Ctrl+Shift state if any key is pressed while modifiers are held
-    wasCtrlShiftPressed = false
+    // Reset modifier state if any key is pressed while modifiers are held
+    wasModifierShortcutPressed = false
 
     if event.getIntegerValueField(.eventSourceUserData) == kEventMarker {
         Log.skip()

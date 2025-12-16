@@ -276,6 +276,91 @@ mod test_utils {
             assert_eq!(result, *expected, "[VNI] '{}' → '{}'", input, result);
         }
     }
+
+    /// Simulate typing with extended parameters (supports raw mode prefix)
+    /// Input format: use special prefixes to trigger shift+key:
+    /// - "@" triggers Shift+2
+    /// - "#" triggers Shift+3
+    /// - ":" triggers Shift+;
+    /// - "/" triggers SLASH (no shift)
+    pub fn type_word_ext(e: &mut Engine, input: &str) -> String {
+        let mut screen = String::new();
+        for c in input.chars() {
+            // Handle raw mode prefix characters
+            let (key, shift) = match c {
+                '@' => (keys::N2, true),
+                '#' => (keys::N3, true),
+                ':' => (keys::SEMICOLON, true),
+                '/' => (keys::SLASH, false), // / doesn't need shift
+                _ => (char_to_key(c), false),
+            };
+
+            let is_caps = c.is_uppercase();
+
+            if key == keys::DELETE {
+                screen.pop();
+                e.on_key_ext(key, false, false, false);
+                continue;
+            }
+
+            if key == keys::ESC {
+                let r = e.on_key_ext(key, false, false, false);
+                if r.action == Action::Send as u8 {
+                    for _ in 0..r.backspace {
+                        screen.pop();
+                    }
+                    for i in 0..r.count as usize {
+                        if let Some(ch) = char::from_u32(r.chars[i]) {
+                            screen.push(ch);
+                        }
+                    }
+                }
+                continue;
+            }
+
+            if key == keys::SPACE {
+                let r = e.on_key_ext(key, false, false, false);
+                if r.action == Action::Send as u8 {
+                    for _ in 0..r.backspace {
+                        screen.pop();
+                    }
+                    for i in 0..r.count as usize {
+                        if let Some(ch) = char::from_u32(r.chars[i]) {
+                            screen.push(ch);
+                        }
+                    }
+                } else {
+                    screen.push(' ');
+                }
+                continue;
+            }
+
+            let r = e.on_key_ext(key, is_caps, false, shift);
+            if r.action == Action::Send as u8 {
+                for _ in 0..r.backspace {
+                    screen.pop();
+                }
+                for i in 0..r.count as usize {
+                    if let Some(ch) = char::from_u32(r.chars[i]) {
+                        screen.push(ch);
+                    }
+                }
+            } else {
+                // Pass through if not handled
+                screen.push(c);
+            }
+        }
+        screen
+    }
+
+    /// Run raw mode test cases (with shift support for prefix chars)
+    pub fn raw_mode(cases: &[(&str, &str)]) {
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            let result = type_word_ext(&mut e, input);
+            assert_eq!(result, *expected, "[RawMode] '{}' → '{}'", input, result);
+        }
+    }
 }
 
 // Re-export test utilities for use in other test modules
