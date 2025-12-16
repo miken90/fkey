@@ -39,13 +39,36 @@ func setConfig(_ config: String) {
     usleep(50000) // 50ms for config to take effect
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEST PATTERNS - Covers README message + difficult Vietnamese patterns from docs
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Core message (from README.md):
+//   - Gõ Nhanh: bộ gõ tiếng Việt miễn phí, nhanh, ổn định
+//   - Đặt dấu đúng vị trí (hoà, khoẻ, thuỷ)
+//   - Nhận diện tiếng Anh tự động
+//
+// Hard patterns (from vietnamese-language-system.md):
+//   - ươ compound: được, người, nước, trường
+//   - ưu cluster: lưu, cứu, ngưu, hưu
+//   - ưa pattern: mưa, cửa, lửa
+//   - Triple vowels: tuổi, mười, tươi, hươu, rượu, quyền, khuyên, chuyện
+//   - New tone rules: hoà, khoẻ, thuỷ (vs old: hòa, khỏe, thủy)
+//   - Stop finals (-p/-t/-c/-ch + sắc/nặng only): cấp, tập, mát, mạt
+//   - ng/ngh rules: nghe, nghĩ, nghỉ (ngh before e,ê,i)
+//   - g/gh rules: ghế (gh before e,ê,i)
+//   - English detection: Windows, variable, function (no diacritics added)
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
 // TELEX: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ | s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
-// người=nguwowif, được=dduwowcj, trường=truwowngf, bình=binhf, định=ddinhj
-// variable=varriable (varr để cancel dấu hỏi)
-let telexInput = "vieejt nam xin chaof camr own nguwowif dduwowcj truwowngf khoong thaatj tooi laf developer code vieejt nam debug laf fix bugs nguwowngj khuyeenr chuyeenj quyeets ddinhj thuwowngf xuyeen hoaf binhf giaos ducj kinh tees xin looix tooi khoong bieets function nayf return gias trij varriable tuwj ddoongj"
+// Examples: người=nguwowif, được=dduwowcj, quyền=quyeenf, khuyên=khuyeen
+// Cancel: varriable (double r cancels hỏi mark) → variable
+let telexInput = "Gox Nhanh laf booj gox tieengs Vieetj mieenx phis nhanh oonr ddinh. DDuwowcj phats trieenr danhf tawngj coongj ddoongf nguwowif dungf Vieetj Nam. DDawtj daaus ddungs vij tris hoaf khoer thuyr. Nhaanj dieen tieengs Anh tuwj ddoongj Wwindows varriable function. Tuooir muwowif tuwowif nhuw huwowu ruwowuj. Cuoois cungf cuwra luwra muwa nuwowcs. Caacs caaps taapj mats matj. Nghe nghix nghir ngowi ghees. Luwu cuwsu nguwu huwu. Quyeenf khuyeen quyeets chuyeenj."
 
 // VNI: 6=^(â,ê,ô), 7=ơ/ư, 8=ă, 9=đ | 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
-let vniInput = "vie65t nam xin cha2o ca3m o7n ngu7o72i d9u7o75c tru7o72ng kho6ng tha65t to6i la2 developer code vie65t nam debug la2 fix bugs ngu7o75ng khuye63n chuye65n quye61t d9i5nh thu7o72ng xuye6n ho2a bi2nh gia1o du5c kinh te61 xin lo64i, to6i kho6ng bie61t. function na2y return gia1 tri5 variable tu75 d9o65ng"
+// Examples: người=ngu7o72i, được=d9u7o75c, quyền=quye62n, khuyên=khuye6n
+let vniInput = "Go4 Nhanh la2 bo65 go4 tie61ng Vie65t mie64n phi1 nhanh o63n d9i5nh. D9u7o75c pha1t trie63n da2nh ta85ng co65ng d9o62ng ngu7o72i du2ng Vie65t Nam. D9a85t da61u d9u1ng vi5 tri1 hoa2 khoe3 thuy3. Nha65n die65n tie61ng Anh tu75 d9o65ng Windows variable function. Tuo63i mu7o72i tu7o7i nhu7 hu7o7u ru7o75u. Cuo61i cu2ng cu73a lu73a mu7a nu7o71c. Ca1c ca61p ta65p ma1t ma5t. Nghe nghi4 nghi3 ngo7i ghe61. Lu7u cu71u ngu7u hu7u. Quye62n khuye6n quye61t chuye65n."
 
 // Test configs: name, config value, test typing delay (µs)
 let testConfigs: [(String, String, UInt32)] = [
