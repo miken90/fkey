@@ -140,6 +140,16 @@ fn telex_w_as_vowel_standalone() {
 }
 
 #[test]
+fn telex_uppercase_w_as_vowel_standalone() {
+    // Uppercase "W" → "Ư" (should respect caps)
+    let mut e = Engine::new();
+    let result = e.on_key(keys::W, true, false); // caps=true for uppercase
+    assert_eq!(result.action, 1); // Action::Send
+    assert_eq!(result.count, 1);
+    assert_eq!(result.chars[0], 'Ư' as u32);
+}
+
+#[test]
 fn telex_w_as_vowel_after_valid_consonant() {
     // "nhw" → "như" (valid: nh + ư)
     let mut e = Engine::new();

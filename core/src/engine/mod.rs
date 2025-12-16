@@ -276,13 +276,14 @@ impl Engine {
         }
 
         // Check revert: ww → w (skip shortcut)
+        // Preserve original case: Ww → W, wW → w
         if let Some(Transform::WAsVowel) = self.last_transform {
             self.last_transform = Some(Transform::WShortcutSkipped);
-            // Fix buffer: remove the U(horn) that was added, replace with W
+            // Get original case from buffer before popping
+            let original_caps = self.buf.last().map(|c| c.caps).unwrap_or(caps);
             self.buf.pop();
-            self.buf.push(Char::new(keys::W, caps));
-            // Revert: backspace "ư", output single "w"
-            let w = if caps { 'W' } else { 'w' };
+            self.buf.push(Char::new(keys::W, original_caps));
+            let w = if original_caps { 'W' } else { 'w' };
             return Some(Result::send(1, &[w]));
         }
 

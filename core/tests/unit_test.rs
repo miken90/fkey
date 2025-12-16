@@ -127,6 +127,13 @@ const TELEX_UPPERCASE: &[(&str, &str)] = &[
     ("AW", "Ă"),
     ("Ow", "Ơ"),
     ("Uw", "Ư"),
+    // Standalone uppercase W → Ư
+    ("W", "Ư"),
+    ("Ww", "W"),
+    ("WW", "W"),
+    ("wW", "w"),
+    ("ww", "w"),
+    ("NHW", "NHƯ"),
 ];
 
 const TELEX_DELAYED: &[(&str, &str)] = &[
