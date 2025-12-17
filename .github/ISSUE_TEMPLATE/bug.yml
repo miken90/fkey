@@ -28,8 +28,8 @@ body:
   - type: input
     id: affected-apps
     attributes:
-      label: App bị lỗi (nếu biết)
-      description: Tên app bị lỗi, ví dụ Chrome, VS Code, Telegram...
+      label: App bị lỗi
+      description: "⚠️ BẮT BUỘC nếu chọn 'Chỉ một app' hoặc 'Một vài app'. Ví dụ: Chrome, VS Code, Telegram..."
       placeholder: "Chrome, VS Code..."
 
   - type: textarea
