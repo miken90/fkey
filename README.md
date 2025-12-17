@@ -27,6 +27,15 @@
 
 ## 📥 Tải về & Cài đặt
 
+### 🍺 Homebrew (macOS - Khuyến nghị)
+
+```bash
+brew tap khaphanspace/gonhanh
+brew install --cask gonhanh
+```
+
+### 📦 Tải thủ công
+
 | Nền tảng | Trạng thái | Tải xuống | Hướng dẫn |
 |:--------:|:----------:|:---------:|:----------|
 | **macOS** | ✅ Sẵn sàng | [📥 Tải GoNhanh.dmg](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md) |
