@@ -555,7 +555,7 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
         // Arc & Others
         "company.thebrowser.Browser",    // The Browser Company
         "company.thebrowser.Arc",        // Arc
-        "company.thebrowser.Dia",        // Dia (The Browser Company)
+        "company.thebrowser.dia",        // Dia (The Browser Company)
         "app.zen-browser.zen",           // Zen Browser
         "app.sigmaos.sigmaos",           // SigmaOS
         "com.nicholaskuecherer.Orion",   // Orion
