@@ -2,6 +2,17 @@
 
 ## Cài đặt
 
+### Cách 1: Homebrew (Khuyến nghị)
+
+```bash
+brew tap khaphanspace/gonhanh
+brew install --cask gonhanh
+```
+
+Sau đó cấp quyền: System Settings → Privacy & Security → Accessibility → Bật **Gõ Nhanh**
+
+### Cách 2: Tải thủ công
+
 1. **Tải về:** [GoNhanh.dmg](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg)
 
 2. **Cài đặt:** Mở file `.dmg` → Kéo vào **Applications**
@@ -48,14 +59,24 @@ Menu Bar → Cài đặt → Kiểu gõ → **VNI**
 
 ## Nâng cấp
 
-Menu Bar → Cài đặt → Cập nhật → **Tải và cài đặt**
+**Homebrew:**
+```bash
+brew upgrade --cask gonhanh
+```
 
-Hoặc tải [GoNhanh.dmg](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) mới và cài đè.
+**Thủ công:** Menu Bar → Cài đặt → Cập nhật → **Tải và cài đặt**
 
 ---
 
 ## Gỡ cài đặt
 
+**Homebrew:**
+```bash
+brew uninstall --cask gonhanh
+brew untap khaphanspace/gonhanh  # Tùy chọn
+```
+
+**Thủ công:**
 1. Menu Bar → **Thoát**
 2. Xóa app từ Applications
 3. (Tùy chọn) Xóa cấu hình:
