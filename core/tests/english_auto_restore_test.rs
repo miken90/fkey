@@ -1,0 +1,388 @@
+//! Comprehensive test suite for English word auto-restore feature.
+//!
+//! # How Auto-Restore Works
+//!
+//! When typing English words using Telex input method, certain letters act as
+//! Vietnamese modifiers (s, f, r, x, j for tones; w for horn mark). This causes
+//! English words to be incorrectly transformed. The auto-restore feature detects
+//! invalid Vietnamese patterns and restores the original English text.
+//!
+//! # Detection Patterns
+//!
+//! The engine can detect English words using these patterns:
+//!
+//! 1. **Modifier + Consonant**: "text" (x followed by t), "expect" (x followed by p)
+//! 2. **EI vowel pair + modifier**: "their" (ei+r)
+//! 3. **AI vowel pair + P initial**: "pair" (P initial + ai + r)
+//! 4. **Vowel + modifier + vowel (no initial)**: "use" (u+s+e)
+//! 5. **W at start + consonant or later W**: "window", "wow"
+//! 6. **Invalid Vietnamese initial (F)**: "fair", "fix"
+//!
+//! # Limitations
+//!
+//! Some English words produce structurally valid Vietnamese and CANNOT be
+//! auto-detected without a dictionary:
+//! - "mix" → "mĩ" (M is valid initial, ĩ is valid)
+//! - "box" → "bõ" (B is valid initial, õ is valid)
+//!
+//! Users should use raw mode (\word) or Esc to restore these manually.
+
+mod common;
+use common::telex;
+
+// =============================================================================
+// PATTERN 1: MODIFIER FOLLOWED BY CONSONANT
+// Example: "text" has x followed by t → clearly English
+// =============================================================================
+
+#[test]
+fn pattern1_modifier_then_consonant() {
+    telex(&[
+        // x + consonant
+        ("text ", "text "),
+        ("next ", "next "),
+        ("context ", "context "),
+        ("textbook ", "textbook "),
+        ("extend ", "extend "),
+        ("extent ", "extent "),
+        ("extern ", "extern "),
+        ("extra ", "extra "),
+        ("extract ", "extract "),
+        ("extreme ", "extreme "),
+        // exp- pattern (x + p)
+        ("expect ", "expect "),
+        ("export ", "export "),
+        ("express ", "express "),
+        ("expand ", "expand "),
+        ("expense ", "expense "),
+        ("expert ", "expert "),
+        ("explore ", "explore "),
+        ("exploit ", "exploit "),
+        ("explode ", "explode "),
+        ("explain ", "explain "),
+        ("explicit ", "explicit "),
+        ("experiment ", "experiment "),
+        ("experience ", "experience "),
+        // exc- pattern (x + c)
+        ("excel ", "excel "),
+        ("except ", "except "),
+        ("excess ", "excess "),
+        ("exchange ", "exchange "),
+        ("excite ", "excite "),
+        ("exclude ", "exclude "),
+        ("excuse ", "excuse "),
+        ("execute ", "execute "),
+        // s + consonant (Pattern 1 with s)
+        ("test ", "test "),
+        ("rest ", "rest "),
+        ("best ", "best "),
+        ("nest ", "nest "),
+        ("west ", "west "),
+        ("most ", "most "),
+        ("post ", "post "),
+        ("cost ", "cost "),
+        ("lost ", "lost "),
+        ("host ", "host "),
+        ("fast ", "fast "),
+        ("last ", "last "),
+        ("past ", "past "),
+        ("vast ", "vast "),
+        ("cast ", "cast "),
+        ("just ", "just "),
+        ("must ", "must "),
+        ("dust ", "dust "),
+        ("rust ", "rust "),
+        ("list ", "list "),
+        ("mist ", "mist "),
+        ("disk ", "disk "),
+        ("risk ", "risk "),
+        ("task ", "task "),
+        ("mask ", "mask "),
+        ("desk ", "desk "),
+    ]);
+}
+
+// =============================================================================
+// PATTERN 2: EI VOWEL PAIR + MODIFIER AT END
+// Example: "their" has ei before r → English pattern
+// =============================================================================
+
+#[test]
+fn pattern2_ei_vowel_pair() {
+    telex(&[
+        ("their ", "their "),
+        ("weird ", "weird "),
+    ]);
+}
+
+// =============================================================================
+// PATTERN 3: AI VOWEL PAIR + RARE INITIAL (P)
+// P alone (not PH) is rare in native Vietnamese
+// =============================================================================
+
+#[test]
+fn pattern3_ai_with_p_initial() {
+    telex(&[
+        ("pair ", "pair "),
+    ]);
+}
+
+// =============================================================================
+// PATTERN 4: VOWEL + MODIFIER + VOWEL (NO INITIAL CONSONANT)
+// Example: "use" starts with vowel, has s between u and e
+// =============================================================================
+
+#[test]
+fn pattern4_vowel_modifier_vowel() {
+    telex(&[
+        ("use ", "use "),
+        ("user ", "user "),
+    ]);
+}
+
+// =============================================================================
+// PATTERN 5: W AT START + CONSONANT / W + VOWEL + W
+// W is not a valid Vietnamese initial consonant
+// =============================================================================
+
+#[test]
+fn pattern5_w_start_consonant() {
+    telex(&[
+        // w + consonant
+        ("water ", "water "),
+        ("winter ", "winter "),
+        ("window ", "window "),
+        ("wonder ", "wonder "),
+        ("worker ", "worker "),
+        ("world ", "world "),
+        ("worth ", "worth "),
+        ("write ", "write "),
+        ("wrong ", "wrong "),
+        ("wrap ", "wrap "),
+        ("wrist ", "wrist "),
+        // wh- words
+        ("what ", "what "),
+        ("when ", "when "),
+        ("where ", "where "),
+        ("which ", "which "),
+        ("while ", "while "),
+        ("white ", "white "),
+        ("whole ", "whole "),
+        ("why ", "why "),
+        ("wheat ", "wheat "),
+        ("wheel ", "wheel "),
+    ]);
+}
+
+#[test]
+fn pattern5_w_vowel_w() {
+    telex(&[
+        ("wow ", "wow "),
+    ]);
+}
+
+// =============================================================================
+// PATTERN 6: INVALID VIETNAMESE INITIAL (F)
+// F is not a Vietnamese initial (Vietnamese uses PH for /f/ sound)
+// =============================================================================
+
+#[test]
+fn pattern6_invalid_initial_f() {
+    telex(&[
+        ("fair ", "fair "),
+        ("fall ", "fall "),
+        ("false ", "false "),
+        ("far ", "far "),
+        ("farm ", "farm "),
+        ("fast ", "fast "),
+        ("fat ", "fat "),
+        ("fear ", "fear "),
+        ("feed ", "feed "),
+        ("feel ", "feel "),
+        ("few ", "few "),
+        ("file ", "file "),
+        ("fill ", "fill "),
+        ("film ", "film "),
+        ("final ", "final "),
+        ("find ", "find "),
+        ("fine ", "fine "),
+        ("fire ", "fire "),
+        ("firm ", "firm "),
+        ("first ", "first "),
+        ("fish ", "fish "),
+        ("fit ", "fit "),
+        ("fix ", "fix "),
+        ("flag ", "flag "),
+        ("flat ", "flat "),
+        ("flex ", "flex "),
+        ("floor ", "floor "),
+        ("flow ", "flow "),
+        ("fly ", "fly "),
+        ("focus ", "focus "),
+        ("fold ", "fold "),
+        ("follow ", "follow "),
+        ("font ", "font "),
+        ("food ", "food "),
+        ("foot ", "foot "),
+        ("for ", "for "),
+        ("force ", "force "),
+        ("fork ", "fork "),
+        ("form ", "form "),
+        ("format ", "format "),
+        ("forward ", "forward "),
+        ("found ", "found "),
+        ("four ", "four "),
+        ("frame ", "frame "),
+        ("free ", "free "),
+        ("fresh ", "fresh "),
+        ("from ", "from "),
+        ("front ", "front "),
+        ("full ", "full "),
+        ("fun ", "fun "),
+        ("function ", "function "),
+        ("future ", "future "),
+        // Tech terms with F
+        ("facebook ", "facebook "),
+        ("firebase ", "firebase "),
+        ("firefox ", "firefox "),
+        ("flutter ", "flutter "),
+        ("framework ", "framework "),
+        ("frontend ", "frontend "),
+        ("fullstack ", "fullstack "),
+    ]);
+}
+
+// =============================================================================
+// TECH & PROGRAMMING TERMS (WITH DETECTABLE PATTERNS)
+// =============================================================================
+
+#[test]
+fn tech_terms_restore() {
+    telex(&[
+        // exp- pattern
+        ("Express ", "Express "),
+        // ext- pattern
+        ("extension ", "extension "),
+        // F initial
+        ("Firebase ", "Firebase "),
+        ("Flutter ", "Flutter "),
+        // W initial
+        ("webpack ", "webpack "),
+        ("WebSocket ", "WebSocket "),
+        // -est pattern
+        ("localhost ", "localhost "),
+        ("request ", "request "),
+        // -ost pattern
+        ("post ", "post "),
+        ("host ", "host "),
+    ]);
+}
+
+// =============================================================================
+// PUNCTUATION TRIGGERS RESTORE
+// =============================================================================
+
+#[test]
+fn punctuation_triggers_restore() {
+    // Only certain punctuation triggers auto-restore (comma, period)
+    telex(&[
+        ("text, ", "text, "),
+        ("expect. ", "expect. "),
+    ]);
+}
+
+// =============================================================================
+// VIETNAMESE WORDS THAT SHOULD NOT RESTORE
+// =============================================================================
+
+#[test]
+fn vietnamese_single_syllable_preserved() {
+    telex(&[
+        // Single syllable with tones
+        ("mas ", "má "),      // má (mother)
+        ("maf ", "mà "),      // mà (but)
+        ("mar ", "mả "),      // mả (grave)
+        ("max ", "mã "),      // mã (horse - Sino-Viet)
+        ("maj ", "mạ "),      // mạ (rice seedling)
+        ("bas ", "bá "),      // bá (aunt)
+        ("baf ", "bà "),      // bà (grandmother)
+        ("cas ", "cá "),      // cá (fish)
+        ("caf ", "cà "),      // cà (eggplant)
+        ("las ", "lá "),      // lá (leaf)
+        ("laf ", "là "),      // là (is)
+        ("tas ", "tá "),      // tá (dozen)
+        ("taf ", "tà "),      // tà (side)
+    ]);
+}
+
+#[test]
+fn vietnamese_multi_syllable_preserved() {
+    telex(&[
+        ("gox ", "gõ "),       // gõ (to type/knock)
+        ("tooi ", "tôi "),     // tôi (I)
+        ("Vieetj ", "Việt "),  // Việt
+        ("thoaij ", "thoại "), // thoại (speech)
+        ("giuwax ", "giữa "),  // giữa (middle)
+        ("dduowcj ", "được "), // được (can/get)
+        ("muwowjt ", "mượt "), // mượt (smooth)
+    ]);
+}
+
+#[test]
+fn vietnamese_ai_pattern_preserved() {
+    // AI pattern with common Vietnamese initials should NOT restore
+    telex(&[
+        ("mais ", "mái "),     // mái (roof)
+        ("cais ", "cái "),     // cái (classifier)
+        ("xaif ", "xài "),     // xài (to use - Southern)
+        ("taif ", "tài "),     // tài (talent)
+        ("gais ", "gái "),     // gái (girl)
+        ("hoaij ", "hoại "),   // hoại (decay)
+        ("ngoaij ", "ngoại "), // ngoại (outside)
+    ]);
+}
+
+#[test]
+fn vietnamese_complex_words_preserved() {
+    telex(&[
+        // Words with horn marks (ư, ơ)
+        ("nuwowcs ", "nước "),     // nước (water)
+        ("dduowngf ", "đường "),   // đường (road)
+        ("truwowcs ", "trước "),   // trước (before)
+        ("giuwowngf ", "giường "), // giường (bed)
+        // Words with circumflex (â, ê, ô)
+        ("caaps ", "cấp "),        // cấp (level)
+        ("taanf ", "tần "),        // tần (frequency)
+        ("laauj ", "lậu "),        // lậu (illegal)
+        ("leex ", "lễ "),          // lễ (ceremony)
+    ]);
+}
+
+// =============================================================================
+// AIR PATTERN - SPECIAL CASE
+// "air" → "ải" is valid Vietnamese (border/pass), should NOT restore
+// =============================================================================
+
+#[test]
+fn air_stays_vietnamese() {
+    // "air" typed becomes "ải" - valid Vietnamese word
+    // Should NOT restore because "ải" (border/pass) is a real word
+    telex(&[("air ", "ải ")]);
+}
+
+// =============================================================================
+// WORDS THAT CANNOT BE AUTO-DETECTED (DOCUMENTATION)
+// These produce structurally valid Vietnamese
+// =============================================================================
+
+#[test]
+#[ignore] // These CANNOT be auto-detected without dictionary
+fn words_that_stay_transformed() {
+    // These produce valid Vietnamese structures
+    // Users should use raw mode (\word) or Esc to restore
+    telex(&[
+        ("mix ", "mix "),   // → "mĩ" (valid Vietnamese)
+        ("box ", "box "),   // → "bõ" (valid Vietnamese)
+        ("six ", "six "),   // → "sĩ" (valid Vietnamese)
+    ]);
+}

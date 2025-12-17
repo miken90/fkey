@@ -971,3 +971,76 @@ fn shortcut_not_triggered_by_letter() {
         "letter should not trigger shortcut"
     );
 }
+
+// Issue: "search" should not become "seảch" in Telex
+// "ea" is not a valid Vietnamese vowel combination
+#[test]
+fn foreign_word_search_no_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "search");
+    assert_eq!(
+        result, "search",
+        "search should stay unchanged, got: {}",
+        result
+    );
+}
+
+// Test other English patterns that might be problematic
+#[test]
+fn foreign_word_teacher_no_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "teacher");
+    // "ea" is invalid Vietnamese pattern
+    assert_eq!(
+        result, "teacher",
+        "teacher should stay unchanged, got: {}",
+        result
+    );
+}
+
+#[test]
+fn foreign_word_real_no_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "real");
+    // "ea" is invalid Vietnamese pattern
+    assert_eq!(
+        result, "real",
+        "real should stay unchanged, got: {}",
+        result
+    );
+}
+
+#[test]
+fn foreign_word_beach_no_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "beach");
+    // "ea" is invalid Vietnamese pattern
+    assert_eq!(
+        result, "beach",
+        "beach should stay unchanged, got: {}",
+        result
+    );
+}
+
+// Diagnostic test to check current behavior of "text" and "expect"
+#[test]
+fn diagnostic_text_expect_behavior() {
+    let mut e = Engine::new();
+    let text_result = type_word(&mut e, "text");
+
+    e.clear();
+    let expect_result = type_word(&mut e, "expect");
+
+    // These are diagnostic - showing current behavior
+    // "text" might become "tẽt" because "te" is valid Vietnamese
+    // "expect" might have transforms applied
+    println!("'text' -> '{}' (expected: 'text')", text_result);
+    println!("'expect' -> '{}' (expected: 'expect')", expect_result);
+
+    // Currently these may fail - showing current behavior
+    assert_eq!(
+        text_result, "tẽt",
+        "text currently becomes tẽt (x applies ngã mark)"
+    );
+    assert_eq!(expect_result, "ễpct", "expect currently becomes ễpct");
+}

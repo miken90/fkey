@@ -246,6 +246,11 @@ mod test_utils {
                         screen.push(ch);
                     }
                 }
+                // For break keys (punctuation), add the character after auto-restore
+                // The restored text doesn't include the break character
+                if keys::is_break(key) {
+                    screen.push(c);
+                }
             } else {
                 // Pass through if not handled (mimic editor receiving char)
                 screen.push(c);
@@ -344,6 +349,10 @@ mod test_utils {
                     if let Some(ch) = char::from_u32(r.chars[i]) {
                         screen.push(ch);
                     }
+                }
+                // For break keys (punctuation), add the character after auto-restore
+                if keys::is_break(key) {
+                    screen.push(c);
                 }
             } else {
                 // Pass through if not handled

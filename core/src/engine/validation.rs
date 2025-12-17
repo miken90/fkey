@@ -132,10 +132,15 @@ fn rule_valid_final(keys: &[u16], syllable: &Syllable) -> Option<ValidationResul
 
 /// Rule 6: Vowel patterns must be valid Vietnamese
 ///
-/// Vietnamese has specific valid vowel combinations. Some patterns common
-/// in English/foreign words don't exist in Vietnamese:
-/// - "ou" (you, our, out, house, about) - Vietnamese uses "ô", "ơ", "ươ" instead
-/// - "yo" (yoke, York, beyond, your) - Vietnamese "y" combines with ê (yêu, yến)
+/// Uses INCLUSION approach: check if vowel pair is in VALID_VOWEL_PAIRS list.
+/// Any pair NOT in the list is considered invalid.
+///
+/// This is more comprehensive than listing invalid patterns individually,
+/// catching patterns like:
+/// - "ea" (search, beach, teacher) - not valid in Vietnamese
+/// - "ou" (you, our, house, about) - not valid in Vietnamese
+/// - "yo" (yoke, York, your) - not valid in Vietnamese
+/// - And many more that would be missed by exclusion approach
 ///
 /// Exception: "uou" is valid (becomes ươu: hươu, rượu, bướu)
 fn rule_valid_vowel_pattern(keys: &[u16], syllable: &Syllable) -> Option<ValidationResult> {
@@ -146,7 +151,7 @@ fn rule_valid_vowel_pattern(keys: &[u16], syllable: &Syllable) -> Option<Validat
     // Get consecutive vowel keys
     let vowels: Vec<u16> = syllable.vowel.iter().map(|&i| keys[i]).collect();
 
-    // Check for invalid vowel patterns
+    // Check each consecutive vowel pair against valid combinations
     for i in 0..vowels.len() - 1 {
         let pair = [vowels[i], vowels[i + 1]];
 
@@ -155,10 +160,12 @@ fn rule_valid_vowel_pattern(keys: &[u16], syllable: &Syllable) -> Option<Validat
             continue;
         }
 
-        if constants::INVALID_VOWEL_PATTERNS
+        // INCLUSION approach: pair must be in VALID_VOWEL_PAIRS to be valid
+        let is_valid = constants::VALID_VOWEL_PAIRS
             .iter()
-            .any(|p| p[0] == pair[0] && p[1] == pair[1])
-        {
+            .any(|p| p[0] == pair[0] && p[1] == pair[1]);
+
+        if !is_valid {
             return Some(ValidationResult::InvalidVowelPattern);
         }
     }
@@ -197,22 +204,23 @@ pub fn is_valid(buffer_keys: &[u16]) -> bool {
 ///
 /// This is a heuristic to detect when the user is likely typing a foreign word
 /// rather than Vietnamese. It checks for:
-/// 1. Invalid vowel patterns (ou, yo) that don't exist in Vietnamese
+/// 1. Invalid vowel patterns that don't exist in Vietnamese (using VALID_VOWEL_PAIRS)
 /// 2. Consonant clusters after finals that are common in English (T+R, P+R, C+R)
 ///
 /// Returns true if the pattern suggests foreign word input.
 pub fn is_foreign_word_pattern(buffer_keys: &[u16], modifier_key: u16) -> bool {
     let syllable = parse(buffer_keys);
 
-    // Check 1: Invalid vowel patterns in current buffer
+    // Check 1: Invalid vowel patterns in current buffer (using inclusion approach)
     if syllable.vowel.len() >= 2 {
         let vowels: Vec<u16> = syllable.vowel.iter().map(|&i| buffer_keys[i]).collect();
         for i in 0..vowels.len() - 1 {
             let pair = [vowels[i], vowels[i + 1]];
-            if constants::INVALID_VOWEL_PATTERNS
+            // Check if pair is NOT in valid pairs list
+            let is_valid = constants::VALID_VOWEL_PAIRS
                 .iter()
-                .any(|p| p[0] == pair[0] && p[1] == pair[1])
-            {
+                .any(|p| p[0] == pair[0] && p[1] == pair[1]);
+            if !is_valid {
                 return true;
             }
         }

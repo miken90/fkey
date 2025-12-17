@@ -234,6 +234,12 @@ pub const TRIPHTHONG_PATTERNS: &[TriphthongTonePattern] = &[
         v3: keys::U,
         position: TonePosition::Second,
     }, // ươu: rượu
+    TriphthongTonePattern {
+        v1: keys::I,
+        v2: keys::U,
+        v3: keys::O,
+        position: TonePosition::Last,
+    }, // iươ: giường (gi + ươ, tone on ơ)
     // Special: uyê uses Last position
     TriphthongTonePattern {
         v1: keys::U,
@@ -346,17 +352,8 @@ impl Phonology {
     fn find_triphthong_position(vowels: &[Vowel]) -> usize {
         let (k0, k1, k2) = (vowels[0].key, vowels[1].key, vowels[2].key);
 
-        // Rule 1: Diacritic priority
-        // Middle with diacritic → middle (ươi: ơ has diacritic)
-        if vowels[1].has_diacritic() {
-            return vowels[1].pos;
-        }
-        // Last with diacritic → last (uyê: ê has diacritic)
-        if vowels[2].has_diacritic() {
-            return vowels[2].pos;
-        }
-
-        // Rule 2: Pattern table lookup
+        // Rule 1: Pattern table lookup (takes priority)
+        // Patterns define exact tone positions for known triphthongs
         for pattern in TRIPHTHONG_PATTERNS {
             if k0 == pattern.v1 && k1 == pattern.v2 && k2 == pattern.v3 {
                 return match pattern.position {
@@ -365,6 +362,16 @@ impl Phonology {
                     TonePosition::Last => vowels[2].pos,
                 };
             }
+        }
+
+        // Rule 2: Diacritic priority (for unmatched patterns)
+        // Middle with diacritic → middle (ươi: ơ has diacritic)
+        if vowels[1].has_diacritic() {
+            return vowels[1].pos;
+        }
+        // Last with diacritic → last (uyê: ê has diacritic)
+        if vowels[2].has_diacritic() {
+            return vowels[2].pos;
         }
 
         // Default: middle vowel
