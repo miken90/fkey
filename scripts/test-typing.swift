@@ -64,7 +64,7 @@ func setConfig(_ config: String) {
 // TELEX: aa=â, ee=ê, oo=ô, aw=ă, ow=ơ, uw=ư, dd=đ | s=sắc, f=huyền, r=hỏi, x=ngã, j=nặng
 // Examples: người=nguwowif, được=dduwowcj, quyền=quyeenf, khuyên=khuyeen
 // Cancel: varriable (double r cancels hỏi mark) → variable
-let telexInput = "Gox Nhanh laf booj gox tieengs Vieetj mieenx phis nhanh oonr ddinh. DDuwowcj phats trieenr danhf tawngj coongj ddoongf nguwowif dungf Vieetj Nam. DDawtj daaus ddungs vij tris hoaf khoer thuyr. Nhaanj dieen tieengs Anh tuwj ddoongj Wwindows varriable function. Tuooir muwowif tuwowif nhuw huwowu ruwowuj. Cuoois cungf cuwra luwra muwa nuwowcs. Caacs caaps taapj mats matj. Nghe nghix nghir ngowi ghees. Luwu cuwsu nguwu huwu. Quyeenf khuyeen quyeets chuyeenj."
+let telexInput = "Gox Nhanh laf booj gox tieengs Vieetj mieenx phis nhanh oonr ddinhj. DDuwowcj phats trieenr danhf tawngj coongj ddoongf nguwowif dungf Vieetj Nam. DDawtj daaus ddungs vij tris hoaf khoer thuyr. Nhaanj dieen tieengs Anh tuwj ddoongj Wwindows varriable function. Tuooir muwowif tuwowif nhuw huwowu ruwowuj. Cuoois cungf cuwra luwra muwa nuwowcs. Caacs caaps taapj mats matj. Nghe nghix nghir ngowi ghees. Luwu cuwsu nguwu huwu. Quyeenf khuyeen quyeets chuyeenj."
 
 // VNI: 6=^(â,ê,ô), 7=ơ/ư, 8=ă, 9=đ | 1=sắc, 2=huyền, 3=hỏi, 4=ngã, 5=nặng
 // Examples: người=ngu7o72i, được=d9u7o75c, quyền=quye62n, khuyên=khuye6n
