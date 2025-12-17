@@ -1022,9 +1022,7 @@ impl Engine {
             let (first, _) = self.raw_input[0];
             if first == keys::W {
                 // Check if there's another W later (non-adjacent) → English pattern like "wow"
-                let has_later_w = self.raw_input[2..]
-                    .iter()
-                    .any(|(k, _)| *k == keys::W);
+                let has_later_w = self.raw_input[2..].iter().any(|(k, _)| *k == keys::W);
                 if has_later_w {
                     return true;
                 }
@@ -1103,8 +1101,7 @@ impl Engine {
                         // Check if initial is just P (rare in native Vietnamese)
                         if !self.raw_input.is_empty() && self.raw_input[0].0 == keys::P {
                             // Make sure it's not PH (PH is common Vietnamese)
-                            let is_ph =
-                                self.raw_input.len() >= 2 && self.raw_input[1].0 == keys::H;
+                            let is_ph = self.raw_input.len() >= 2 && self.raw_input[1].0 == keys::H;
                             if !is_ph {
                                 return true;
                             }
@@ -1136,6 +1133,35 @@ impl Engine {
                     if !has_initial_consonant {
                         return true;
                     }
+
+                    // Pattern 4: vowel + modifier + DIFFERENT vowel → English
+                    // EXCEPT for Vietnamese patterns: u+a (ưa), u+o (ươ)
+                    // Example: "core" = c + o + r + e → o+r+e is NOT Vietnamese pattern
+                    // Example: "cura" = c + u + r + a → u+r+a IS Vietnamese (cửa)
+                    if has_initial_consonant {
+                        let (prev_vowel, _) = self.raw_input[i - 1];
+                        // Vietnamese exception: U + modifier + A/O → valid (ưa, ươ patterns)
+                        let is_vietnamese_ua =
+                            prev_vowel == keys::U && (next_key == keys::A || next_key == keys::O);
+                        if !is_vietnamese_ua {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pattern 5: W at end after vowel → English (like "raw", "law", "saw")
+        // W as final is not valid Vietnamese, it's an English pattern
+        // Exception: "uw" ending is Vietnamese (tuw → tư)
+        if self.raw_input.len() >= 2 {
+            let (last, _) = self.raw_input[self.raw_input.len() - 1];
+            if last == keys::W {
+                let (second_last, _) = self.raw_input[self.raw_input.len() - 2];
+                // W after vowel (not U) at end is English: raw, law, saw
+                // W after U is Vietnamese: tuw → tư
+                if keys::is_vowel(second_last) && second_last != keys::U {
+                    return true;
                 }
             }
         }

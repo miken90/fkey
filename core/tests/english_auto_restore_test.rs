@@ -109,10 +109,7 @@ fn pattern1_modifier_then_consonant() {
 
 #[test]
 fn pattern2_ei_vowel_pair() {
-    telex(&[
-        ("their ", "their "),
-        ("weird ", "weird "),
-    ]);
+    telex(&[("their ", "their "), ("weird ", "weird ")]);
 }
 
 // =============================================================================
@@ -122,9 +119,7 @@ fn pattern2_ei_vowel_pair() {
 
 #[test]
 fn pattern3_ai_with_p_initial() {
-    telex(&[
-        ("pair ", "pair "),
-    ]);
+    telex(&[("pair ", "pair ")]);
 }
 
 // =============================================================================
@@ -134,10 +129,7 @@ fn pattern3_ai_with_p_initial() {
 
 #[test]
 fn pattern4_vowel_modifier_vowel() {
-    telex(&[
-        ("use ", "use "),
-        ("user ", "user "),
-    ]);
+    telex(&[("use ", "use "), ("user ", "user ")]);
 }
 
 // =============================================================================
@@ -176,9 +168,7 @@ fn pattern5_w_start_consonant() {
 
 #[test]
 fn pattern5_w_vowel_w() {
-    telex(&[
-        ("wow ", "wow "),
-    ]);
+    telex(&[("wow ", "wow ")]);
 }
 
 // =============================================================================
@@ -285,10 +275,7 @@ fn tech_terms_restore() {
 #[test]
 fn punctuation_triggers_restore() {
     // Only certain punctuation triggers auto-restore (comma, period)
-    telex(&[
-        ("text, ", "text, "),
-        ("expect. ", "expect. "),
-    ]);
+    telex(&[("text, ", "text, "), ("expect. ", "expect. ")]);
 }
 
 // =============================================================================
@@ -299,19 +286,19 @@ fn punctuation_triggers_restore() {
 fn vietnamese_single_syllable_preserved() {
     telex(&[
         // Single syllable with tones
-        ("mas ", "má "),      // má (mother)
-        ("maf ", "mà "),      // mà (but)
-        ("mar ", "mả "),      // mả (grave)
-        ("max ", "mã "),      // mã (horse - Sino-Viet)
-        ("maj ", "mạ "),      // mạ (rice seedling)
-        ("bas ", "bá "),      // bá (aunt)
-        ("baf ", "bà "),      // bà (grandmother)
-        ("cas ", "cá "),      // cá (fish)
-        ("caf ", "cà "),      // cà (eggplant)
-        ("las ", "lá "),      // lá (leaf)
-        ("laf ", "là "),      // là (is)
-        ("tas ", "tá "),      // tá (dozen)
-        ("taf ", "tà "),      // tà (side)
+        ("mas ", "má "), // má (mother)
+        ("maf ", "mà "), // mà (but)
+        ("mar ", "mả "), // mả (grave)
+        ("max ", "mã "), // mã (horse - Sino-Viet)
+        ("maj ", "mạ "), // mạ (rice seedling)
+        ("bas ", "bá "), // bá (aunt)
+        ("baf ", "bà "), // bà (grandmother)
+        ("cas ", "cá "), // cá (fish)
+        ("caf ", "cà "), // cà (eggplant)
+        ("las ", "lá "), // lá (leaf)
+        ("laf ", "là "), // là (is)
+        ("tas ", "tá "), // tá (dozen)
+        ("taf ", "tà "), // tà (side)
     ]);
 }
 
@@ -351,10 +338,10 @@ fn vietnamese_complex_words_preserved() {
         ("truwowcs ", "trước "),   // trước (before)
         ("giuwowngf ", "giường "), // giường (bed)
         // Words with circumflex (â, ê, ô)
-        ("caaps ", "cấp "),        // cấp (level)
-        ("taanf ", "tần "),        // tần (frequency)
-        ("laauj ", "lậu "),        // lậu (illegal)
-        ("leex ", "lễ "),          // lễ (ceremony)
+        ("caaps ", "cấp "), // cấp (level)
+        ("taanf ", "tần "), // tần (frequency)
+        ("laauj ", "lậu "), // lậu (illegal)
+        ("leex ", "lễ "),   // lễ (ceremony)
     ]);
 }
 
@@ -381,8 +368,58 @@ fn words_that_stay_transformed() {
     // These produce valid Vietnamese structures
     // Users should use raw mode (\word) or Esc to restore
     telex(&[
-        ("mix ", "mix "),   // → "mĩ" (valid Vietnamese)
-        ("box ", "box "),   // → "bõ" (valid Vietnamese)
-        ("six ", "six "),   // → "sĩ" (valid Vietnamese)
+        ("mix ", "mix "), // → "mĩ" (valid Vietnamese)
+        ("box ", "box "), // → "bõ" (valid Vietnamese)
+        ("six ", "six "), // → "sĩ" (valid Vietnamese)
+    ]);
+}
+
+// =============================================================================
+// PATTERN 7: VOWEL + MODIFIER + VOWEL (WITH INITIAL CONSONANT)
+// Example: "core" = c + o + r + e → "cỏe" invalid → restore
+// =============================================================================
+
+#[test]
+fn pattern7_vowel_modifier_vowel_with_initial() {
+    telex(&[
+        ("core ", "core "),
+        ("more ", "more "),
+        ("care ", "care "),
+        ("rare ", "rare "),
+        ("are ", "are "),
+        ("ore ", "ore "),
+        ("bore ", "bore "),
+        ("fore ", "fore "), // F initial also triggers Pattern 6
+        ("sore ", "sore "),
+        ("wore ", "wore "), // W initial also triggers Pattern 5
+        ("store ", "store "),
+        ("score ", "score "),
+    ]);
+}
+
+#[test]
+fn vietnamese_ua_uo_preserved() {
+    // Vietnamese ưa/ươ patterns should NOT restore
+    // u + modifier + a → ưa family (cửa, mua, bưa)
+    // u + modifier + o → ươ family (được, bước)
+    telex(&[
+        ("cura ", "của "),      // của (of) - common Vietnamese
+        ("muar ", "mủa "),      // mủa (not common but valid structure)
+        ("dduwowcj ", "được "), // được (can/get)
+    ]);
+}
+
+// =============================================================================
+// PATTERN 8: W AS FINAL (NOT MODIFIER)
+// Example: "raw" = r + a + w → W can't modify A, stays as W final
+// =============================================================================
+
+#[test]
+fn pattern8_w_as_final() {
+    telex(&[
+        ("raw ", "raw "),
+        ("law ", "law "),
+        ("saw ", "saw "),
+        ("jaw ", "jaw "),
     ]);
 }

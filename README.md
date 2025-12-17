@@ -38,7 +38,7 @@
 ### 🔥 Highlight
 
 - 🔍 **Fix lỗi Chrome/Spotlight/Claude Code/JetBrains** - Tự động sửa dính chữ trong address bar, thanh tìm kiếm
-- 🔤 **Auto-restore tiếng Anh** — Gõ `text` `expect` `window` → tự khôi phục khi nhấn space. [Xem chi tiết ↓](#-auto-restore-tiếng-anh)
+- 🔤 **Auto-restore tiếng Anh** — Gõ `text` `expect` `user` `push` `sort` → tự khôi phục khi nhấn space. [Xem chi tiết ↓](#-auto-restore-tiếng-anh)
 - ⎋ **Gõ ESC tự khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`. Không cần tắt bộ gõ khi gõ tiếng Anh!
 - 🧠 **Chuyển chế độ thông minh** — Tự nhớ ON/OFF cho từng app. Code trên VS Code (tắt) → Chat trên Slack (bật) → tự chuyển
 - 🏷️ **Hỗ trợ raw mode**: gõ `\`, `@`, `#`, `:`, `/` ở đầu để tắt chuyển đổi tiếng Việt (ví dụ: `\mix` → `mix`)
