@@ -226,6 +226,7 @@ impl Engine {
 
     /// Check if key+shift combo is a raw mode prefix character
     /// Raw prefixes: @ # : /
+    #[allow(dead_code)] // TEMP DISABLED
     fn is_raw_prefix(key: u16, shift: bool) -> bool {
         // / doesn't need shift
         if key == keys::SLASH && !shift {
@@ -258,12 +259,13 @@ impl Engine {
             return Result::none();
         }
 
+        // TEMP DISABLED: Raw mode prefix detection
         // Raw mode prefix detection: when buffer is empty and user types @ # $ ^ : > ?
         // Enable raw mode to skip Vietnamese transforms for subsequent letters
-        if self.buf.is_empty() && Self::is_raw_prefix(key, shift) {
-            self.raw_mode = true;
-            return Result::none();
-        }
+        // if self.buf.is_empty() && Self::is_raw_prefix(key, shift) {
+        //     self.raw_mode = true;
+        //     return Result::none();
+        // }
 
         // Check for word boundary shortcuts ONLY on SPACE
         if key == keys::SPACE {

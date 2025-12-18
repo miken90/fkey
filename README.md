@@ -62,7 +62,6 @@ Sau đó: **System Settings → Privacy & Security → Accessibility → Bật G
 - 🔤 **Auto-restore tiếng Anh** — Gõ `text` `expect` `user` `push` `sort` → tự khôi phục khi nhấn space. [Xem chi tiết ↓](#-auto-restore-tiếng-anh)
 - ⎋ **Gõ ESC tự khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`. Không cần tắt bộ gõ khi gõ tiếng Anh!
 - 🧠 **Chuyển chế độ thông minh** — Tự nhớ ON/OFF cho từng app. Code trên VS Code (tắt) → Chat trên Slack (bật) → tự chuyển
-- 🏷️ **Hỗ trợ raw mode**: gõ `\`, `@`, `#`, `:`, `/` ở đầu để tắt chuyển đổi tiếng Việt (ví dụ: `\mix` → `mix`)
 - ⚡ **Siêu nhanh** — <1ms latency · ~5MB RAM. Hỗ trợ đa nền tảng trên cùng một engine
 
 ### 📋 Đầy đủ
@@ -145,7 +144,6 @@ Một số từ tiếng Anh tạo ra cấu trúc **hợp lệ tiếng Việt** n
 | `six` | `sĩ` | S + ĩ hợp lệ |
 
 **Giải pháp:**
-- Dùng **raw mode**: gõ `\mix` → `mix`
 - Nhấn **ESC** sau khi gõ để khôi phục
 - Tắt bộ gõ tạm thời (⌘+Space hoặc click menu bar)
 
