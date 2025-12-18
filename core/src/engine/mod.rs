@@ -518,6 +518,23 @@ impl Engine {
         }
 
         if target_positions.is_empty() {
+            // Check if any target vowels already have the requested tone
+            // If so, absorb the key (no-op) instead of falling through
+            // This handles redundant tone keys like "u7o7" → "ươ" (second 7 absorbed)
+            //
+            // EXCEPTION: Don't absorb 'w' if last_transform was WAsVowel
+            // because try_w_as_vowel needs to handle the revert (ww → w)
+            let is_w_revert_pending =
+                key == keys::W && matches!(self.last_transform, Some(Transform::WAsVowel));
+
+            let has_tone_already = self
+                .buf
+                .iter()
+                .any(|c| targets.contains(&c.key) && c.tone == tone_val);
+            if has_tone_already && !is_w_revert_pending {
+                // Return empty Send to absorb key without passthrough
+                return Some(Result::send(0, &[]));
+            }
             return None;
         }
 
@@ -956,9 +973,9 @@ impl Engine {
             self.buf.push(Char::new(key, caps));
 
             // Normalize ưo → ươ immediately when 'o' is typed after 'ư'
-            // This ensures "dduwo" → "đươ" without waiting for a mark
-            // Only in Telex mode (0) - VNI uses explicit '7' for horn
-            if self.method == 0 && key == keys::O && self.normalize_uo_compound().is_some() {
+            // This ensures "dduwo" → "đươ" (Telex) and "u7o" → "ươ" (VNI)
+            // Works for both methods since "ưo" alone is not valid Vietnamese
+            if key == keys::O && self.normalize_uo_compound().is_some() {
                 // ươ compound formed - reposition tone if needed (ư→ơ)
                 if let Some((old_pos, _)) = self.reposition_tone_if_needed() {
                     return self.rebuild_from_after_insert(old_pos);
