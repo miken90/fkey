@@ -203,13 +203,18 @@ fn tone_horn_uw() {
 
 #[test]
 fn tone_breve_aw() {
+    // Issue #44: Breve in open syllable is deferred until final consonant or mark
+    // "aw" alone stays "aw" because breve on standalone 'a' without final is uncertain
+    // But "aws" → "ắ" because mark confirms Vietnamese input
     telex(&[
-        ("aw", "ă"),
-        ("aws", "ắ"),
-        ("awf", "ằ"),
-        ("awr", "ẳ"),
-        ("awx", "ẵ"),
-        ("awj", "ặ"),
+        ("aw", "aw"),  // Deferred: no final consonant, stays "aw"
+        ("aws", "ắ"),  // Mark confirms Vietnamese: breve applied + sắc
+        ("awf", "ằ"),  // Mark confirms Vietnamese: breve applied + huyền
+        ("awr", "ẳ"),  // Mark confirms Vietnamese: breve applied + hỏi
+        ("awx", "ẵ"),  // Mark confirms Vietnamese: breve applied + ngã
+        ("awj", "ặ"),  // Mark confirms Vietnamese: breve applied + nặng
+        ("awm", "ăm"), // Final consonant: breve applied
+        ("awn", "ăn"), // Final consonant: breve applied
     ]);
 }
 
@@ -365,7 +370,19 @@ fn vni_tone_horn() {
 
 #[test]
 fn vni_tone_breve() {
-    vni(&[("a8", "ă")]);
+    // Issue #44: Breve in open syllable is deferred until final consonant
+    // "a8" alone stays "a8" because ă without final is not valid Vietnamese
+    // "a8m" → "ăm" because final consonant validates the breve
+    vni(&[
+        ("a8", "a8"),    // Deferred: no final consonant
+        ("a8m", "ăm"),   // Final consonant: breve applied
+        ("a8n", "ăn"),   // Final consonant: breve applied
+        ("a8c", "ăc"),   // Final consonant: breve applied
+        ("a8t", "ăt"),   // Final consonant: breve applied
+        ("a8p", "ăp"),   // Final consonant: breve applied
+        ("ta8m", "tăm"), // tăm - silkworm
+        ("la8m", "lăm"), // lăm - five (colloquial)
+    ]);
 }
 
 #[test]

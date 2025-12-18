@@ -330,7 +330,11 @@ pub fn is_valid_for_transform(buffer_keys: &[u16]) -> bool {
 /// This is needed to distinguish "le" (plain e, English-like) from "lê" (e with circumflex, Vietnamese).
 ///
 /// Returns true if the pattern suggests foreign word input.
-pub fn is_foreign_word_pattern(buffer_keys: &[u16], buffer_tones: &[u8], modifier_key: u16) -> bool {
+pub fn is_foreign_word_pattern(
+    buffer_keys: &[u16],
+    buffer_tones: &[u8],
+    modifier_key: u16,
+) -> bool {
     let syllable = parse(buffer_keys);
 
     // Check 1: Invalid vowel patterns (not in whitelist)
@@ -443,8 +447,10 @@ pub fn is_foreign_word_pattern(buffer_keys: &[u16], buffer_tones: &[u8], modifie
         };
 
         if is_invalid_final {
-            let is_mark_modifier =
-                matches!(modifier_key, keys::S | keys::F | keys::R | keys::X | keys::J);
+            let is_mark_modifier = matches!(
+                modifier_key,
+                keys::S | keys::F | keys::R | keys::X | keys::J
+            );
             if is_mark_modifier {
                 return true;
             }
