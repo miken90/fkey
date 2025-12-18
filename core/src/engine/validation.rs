@@ -202,6 +202,17 @@ fn rule_valid_vowel_pattern(
                     return Some(ValidationResult::InvalidVowelPattern);
                 }
             }
+
+            // Breve (ă) restrictions: 'ă' cannot be followed by another vowel
+            // Valid: ăm, ăn, ăng, ănh, ăp, ăt, ăc (consonant endings)
+            // Valid: oă (in "xoăn" etc.)
+            // Invalid: ăi, ăo, ău, ăy (breve + vowel)
+            // In Vietnamese, horn tone on 'a' creates breve 'ă'
+            if snap.has_tone_info && vowel_keys[0] == keys::A && vowel_tones[0] == tone::HORN {
+                // A with breve followed by vowel is invalid
+                // (V2 in diphthong is always a vowel, so this is always invalid)
+                return Some(ValidationResult::InvalidVowelPattern);
+            }
         }
         3 => {
             let triple = [vowel_keys[0], vowel_keys[1], vowel_keys[2]];
@@ -475,5 +486,27 @@ mod tests {
                 pattern
             );
         }
+    }
+
+    #[test]
+    fn test_breve_followed_by_vowel_invalid() {
+        // Issue #44: "taiw" → "tăi" should be invalid
+        // Breve (ă) cannot be followed by another vowel in Vietnamese
+        // Valid: ăm, ăn, ăng (consonant endings), oă (xoăn)
+        // Invalid: ăi, ăo, ău, ăy
+        let keys = keys_from_str("tai");
+        let tones = vec![0, tone::HORN, 0]; // breve on 'a'
+        assert!(
+            !is_valid_with_tones(&keys, &tones),
+            "'tăi' (breve + vowel) should be invalid"
+        );
+
+        // Also test standalone ăi
+        let keys = keys_from_str("ai");
+        let tones = vec![tone::HORN, 0]; // breve on 'a'
+        assert!(
+            !is_valid_with_tones(&keys, &tones),
+            "'ăi' should be invalid"
+        );
     }
 }

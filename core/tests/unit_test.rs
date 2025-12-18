@@ -458,6 +458,12 @@ const TELEX_EDGE: &[(&str, &str)] = &[
     ("truwowcs", "trước"),
     // dd→đ edge cases
     ("ddf", "đf"),
+    // Issue #44: breve (ă) + vowel is NEVER valid in Vietnamese
+    // When 'w' would create ă followed by another vowel, skip the transformation
+    // "taiw" should NOT become "tăi" (ăi is invalid)
+    ("taiw", "taiw"),
+    // "aiw" - 'w' targets 'a' (creating ă) when followed by 'i' - should skip
+    ("aiw", "aiw"),
 ];
 
 // ============================================================
