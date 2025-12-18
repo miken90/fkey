@@ -1098,7 +1098,28 @@ impl Engine {
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
 
         // Use centralized phonology rules (context inferred from buffer)
-        Phonology::find_horn_positions(&buffer_keys, &vowels)
+        let mut result = Phonology::find_horn_positions(&buffer_keys, &vowels);
+
+        // Special case: standalone "ua" pattern where U already has a mark
+        // If user typed "uaf" → "ùa", then 'w' should go to U (making "ừa"), not A
+        // This ensures consistent behavior: mark placement indicates user's intent
+        if result.len() == 1 {
+            if let Some(&pos) = result.first() {
+                if let Some(c) = self.buf.get(pos) {
+                    // If horn target is A, check if U exists before it with a mark
+                    if c.key == keys::A && pos > 0 {
+                        if let Some(prev) = self.buf.get(pos - 1) {
+                            // Adjacent U with a mark → user wants horn on U, not breve on A
+                            if prev.key == keys::U && prev.mark > 0 {
+                                result = vec![pos - 1]; // Return U position instead
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        result
             .into_iter()
             .filter(|&pos| {
                 self.buf

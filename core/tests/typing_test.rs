@@ -767,7 +767,8 @@ const VNI_MARK_REPOSITION: &[(&str, &str)] = &[
 ];
 
 const TELEX_MARK_REPOSITION: &[(&str, &str)] = &[
-    ("uafw", "uằ"),
+    // ua pattern: when U has mark, horn goes to U (not breve on A)
+    ("uafw", "ừa"), // uaf → ùa, then w → ừa (horn on U)
     ("uwaf", "ừa"),
     ("oafw", "oằ"),
     // ươ compound
