@@ -147,6 +147,16 @@ pub struct Engine {
     /// Skip w→ư shortcut in Telex mode (user preference)
     /// When true, typing 'w' at word start stays as 'w' instead of converting to 'ư'
     skip_w_shortcut: bool,
+    /// Enable ESC key to restore raw ASCII (undo Vietnamese transforms)
+    /// When false, ESC key is passed through without restoration
+    esc_restore_enabled: bool,
+    /// Enable free tone placement (skip validation)
+    /// When true, allows placing diacritics anywhere without spelling validation
+    free_tone_enabled: bool,
+    /// Use modern orthography for tone placement (hoà vs hòa)
+    /// When true: oà, uý (tone on second vowel)
+    /// When false: òa, úy (tone on first vowel - traditional)
+    modern_tone: bool,
     /// Word history for backspace-after-space feature
     word_history: WordHistory,
     /// Number of spaces typed after committing a word (for backspace tracking)
@@ -175,6 +185,9 @@ impl Engine {
             raw_input: Vec::with_capacity(64),
             has_non_letter_prefix: false,
             skip_w_shortcut: false,
+            esc_restore_enabled: false, // Default: OFF (user request)
+            free_tone_enabled: false,
+            modern_tone: true, // Default: modern style (hoà, thuý)
             word_history: WordHistory::new(),
             spaces_after_commit: 0,
             pending_breve_pos: None,
@@ -197,6 +210,21 @@ impl Engine {
     /// Set whether to skip w→ư shortcut in Telex mode
     pub fn set_skip_w_shortcut(&mut self, skip: bool) {
         self.skip_w_shortcut = skip;
+    }
+
+    /// Set whether ESC key restores raw ASCII
+    pub fn set_esc_restore(&mut self, enabled: bool) {
+        self.esc_restore_enabled = enabled;
+    }
+
+    /// Set whether to enable free tone placement (skip validation)
+    pub fn set_free_tone(&mut self, enabled: bool) {
+        self.free_tone_enabled = enabled;
+    }
+
+    /// Set whether to use modern orthography for tone placement
+    pub fn set_modern_tone(&mut self, modern: bool) {
+        self.modern_tone = modern;
     }
 
     pub fn shortcuts(&self) -> &ShortcutTable {
@@ -288,8 +316,13 @@ impl Engine {
         }
 
         // ESC key: restore to raw ASCII (undo all Vietnamese transforms)
+        // Only if esc_restore is enabled by user
         if key == keys::ESC {
-            let result = self.restore_to_raw();
+            let result = if self.esc_restore_enabled {
+                self.restore_to_raw()
+            } else {
+                Result::none()
+            };
             self.clear();
             self.word_history.clear();
             self.spaces_after_commit = 0;
@@ -523,9 +556,10 @@ impl Engine {
             // Validate buffer structure before applying stroke
             // Only validate if buffer has vowels (complete syllable)
             // Allow stroke on initial consonant before vowel is typed (e.g., "dd" → "đ" then "đi")
+            // Skip validation if free_tone mode is enabled
             let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
             let has_vowel = buffer_keys.iter().any(|&k| keys::is_vowel(k));
-            if has_vowel && !is_valid_for_transform(&buffer_keys) {
+            if !self.free_tone_enabled && has_vowel && !is_valid_for_transform(&buffer_keys) {
                 return None;
             }
 
@@ -573,8 +607,9 @@ impl Engine {
         }
 
         // Validate buffer structure (not vowel patterns - those are checked after transform)
+        // Skip validation if free_tone mode is enabled
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !is_valid_for_transform(&buffer_keys) {
+        if !self.free_tone_enabled && !is_valid_for_transform(&buffer_keys) {
             return None;
         }
 
@@ -934,15 +969,24 @@ impl Engine {
         // but with horns applied it's valid "ươu")
         let has_horn_transforms = self.buf.iter().any(|c| c.tone == tone::HORN);
 
-        // Validate buffer structure (skip if has horn transforms - already intentional Vietnamese)
+        // Check if buffer has stroke transforms (đ) - indicates intentional Vietnamese typing
+        // Issue #48: "ddeso" → "đéo" (d was stroked to đ, so this is Vietnamese, not English)
+        let has_stroke_transforms = self.buf.iter().any(|c| c.stroke);
+
+        // Validate buffer structure (skip if has horn/stroke transforms - already intentional Vietnamese)
+        // Also skip validation if free_tone mode is enabled
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
         let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
-        if !has_horn_transforms && !is_valid_for_transform(&buffer_keys) {
+        if !self.free_tone_enabled
+            && !has_horn_transforms
+            && !has_stroke_transforms
+            && !is_valid_for_transform(&buffer_keys)
+        {
             return None;
         }
 
         // Skip modifier if buffer shows foreign word patterns.
-        // Only check when NO horn transforms exist.
+        // Only check when NO horn/stroke transforms exist.
         //
         // Detected patterns:
         // - Invalid vowel combinations (ou, yo) that don't exist in Vietnamese
@@ -952,7 +996,13 @@ impl Engine {
         // - "met" + 'r' → T+R cluster common in English → skip modifier
         // - "you" + 'r' → "ou" vowel pattern invalid → skip modifier
         // - "rươu" + 'j' → has horn transforms → DON'T skip, apply mark normally
-        if !has_horn_transforms && is_foreign_word_pattern(&buffer_keys, &buffer_tones, key) {
+        // - "đe" + 's' → has stroke transform → DON'T skip, apply mark normally (Issue #48)
+        // Skip foreign word detection if free_tone mode is enabled
+        if !self.free_tone_enabled
+            && !has_horn_transforms
+            && !has_stroke_transforms
+            && is_foreign_word_pattern(&buffer_keys, &buffer_tones, key)
+        {
             return None;
         }
 
@@ -970,7 +1020,8 @@ impl Engine {
         let has_final = self.has_final_consonant(last_vowel_pos);
         let has_qu = self.has_qu_initial();
         let has_gi = self.has_gi_initial();
-        let pos = Phonology::find_tone_position(&vowels, has_final, true, has_qu, has_gi);
+        let pos =
+            Phonology::find_tone_position(&vowels, has_final, self.modern_tone, has_qu, has_gi);
 
         if let Some(c) = self.buf.get_mut(pos) {
             c.mark = mark_val;
@@ -1940,7 +1991,8 @@ impl Engine {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::{telex, vni};
+    use super::Engine;
+    use crate::utils::{telex, type_word, vni};
 
     const TELEX_BASIC: &[(&str, &str)] = &[
         ("as", "á"),
@@ -2024,12 +2076,25 @@ mod tests {
 
     #[test]
     fn test_telex_esc_restore() {
-        telex(TELEX_ESC_RESTORE);
+        // ESC restore is disabled by default, enable it for this test
+        for (input, expected) in TELEX_ESC_RESTORE {
+            let mut e = Engine::new();
+            e.set_esc_restore(true);
+            let result = type_word(&mut e, input);
+            assert_eq!(result, *expected, "[Telex] '{}' → '{}'", input, result);
+        }
     }
 
     #[test]
     fn test_vni_esc_restore() {
-        vni(VNI_ESC_RESTORE);
+        // ESC restore is disabled by default, enable it for this test
+        for (input, expected) in VNI_ESC_RESTORE {
+            let mut e = Engine::new();
+            e.set_method(1);
+            e.set_esc_restore(true);
+            let result = type_word(&mut e, input);
+            assert_eq!(result, *expected, "[VNI] '{}' → '{}'", input, result);
+        }
     }
 
     #[test]

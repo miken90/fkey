@@ -317,23 +317,37 @@ impl Phonology {
             return if has_gi_initial { v2.pos } else { v1.pos };
         }
 
-        // ua: 1st unless qu-initial (mùa → u, quá → a)
+        // ua: 1st unless qu-initial (mùa → u, quà → a)
+        // Note: qu-initial means 'u' is part of consonant, not affected by modern setting
         if v1.key == keys::U && v2.key == keys::A {
-            if has_qu_initial {
-                return if modern { v2.pos } else { v1.pos };
-            }
-            return v1.pos;
+            return if has_qu_initial { v2.pos } else { v1.pos };
+        }
+
+        // uy with qu-initial: always on y (quý - 'u' is part of qu consonant)
+        // Not affected by modern setting
+        if v1.key == keys::U && v2.key == keys::Y && has_qu_initial {
+            return v2.pos;
         }
 
         // Rule 4: Pattern table lookup
         let pair = [v1.key, v2.key];
 
         // Check TONE_SECOND_PATTERNS (medial + main, compound)
+        // Modern setting only affects: oa, oe, uy (without qu-initial)
         if TONE_SECOND_PATTERNS
             .iter()
             .any(|p| p[0] == pair[0] && p[1] == pair[1])
         {
-            return if modern { v2.pos } else { v1.pos };
+            // Only oa, oe, uy are affected by modern/traditional debate
+            let is_modern_pattern = matches!(
+                (v1.key, v2.key),
+                (keys::O, keys::A) | (keys::O, keys::E) | (keys::U, keys::Y)
+            );
+            if is_modern_pattern {
+                return if modern { v2.pos } else { v1.pos };
+            }
+            // Other patterns (uê, iê, uô): always 2nd vowel
+            return v2.pos;
         }
 
         // Check TONE_FIRST_PATTERNS (main + glide)

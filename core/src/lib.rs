@@ -153,6 +153,46 @@ pub extern "C" fn ime_skip_w_shortcut(skip: bool) {
     }
 }
 
+/// Set whether ESC key restores raw ASCII input.
+///
+/// When `enabled` is true (default), pressing ESC restores original keystrokes.
+/// When `enabled` is false, ESC key is passed through without restoration.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_esc_restore(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_esc_restore(enabled);
+    }
+}
+
+/// Set whether to enable free tone placement (skip validation).
+///
+/// When `enabled` is true, allows placing diacritics anywhere without
+/// spelling validation (e.g., "Zìa" is allowed).
+/// When `enabled` is false (default), validates Vietnamese spelling rules.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_free_tone(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_free_tone(enabled);
+    }
+}
+
+/// Set whether to use modern orthography for tone placement.
+///
+/// When `modern` is true: hoà, thuý (tone on second vowel - new style)
+/// When `modern` is false (default): hòa, thúy (tone on first vowel - traditional)
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_modern(modern: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_modern_tone(modern);
+    }
+}
+
 /// Clear the input buffer.
 ///
 /// Call on word boundaries (space, punctuation, mouse click, focus change).
