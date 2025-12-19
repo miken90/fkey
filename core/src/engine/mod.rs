@@ -776,14 +776,18 @@ impl Engine {
         // but with horns applied it's valid "ươu")
         let has_horn_transforms = self.buf.iter().any(|c| c.tone == tone::HORN);
 
-        // Validate buffer structure (skip if has horn transforms - already intentional Vietnamese)
+        // Check if buffer has stroke transforms (đ) - indicates intentional Vietnamese typing
+        // Issue #48: "ddeso" → "đéo" (d was stroked to đ, so this is Vietnamese, not English)
+        let has_stroke_transforms = self.buf.iter().any(|c| c.stroke);
+
+        // Validate buffer structure (skip if has horn/stroke transforms - already intentional Vietnamese)
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
-        if !has_horn_transforms && !is_valid_for_transform(&buffer_keys) {
+        if !has_horn_transforms && !has_stroke_transforms && !is_valid_for_transform(&buffer_keys) {
             return None;
         }
 
         // Skip modifier if buffer shows foreign word patterns.
-        // Only check when NO horn transforms exist.
+        // Only check when NO horn/stroke transforms exist.
         //
         // Detected patterns:
         // - Invalid vowel combinations (ou, yo) that don't exist in Vietnamese
@@ -793,7 +797,8 @@ impl Engine {
         // - "met" + 'r' → T+R cluster common in English → skip modifier
         // - "you" + 'r' → "ou" vowel pattern invalid → skip modifier
         // - "rươu" + 'j' → has horn transforms → DON'T skip, apply mark normally
-        if !has_horn_transforms && is_foreign_word_pattern(&buffer_keys, key) {
+        // - "đe" + 's' → has stroke transform → DON'T skip, apply mark normally (Issue #48)
+        if !has_horn_transforms && !has_stroke_transforms && is_foreign_word_pattern(&buffer_keys, key) {
             return None;
         }
 

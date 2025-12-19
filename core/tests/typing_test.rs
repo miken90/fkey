@@ -166,6 +166,12 @@ const TELEX_TYPOS: &[(&str, &str)] = &[
     ("ejo", "ẹo"),     // e + j + o → ẹo
     ("keso", "kéo"),   // k + e + s + o → kéo
     ("treso", "tréo"), // tr + e + s + o → tréo
+    // Issue #48: dd + eso pattern (đ + e + s + o → đéo)
+    ("ddeso", "đéo"),   // dd + e + s + o → đéo
+    ("ddefo", "đèo"),   // dd + e + f + o → đèo (đèo = mountain pass)
+    ("ddero", "đẻo"),   // dd + e + r + o → đẻo
+    ("ddexo", "đẽo"),   // dd + e + x + o → đẽo
+    ("ddejo", "đẹo"),   // dd + e + j + o → đẹo
     //
     // --- Pattern: êu (ê + glide u) ---
     ("eesu", "ếu"),   // ee + s + u → ếu (ee = ê)
