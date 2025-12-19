@@ -259,6 +259,11 @@ mod test_utils {
                         screen.push(ch);
                     }
                 }
+                // For break keys (punctuation), add the character after auto-restore
+                // The restored text doesn't include the break character
+                if keys::is_break(key) {
+                    screen.push(c);
+                }
             } else {
                 // Pass through if not handled (mimic editor receiving char)
                 screen.push(c);
@@ -277,6 +282,20 @@ mod test_utils {
             let mut e = Engine::new();
             let result = type_word(&mut e, input);
             assert_eq!(result, *expected, "[Telex] '{}' → '{}'", input, result);
+        }
+    }
+
+    /// Run Telex test cases with English auto-restore enabled
+    pub fn telex_auto_restore(cases: &[(&str, &str)]) {
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            e.set_english_auto_restore(true);
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[Telex AutoRestore] '{}' → '{}'",
+                input, result
+            );
         }
     }
 
@@ -400,21 +419,16 @@ mod test_utils {
                         screen.push(ch);
                     }
                 }
+                // For break keys (punctuation), add the character after auto-restore
+                if keys::is_break(key) {
+                    screen.push(c);
+                }
             } else {
                 // Pass through if not handled
                 screen.push(c);
             }
         }
         screen
-    }
-
-    /// Run raw mode test cases (with shift support for prefix chars)
-    pub fn raw_mode(cases: &[(&str, &str)]) {
-        for (input, expected) in cases {
-            let mut e = Engine::new();
-            let result = type_word_ext(&mut e, input);
-            assert_eq!(result, *expected, "[RawMode] '{}' → '{}'", input, result);
-        }
     }
 }
 

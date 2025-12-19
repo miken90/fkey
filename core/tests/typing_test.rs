@@ -1,7 +1,7 @@
 //! Typing Tests - Real-world typing scenarios, sentences, behaviors
 
 mod common;
-use common::{telex, telex_traditional, vni, vni_traditional};
+use common::{telex, telex_auto_restore, telex_traditional, vni, vni_traditional};
 
 // ============================================================
 // BACKSPACE & CORRECTIONS
@@ -364,10 +364,10 @@ const TELEX_TYPOS: &[(&str, &str)] = &[
     // EXISTING TEST CASES (preserved)
     // ============================================================
     //
-    // Double mark → revert
-    ("ass", "as"),
-    ("aff", "af"),
-    ("arr", "ar"),
+    // Double mark → revert (both keys appear for English words)
+    ("ass", "ass"),
+    ("aff", "aff"),
+    ("arr", "arr"),
     // Double tone → revert
     ("aaa", "aa"),
     ("ooo", "oo"),
@@ -669,7 +669,7 @@ const TELEX_COMMON_ISSUES: &[(&str, &str)] = &[
     ("sa", "sa"),
     ("as", "á"),
     ("sas", "sá"),
-    ("sass", "sas"),
+    ("sass", "sass"), // both s appear after revert
     ("fa", "fa"),
     ("af", "à"),
     // Long compound words
@@ -773,7 +773,8 @@ const VNI_MARK_REPOSITION: &[(&str, &str)] = &[
 ];
 
 const TELEX_MARK_REPOSITION: &[(&str, &str)] = &[
-    ("uafw", "uằ"),
+    // ua pattern: when U has mark, horn goes to U (not breve on A)
+    ("uafw", "ừa"), // uaf → ùa, then w → ừa (horn on U)
     ("uwaf", "ừa"),
     ("oafw", "oằ"),
     // ươ compound
@@ -1141,24 +1142,26 @@ fn vni_switch_diacritics() {
 // NON-ADJACENT STROKE - Issue #51
 // ============================================================
 //
-// In Telex, "dd" → "đ" should only apply when the two 'd's are ADJACENT.
-// When there are characters between them (like in "deadline"), they should
-// remain as separate 'd' characters.
+// Telex stroke behavior:
+// - dd → đ (adjacent stroke, always works)
+// - d + vowel + d → deferred (open syllable, waits for mark key)
+// - d + vowel + consonant + d → đ + vowel + consonant (has final, immediate stroke)
 //
-// According to Vietnamese Telex docs (Section 9.2.2):
-// - dd → đ (two adjacent d's)
-// - d...d (with chars between) → d...d (no transformation)
+// Delayed stroke is DEFERRED for open syllables to prevent "dede" → "đê"
+// Only when a mark key (s,f,r,x,j) is typed does the stroke + mark apply together.
+// This enables "dods" → "đó" while preventing "dedicated" → "đeicated".
 
 const TELEX_NON_ADJACENT_STROKE: &[(&str, &str)] = &[
-    // Issue #51: "deadline" should stay as "deadline", not "đealine"
-    // The 'd's are separated by "ea", so stroke should NOT apply
+    // English words with invalid Vietnamese vowel patterns stay unchanged
+    // (ea, io, etc. are NOT valid Vietnamese diphthongs)
     ("deadline", "deadline"),
     ("dedicated", "dedicated"),
     ("decided", "decided"),
-    // Edge case: d + vowels + d + vowels
-    ("dede", "dede"),
-    ("dada", "dada"),
-    ("dodo", "dodo"),
+    // Open syllables (d + vowel + d) - stroke is DEFERRED to mark key
+    // This prevents false transformation of English-like patterns
+    ("dede", "dede"), // No mark key, stroke deferred
+    ("dada", "dada"), // No mark key, stroke deferred
+    ("dodo", "dodo"), // No mark key, stroke deferred
     // Mixed: adjacent dd at start
     ("ddead", "đead"),           // dd at start is adjacent → đ, then "ead"
     ("ddedicated", "đedicated"), // dd at start
@@ -1381,13 +1384,11 @@ const TELEX_BREVE_EDGE_CASES: &[(&str, &str)] = &[
 // ============================================================
 
 #[test]
-#[ignore = "Issue #44: pending breve deferral feature"]
 fn telex_invalid_breve_open_syllable() {
     telex(TELEX_INVALID_BREVE_OPEN);
 }
 
 #[test]
-#[ignore = "Issue #44: pending breve deferral feature"]
 fn vni_invalid_breve_open_syllable() {
     vni(VNI_INVALID_BREVE_OPEN);
 }
@@ -1403,25 +1404,22 @@ fn vni_valid_breve_with_final() {
 }
 
 #[test]
-#[ignore = "Issue #44: pending breve deferral feature"]
 fn telex_invalid_breve_diphthong() {
     telex(TELEX_INVALID_BREVE_DIPHTHONG);
 }
 
 #[test]
-#[ignore = "Issue #44: pending breve deferral feature"]
 fn vni_invalid_breve_diphthong() {
     vni(VNI_INVALID_BREVE_DIPHTHONG);
 }
 
+// NOTE: Requires english_auto_restore to be enabled (experimental feature).
 #[test]
-#[ignore = "Issue #44: pending breve deferral feature"]
 fn telex_english_aw_words() {
-    telex(TELEX_ENGLISH_AW_WORDS);
+    telex_auto_restore(TELEX_ENGLISH_AW_WORDS);
 }
 
 #[test]
-#[ignore = "Issue #44: pending breve deferral feature"]
 fn telex_breve_edge_cases() {
     telex(TELEX_BREVE_EDGE_CASES);
 }
@@ -1445,16 +1443,16 @@ const TELEX_TRADITIONAL_TONE: &[(&str, &str)] = &[
     // ============================================================
     //
     // --- Pattern: oa (traditional: tone on 'o') ---
-    ("osa", "óa"),     // o + s + a → óa (NOT oá)
-    ("ofa", "òa"),     // o + f + a → òa (NOT oà)
-    ("ora", "ỏa"),     // o + r + a → ỏa (NOT oả)
-    ("oxa", "õa"),     // o + x + a → õa (NOT oã)
-    ("oja", "ọa"),     // o + j + a → ọa (NOT oạ)
-    ("hosa", "hóa"),   // h + o + s + a → hóa (NOT hoá)
-    ("hofa", "hòa"),   // h + o + f + a → hòa (NOT hoà)
-    ("xosa", "xóa"),   // x + o + s + a → xóa (NOT xoá) - Issue #64 case
-    ("losa", "lóa"),   // l + o + s + a → lóa (NOT loá)
-    ("tosa", "tóa"),   // t + o + s + a → tóa (NOT toá)
+    ("osa", "óa"),   // o + s + a → óa (NOT oá)
+    ("ofa", "òa"),   // o + f + a → òa (NOT oà)
+    ("ora", "ỏa"),   // o + r + a → ỏa (NOT oả)
+    ("oxa", "õa"),   // o + x + a → õa (NOT oã)
+    ("oja", "ọa"),   // o + j + a → ọa (NOT oạ)
+    ("hosa", "hóa"), // h + o + s + a → hóa (NOT hoá)
+    ("hofa", "hòa"), // h + o + f + a → hòa (NOT hoà)
+    ("xosa", "xóa"), // x + o + s + a → xóa (NOT xoá) - Issue #64 case
+    ("losa", "lóa"), // l + o + s + a → lóa (NOT loá)
+    ("tosa", "tóa"), // t + o + s + a → tóa (NOT toá)
     //
     // --- Pattern: oe (traditional: tone on 'o') ---
     ("ose", "óe"),     // o + s + e → óe (NOT oé)
@@ -1482,9 +1480,9 @@ const TELEX_TRADITIONAL_TONE: &[(&str, &str)] = &[
     // ============================================================
     //
     // --- oa + delayed tone ---
-    ("hoas", "hóa"),   // h + o + a + s → hóa (traditional)
-    ("hoaf", "hòa"),   // h + o + a + f → hòa (traditional)
-    ("xoas", "xóa"),   // x + o + a + s → xóa (traditional)
+    ("hoas", "hóa"), // h + o + a + s → hóa (traditional)
+    ("hoaf", "hòa"), // h + o + a + f → hòa (traditional)
+    ("xoas", "xóa"), // x + o + a + s → xóa (traditional)
     //
     // --- oe + delayed tone ---
     ("khoes", "khóe"), // kh + o + e + s → khóe (traditional)

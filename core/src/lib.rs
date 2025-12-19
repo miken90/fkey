@@ -193,6 +193,20 @@ pub extern "C" fn ime_modern(modern: bool) {
     }
 }
 
+/// Enable/disable English auto-restore (experimental feature).
+///
+/// When `enabled` is true, automatically restores English words that were
+/// accidentally transformed (e.g., "tẽt" → "text", "ễpct" → "expect").
+/// When `enabled` is false (default), no auto-restore happens.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_english_auto_restore(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_english_auto_restore(enabled);
+    }
+}
+
 /// Clear the input buffer.
 ///
 /// Call on word boundaries (space, punctuation, mouse click, focus change).

@@ -203,13 +203,18 @@ fn tone_horn_uw() {
 
 #[test]
 fn tone_breve_aw() {
+    // Issue #44: Breve in open syllable is deferred until final consonant or mark
+    // "aw" alone stays "aw" because breve on standalone 'a' without final is uncertain
+    // But "aws" → "ắ" because mark confirms Vietnamese input
     telex(&[
-        ("aw", "ă"),
-        ("aws", "ắ"),
-        ("awf", "ằ"),
-        ("awr", "ẳ"),
-        ("awx", "ẵ"),
-        ("awj", "ặ"),
+        ("aw", "aw"),  // Deferred: no final consonant, stays "aw"
+        ("aws", "ắ"),  // Mark confirms Vietnamese: breve applied + sắc
+        ("awf", "ằ"),  // Mark confirms Vietnamese: breve applied + huyền
+        ("awr", "ẳ"),  // Mark confirms Vietnamese: breve applied + hỏi
+        ("awx", "ẵ"),  // Mark confirms Vietnamese: breve applied + ngã
+        ("awj", "ặ"),  // Mark confirms Vietnamese: breve applied + nặng
+        ("awm", "ăm"), // Final consonant: breve applied
+        ("awn", "ăn"), // Final consonant: breve applied
     ]);
 }
 
@@ -297,15 +302,31 @@ fn stroke_dd() {
 }
 
 #[test]
-fn stroke_requires_adjacent() {
-    // Issue #51: stroke only applies when 'd's are ADJACENT
-    // d + vowel + d → d + vowel + d (NO stroke - not adjacent)
-    // This allows typing English words like "deadline" without false transformation
+fn stroke_delayed_valid_vietnamese() {
+    // When 'd' is typed after "d + vowel", stroke is applied immediately
+    // This allows: "did" → "đi", "dod" → "đo", etc.
+    // The trailing 'd' triggers stroke and is consumed (not added to buffer)
     telex(&[
-        ("dod", "dod"),
-        ("dad", "dad"),
-        ("did", "did"),
-        ("dud", "dud"),
+        ("dod", "đo"), // d triggers stroke: đo
+        ("dad", "đa"), // d triggers stroke: đa
+        ("did", "đi"), // d triggers stroke: đi
+        ("dud", "đu"), // d triggers stroke: đu
+    ]);
+
+    // Delayed stroke WITH mark key applies both stroke and mark
+    telex(&[
+        ("dods", "đó"), // Delayed stroke + sắc
+        ("dads", "đá"), // Delayed stroke + sắc
+        ("dids", "đí"), // Delayed stroke + sắc
+        ("duds", "đú"), // Delayed stroke + sắc
+        ("dodf", "đò"), // Delayed stroke + huyền
+        ("dodx", "đõ"), // Delayed stroke + ngã
+    ]);
+
+    // For syllables WITH final consonant, delayed stroke applies immediately
+    telex(&[
+        ("docd", "đoc"), // Has final 'c' - immediate delayed stroke
+        ("datd", "đat"), // Has final 't' - immediate delayed stroke
     ]);
 }
 
@@ -331,21 +352,23 @@ fn revert_tone_double_key() {
 
 #[test]
 fn revert_mark_double_key() {
-    // ass → as (revert á back to as)
+    // When mark is reverted, BOTH the original mark key AND the reverting key
+    // should appear as letters. This allows typing words like "issue", "bass", etc.
+    // ass → ass (not as): first 's' was modifier for á, second 's' reverts and outputs both
     telex(&[
-        ("ass", "as"),
-        ("aff", "af"),
-        ("arr", "ar"),
-        ("axx", "ax"),
-        ("ajj", "aj"),
+        ("ass", "ass"),
+        ("aff", "aff"),
+        ("arr", "arr"),
+        ("axx", "axx"),
+        ("ajj", "ajj"),
     ]);
 }
 
 #[test]
 fn revert_stroke_double_key() {
-    // ddd → đd (đ + d because third d is just added)
-    // Note: This is correct behavior - dd makes đ, third d just adds d
-    telex(&[("ddd", "đd")]);
+    // ddd → dd (third d reverts stroke, returning to raw "dd")
+    // This matches user expectation: if you typed too many d's, you get raw text
+    telex(&[("ddd", "dd")]);
 }
 
 #[test]
@@ -372,7 +395,19 @@ fn vni_tone_horn() {
 
 #[test]
 fn vni_tone_breve() {
-    vni(&[("a8", "ă")]);
+    // Issue #44: Breve in open syllable is deferred until final consonant
+    // "a8" alone stays "a8" because ă without final is not valid Vietnamese
+    // "a8m" → "ăm" because final consonant validates the breve
+    vni(&[
+        ("a8", "a8"),    // Deferred: no final consonant
+        ("a8m", "ăm"),   // Final consonant: breve applied
+        ("a8n", "ăn"),   // Final consonant: breve applied
+        ("a8c", "ăc"),   // Final consonant: breve applied
+        ("a8t", "ăt"),   // Final consonant: breve applied
+        ("a8p", "ăp"),   // Final consonant: breve applied
+        ("ta8m", "tăm"), // tăm - silkworm
+        ("la8m", "lăm"), // lăm - five (colloquial)
+    ]);
 }
 
 #[test]
