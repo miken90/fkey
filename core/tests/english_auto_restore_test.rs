@@ -399,3 +399,31 @@ fn pattern8_w_as_final() {
         ("jaw ", "jaw "),
     ]);
 }
+
+// =============================================================================
+// VIETNAMESE TONE MODIFIERS WITH SONORANT FINALS
+// hỏi (r), huyền (f), ngã (x) + sonorant (m, n, nh, ng) should stay Vietnamese
+// =============================================================================
+
+#[test]
+fn vietnamese_hoi_with_sonorant_final() {
+    telex(&[
+        // hỏi (r) + sonorant final (nh) - should stay Vietnamese
+        ("nhirnh ", "nhỉnh "),  // nhỉnh (a bit)
+        ("tirnh ", "tỉnh "),    // tỉnh (province/wake)
+        ("ddirnh ", "đỉnh "),   // đỉnh (peak)
+        ("chirnh ", "chỉnh "),  // chỉnh (adjust)
+        // Alternative typing order
+        ("nhinhr ", "nhỉnh "),
+        ("tinhr ", "tỉnh "),
+        ("ddinhr ", "đỉnh "),
+        ("chinhr ", "chỉnh "),
+        // huyền (f) + sonorant final (m, n, ng)
+        ("lafm ", "làm "),      // làm (do/make)
+        ("hafng ", "hàng "),    // hàng (goods/row)
+        ("dufng ", "dùng "),    // dùng (use)
+        // ngã (x) + sonorant final
+        ("maxnh ", "mãnh "),    // mãnh (fierce)
+        ("haxnh ", "hãnh "),    // hãnh (proud)
+    ]);
+}

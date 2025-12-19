@@ -1697,21 +1697,38 @@ impl Engine {
             if i + 1 < self.raw_input.len() {
                 let (next_key, _) = self.raw_input[i + 1];
                 if keys::is_consonant(next_key) {
-                    // Heuristic: In Vietnamese, finals combine differently with tones:
-                    // - nặng (j) + consonant is common: học, bọc, bật, cặp, đọc, etc.
-                    // - sắc (s) + consonant is common: bức, đất, ất, etc.
-                    // - huyền (f) + consonant is common: làm, hàng, dùng, vàng, etc.
-                    // - ngã (x) + consonant is RARE in Vietnamese
-                    // - hỏi (r) + consonant is RARE in Vietnamese
+                    // Heuristic: In Vietnamese, tone modifiers + consonant is common:
+                    // - nặng (j) + consonant: học, bọc, bật, cặp, đọc, etc.
+                    // - sắc (s) + consonant: bức, đất, ất, etc.
+                    // - huyền (f) + consonant: làm, hàng, dùng, vàng, etc.
+                    // - hỏi (r) + consonant: tỉnh, đỉnh, nhỉnh, mỉnh, etc.
+                    // - ngã (x) + consonant: mãnh, hãnh, etc.
                     //
-                    // Skip restore if modifier is nặng (j), sắc (s), or huyền (f)
+                    // Skip restore for ALL tone modifiers followed by consonant
                     // This handles:
                     // - "dojc" → "dọc" (j + final c)
-                    // - "dojdc" → "đọc" (j + d for stroke + final c)
                     // - "lafm" → "làm" (f + final m)
-                    let is_likely_vietnamese_mark =
-                        key == keys::J || key == keys::S || key == keys::F;
-                    if is_likely_vietnamese_mark {
+                    // - "tirnh" → "tỉnh" (r + final nh)
+                    // - "maxnh" → "mãnh" (x + final nh)
+                    // Vietnamese tone modifiers have different likelihood with consonants:
+                    // - nặng (j) + any consonant: COMMON (học, bọc, bật, làm, etc.)
+                    // - sắc (s) + any consonant: COMMON (bức, đất, sắm, etc.)
+                    // - huyền (f) + sonorant (m,n): COMMON (làm, hàng, dùng)
+                    // - hỏi (r) + sonorant (m,n): COMMON (tỉnh, đỉnh, nhỉnh)
+                    // - ngã (x) + sonorant (m,n): COMMON (mãnh, hãnh)
+                    // - huyền/hỏi/ngã + stop (c,p,t): RARE in Vietnamese
+                    let is_common_viet_mark = key == keys::J || key == keys::S;
+                    let is_rare_with_stop = key == keys::F || key == keys::R || key == keys::X;
+                    let next_is_sonorant = next_key == keys::M || next_key == keys::N;
+
+                    // Always skip for J and S - these are very common in Vietnamese
+                    if is_common_viet_mark {
+                        continue;
+                    }
+
+                    // For F, R, X: skip only if followed by sonorant (m, n)
+                    // This allows "text" to restore but keeps "tỉnh", "làm", "mãnh"
+                    if is_rare_with_stop && next_is_sonorant {
                         continue;
                     }
 
@@ -1720,9 +1737,9 @@ impl Engine {
                     if i + 2 < self.raw_input.len() {
                         return true;
                     }
+
                     // Case 1b: Final consonant but only 1 vowel before modifier → likely English
                     // Example: "text" = T+E+X+T (only 1 vowel E before X)
-                    // Counter: "muwowjt" = M+U+W+O+W+J+T (2 vowels with W modifiers)
                     let vowels_before: usize = (0..i)
                         .filter(|&j| keys::is_vowel(self.raw_input[j].0))
                         .count();
