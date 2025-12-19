@@ -302,15 +302,31 @@ fn stroke_dd() {
 }
 
 #[test]
-fn stroke_requires_adjacent() {
-    // Issue #51: stroke only applies when 'd's are ADJACENT
-    // d + vowel + d → d + vowel + d (NO stroke - not adjacent)
-    // This allows typing English words like "deadline" without false transformation
+fn stroke_delayed_valid_vietnamese() {
+    // Delayed stroke for OPEN syllables (d + vowel + d) is DEFERRED to mark key
+    // This prevents "de" + "d" → "đe" while still allowing "dods" → "đó"
+    // The pattern d + vowel + d waits for a mark key (s,f,r,x,j) to confirm Vietnamese
     telex(&[
-        ("dod", "dod"),
-        ("dad", "dad"),
-        ("did", "did"),
-        ("dud", "dud"),
+        ("dod", "dod"), // Open syllable - stroke deferred, no mark key
+        ("dad", "dad"), // Open syllable - stroke deferred
+        ("did", "did"), // Open syllable - stroke deferred
+        ("dud", "dud"), // Open syllable - stroke deferred
+    ]);
+
+    // Delayed stroke WITH mark key applies both stroke and mark
+    telex(&[
+        ("dods", "đó"), // Delayed stroke + sắc
+        ("dads", "đá"), // Delayed stroke + sắc
+        ("dids", "đí"), // Delayed stroke + sắc
+        ("duds", "đú"), // Delayed stroke + sắc
+        ("dodf", "đò"), // Delayed stroke + huyền
+        ("dodx", "đõ"), // Delayed stroke + ngã
+    ]);
+
+    // For syllables WITH final consonant, delayed stroke applies immediately
+    telex(&[
+        ("docd", "đoc"), // Has final 'c' - immediate delayed stroke
+        ("datd", "đat"), // Has final 't' - immediate delayed stroke
     ]);
 }
 
