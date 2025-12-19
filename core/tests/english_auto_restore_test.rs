@@ -428,5 +428,16 @@ fn vietnamese_hoi_with_sonorant_final() {
         // nặng (j) + stop final (c) - should stay Vietnamese
         ("trwjc ", "trực "), // trực (direct)
         ("bwjc ", "bực "),   // bực (annoyed)
+        // ngã (x) before ng final - should stay Vietnamese
+        // Pattern: C + U + N + X + G → cũng (modifier X splits the ng final)
+        ("cunxg ", "cũng "), // cũng (also)
+        ("cungx ", "cũng "), // cũng (standard typing order)
+        ("cuxng ", "cũng "), // cũng (another valid order)
+        ("hunxg ", "hũng "), // similar pattern with h initial
+        // Tone modifier BEFORE final vowel (alternative typing order)
+        ("gasi ", "gái "), // sắc before i
+        ("gais ", "gái "), // sắc after i (standard)
+        ("gaxy ", "gãy "), // ngã before y
+        ("gayx ", "gãy "), // ngã after y (standard)
     ]);
 }

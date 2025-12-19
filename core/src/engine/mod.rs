@@ -1715,22 +1715,26 @@ impl Engine {
                     // Vietnamese tone modifiers have different likelihood with consonants:
                     // - nặng (j) + any consonant: COMMON (học, bọc, bật, làm, etc.)
                     // - sắc (s) + any consonant: COMMON (bức, đất, sắm, etc.)
-                    // - huyền (f) + sonorant (m,n): COMMON (làm, hàng, dùng)
-                    // - hỏi (r) + sonorant (m,n): COMMON (tỉnh, đỉnh, nhỉnh)
-                    // - ngã (x) + sonorant (m,n): COMMON (mãnh, hãnh)
+                    // - huyền (f) + sonorant (m,n,ng,nh): COMMON (làm, hàng, dùng, cũng)
+                    // - hỏi (r) + sonorant (m,n,ng,nh): COMMON (tỉnh, đỉnh, nhỉnh, cửng)
+                    // - ngã (x) + sonorant (m,n,ng,nh): COMMON (mãnh, hãnh, cũng)
                     // - huyền/hỏi/ngã + stop (c,p,t): RARE in Vietnamese
                     let is_common_viet_mark = key == keys::J || key == keys::S;
                     let is_rare_with_stop = key == keys::F || key == keys::R || key == keys::X;
-                    let next_is_sonorant = next_key == keys::M || next_key == keys::N;
+                    // Sonorants: M, N, or G/H when following N (part of ng, nh finals)
+                    let is_sonorant_or_part_of_final = next_key == keys::M
+                        || next_key == keys::N
+                        || (next_key == keys::G && i >= 1 && self.raw_input[i - 1].0 == keys::N)
+                        || (next_key == keys::H && i >= 1 && self.raw_input[i - 1].0 == keys::N);
 
                     // Always skip for J and S - these are very common in Vietnamese
                     if is_common_viet_mark {
                         continue;
                     }
 
-                    // For F, R, X: skip only if followed by sonorant (m, n)
-                    // This allows "text" to restore but keeps "tỉnh", "làm", "mãnh"
-                    if is_rare_with_stop && next_is_sonorant {
+                    // For F, R, X: skip only if followed by sonorant (m, n, ng, nh)
+                    // This allows "text" to restore but keeps "tỉnh", "làm", "mãnh", "cũng"
+                    if is_rare_with_stop && is_sonorant_or_part_of_final {
                         continue;
                     }
 
@@ -1814,15 +1818,23 @@ impl Engine {
                     }
 
                     // Pattern 4: vowel + modifier + DIFFERENT vowel → English
-                    // EXCEPT for Vietnamese patterns: u+a (ưa), u+o (ươ)
+                    // EXCEPT for Vietnamese diphthong patterns with tone in middle:
+                    // - U + modifier + A/O: ưa, ươ (của, được)
+                    // - A + modifier + I/Y: ai, ay (gái, máy)
+                    // - O + modifier + I: oi (bói, hói)
                     // Example: "core" = c + o + r + e → o+r+e is NOT Vietnamese pattern
                     // Example: "cura" = c + u + r + a → u+r+a IS Vietnamese (cửa)
+                    // Example: "gasi" = g + a + s + i → a+s+i IS Vietnamese (gái)
                     if has_initial_consonant {
                         let (prev_vowel, _) = self.raw_input[i - 1];
-                        // Vietnamese exception: U + modifier + A/O → valid (ưa, ươ patterns)
-                        let is_vietnamese_ua =
-                            prev_vowel == keys::U && (next_key == keys::A || next_key == keys::O);
-                        if !is_vietnamese_ua {
+                        // Vietnamese exceptions: diphthongs with tone modifier in middle
+                        let is_vietnamese_pattern = match prev_vowel {
+                            k if k == keys::U => next_key == keys::A || next_key == keys::O,
+                            k if k == keys::A => next_key == keys::I || next_key == keys::Y,
+                            k if k == keys::O => next_key == keys::I,
+                            _ => false,
+                        };
+                        if !is_vietnamese_pattern {
                             return true;
                         }
                     }
