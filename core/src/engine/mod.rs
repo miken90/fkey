@@ -1931,6 +1931,13 @@ impl Engine {
         self.pending_breve_pos = None;
     }
 
+    /// Get the full composed buffer as a Vietnamese string with diacritics.
+    ///
+    /// Used for "Select All + Replace" injection method.
+    pub fn get_buffer_string(&self) -> String {
+        self.buf.to_full_string()
+    }
+
     /// Restore buffer from a Vietnamese word string
     ///
     /// Used when native app detects cursor at word boundary and wants to edit.
