@@ -105,22 +105,33 @@ jobs:
           body: |
             🔄 Auto-generated preview build for PR #${{ github.event.pull_request.number }}
 
-            **Version:** `${{ steps.version.outputs.version }}`
-            **Commit:** ${{ github.sha }}
+            **Latest Version:** `${{ steps.version.outputs.version }}`
+            **Latest Commit:** ${{ github.sha }}
 
-      - name: Comment on PR
+            > ⚠️ This release is updated on each push. Download links for specific commits are in PR comments.
+
+      - name: Comment on PR with new DMG
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: actions/github-script@v7
         with:
-          header: dmg-download
-          message: |
-            ## 📦 macOS Build Ready
+          script: |
+            const shortSha = '${{ github.sha }}'.substring(0, 7);
+            const version = '${{ steps.version.outputs.version }}';
+            const dmgName = '${{ steps.dmg.outputs.name }}';
+            const downloadUrl = `https://github.com/${{ github.repository }}/releases/download/pr-${{ github.event.pull_request.number }}/${dmgName}`;
 
-            | Version | Download |
-            |---------|----------|
-            | `${{ steps.version.outputs.version }}` | [⬇️ **${{ steps.dmg.outputs.name }}**](https://github.com/${{ github.repository }}/releases/download/pr-${{ github.event.pull_request.number }}/${{ steps.dmg.outputs.name }}) |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.pull_request.number }},
+              body: `## 📦 macOS Build Ready
 
-            > 💡 Direct download link - no login required
+| Commit | Version | Download |
+|--------|---------|----------|
+| \`${shortSha}\` | \`${version}\` | [⬇️ **${dmgName}**](${downloadUrl}) |
+
+> 🔗 Build for commit ${{ github.sha }}`
+            });
 
   build-linux:
     # Only for manual trigger (not PR) - Linux build is optional
