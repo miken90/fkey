@@ -249,13 +249,13 @@ fn w_vowel_produces_valid_vietnamese() {
 #[test]
 fn w_final_consonant_produces_valid_vietnamese() {
     telex(&[
-        ("wng ", "ưng "),   // ưng is valid Vietnamese (w→ư + ng final)
-        ("uwng ", "ưng "),  // uwng also produces ưng (redundant u)
-        ("wn ", "ưn "),     // ưn is valid Vietnamese
-        ("wm ", "ưm "),     // ưm is valid Vietnamese
-        ("wc ", "ưc "),     // ưc is valid Vietnamese
-        ("wt ", "ưt "),     // ưt is valid Vietnamese
-        ("wp ", "ưp "),     // ưp is valid Vietnamese
+        ("wng ", "ưng "),  // ưng is valid Vietnamese (w→ư + ng final)
+        ("uwng ", "ưng "), // uwng also produces ưng (redundant u)
+        ("wn ", "ưn "),    // ưn is valid Vietnamese
+        ("wm ", "ưm "),    // ưm is valid Vietnamese
+        ("wc ", "ưc "),    // ưc is valid Vietnamese
+        ("wt ", "ưt "),    // ưt is valid Vietnamese
+        ("wp ", "ưp "),    // ưp is valid Vietnamese
     ]);
 }
 
@@ -957,5 +957,49 @@ fn case_sensitivity_restore() {
         // Mixed case tech terms
         ("TypeScript ", "TypeScript "),
         ("JavaScript ", "JavaScript "),
+    ]);
+}
+
+// ============================================================
+// DOUBLE MARK KEYS (English words with repeated modifier keys)
+// When same mark key is pressed twice, both appear as letters
+// This allows typing English words like "issue", "bass", "boss"
+// ============================================================
+
+#[test]
+fn double_mark_english_words() {
+    telex(&[
+        // Words with double 's' (sắc mark key)
+        ("issue ", "issue "),
+        ("bass ", "bass "),
+        ("boss ", "boss "),
+        ("class ", "class "),
+        ("cross ", "cross "),
+        ("dress ", "dress "),
+        ("glass ", "glass "),
+        ("grass ", "grass "),
+        ("gross ", "gross "),
+        ("less ", "less "),
+        ("loss ", "loss "),
+        ("mass ", "mass "),
+        ("mess ", "mess "),
+        ("miss ", "miss "),
+        ("pass ", "pass "),
+        ("press ", "press "),
+        ("stress ", "stress "),
+        // Words with double 'f' (huyền mark key)
+        ("staff ", "staff "),
+        ("stuff ", "stuff "),
+        ("cliff ", "cliff "),
+        ("stiff ", "stiff "),
+        ("off ", "off "),
+        ("buff ", "buff "),
+        ("cuff ", "cuff "),
+        ("puff ", "puff "),
+        // Words with double 'r' (hỏi mark key)
+        ("error ", "error "),
+        ("mirror ", "mirror "),
+        ("horror ", "horror "),
+        ("terror ", "terror "),
     ]);
 }

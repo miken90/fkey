@@ -308,8 +308,10 @@ fn modern_orthography_full() {
 // ============================================================
 
 #[test]
-fn double_tone_reverts() {
-    telex(&[("ass", "as")]);
+fn double_mark_key_includes_both() {
+    // When mark is reverted by pressing same key twice, BOTH keys appear as letters
+    // This allows typing English words like "issue", "bass", "boss"
+    telex(&[("ass", "ass")]);
 }
 
 #[test]
@@ -426,14 +428,14 @@ fn foreign_word_exxpe_no_transform() {
     // When typing "exxpe":
     // - 'e' → buffer="e"
     // - 'x' → mark applied → screen="ẽ"
-    // - 'x' → revert (same key) → screen="ex", buffer="ex"
-    // - 'p' → screen="exp", buffer="exp" (invalid Vietnamese)
-    // - 'e' → buffer="expe" invalid → no circumflex applied, just adds 'e'
-    // Result: "expe" (the first x was consumed/reverted)
+    // - 'x' → revert (same key) → screen="exx", buffer="exx" (both x appear)
+    // - 'p' → screen="exxp", buffer="exxp"
+    // - 'e' → buffer="exxpe" invalid → no circumflex applied, just adds 'e'
+    // Result: "exxpe" (both x keys appear after revert)
     let result = type_word(&mut e, "exxpe");
     assert_eq!(
-        result, "expe",
-        "exxpe should become expe (first x consumed by mark/revert), got: {}",
+        result, "exxpe",
+        "exxpe should stay exxpe (both x keys appear after revert), got: {}",
         result
     );
 }

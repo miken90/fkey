@@ -336,13 +336,15 @@ fn revert_tone_double_key() {
 
 #[test]
 fn revert_mark_double_key() {
-    // ass → as (revert á back to as)
+    // When mark is reverted, BOTH the original mark key AND the reverting key
+    // should appear as letters. This allows typing words like "issue", "bass", etc.
+    // ass → ass (not as): first 's' was modifier for á, second 's' reverts and outputs both
     telex(&[
-        ("ass", "as"),
-        ("aff", "af"),
-        ("arr", "ar"),
-        ("axx", "ax"),
-        ("ajj", "aj"),
+        ("ass", "ass"),
+        ("aff", "aff"),
+        ("arr", "arr"),
+        ("axx", "axx"),
+        ("ajj", "ajj"),
     ]);
 }
 
