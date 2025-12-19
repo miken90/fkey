@@ -713,12 +713,9 @@ impl Engine {
                                 // Check if there's a vowel between target and final consonants
                                 // "teacher": e-a-ch has 'a' between first 'e' and 'ch' → block
                                 // "hongo": o-ng has no vowel between 'o' and 'ng' → allow
-                                let has_vowel_between = (i + 1..self.buf.len())
-                                    .any(|j| {
-                                        self.buf
-                                            .get(j)
-                                            .is_some_and(|ch| keys::is_vowel(ch.key))
-                                    });
+                                let has_vowel_between = (i + 1..self.buf.len()).any(|j| {
+                                    self.buf.get(j).is_some_and(|ch| keys::is_vowel(ch.key))
+                                });
 
                                 if has_vowel_between {
                                     // Another vowel between target and end → different syllable
@@ -734,18 +731,19 @@ impl Engine {
                                 // Single consonant finals need additional context
                                 // - "data" → should NOT become "dât" (t final, but English)
                                 // - "nhana" → "nhân" (n final, but has nh initial)
-                                let (all_are_valid_finals, is_double_final) =
-                                    match consonants_after.len() {
-                                        1 => (
-                                            constants::VALID_FINALS_1.contains(&consonants_after[0]),
-                                            false,
-                                        ),
-                                        2 => {
-                                            let pair = [consonants_after[0], consonants_after[1]];
-                                            (constants::VALID_FINALS_2.contains(&pair), true)
-                                        }
-                                        _ => (false, false), // More than 2 consonants is invalid
-                                    };
+                                let (all_are_valid_finals, is_double_final) = match consonants_after
+                                    .len()
+                                {
+                                    1 => (
+                                        constants::VALID_FINALS_1.contains(&consonants_after[0]),
+                                        false,
+                                    ),
+                                    2 => {
+                                        let pair = [consonants_after[0], consonants_after[1]];
+                                        (constants::VALID_FINALS_2.contains(&pair), true)
+                                    }
+                                    _ => (false, false), // More than 2 consonants is invalid
+                                };
 
                                 // Double consonant finals (ng,nh,ch) are distinctly Vietnamese
                                 // Always allow circumflex for these patterns
@@ -1554,34 +1552,29 @@ impl Engine {
                 }
             }
 
-            // Auto-restore when consonant after mark creates English pattern
-            // Example: "tex" → "tẽ", then 't' typed → "tẽt" is invalid → restore "text"
-            // Check: buffer has mark transforms AND new consonant creates invalid pattern
+            // Auto-restore when consonant after mark creates clear English pattern
+            // Example: "tex" → "tẽ", then 't' typed → "tẽt" has English modifier pattern → restore "text"
             //
-            // IMPORTANT: Only trigger when consonant immediately follows a marked character
-            // This catches: "tex" + 't' where 'ẽ' (marked) is followed by 't'
-            // But skips: "việt" + 'n' where 't' (plain) is followed by 'n'
-            // The second case happens after restore_word() when extending a word.
+            // IMPORTANT: Mid-word, only restore for clear English PATTERNS (modifier+consonant clusters),
+            // NOT just structural invalidity. Words like "dọd" are invalid but user might still be typing.
+            // Full structural validation happens at word boundary (space/break).
+            //
+            // This catches: "tex" + 't' where 'x' modifier before 't' creates English cluster
+            // But preserves: "dọ" + 'd' where 'j' modifier before 'd' doesn't indicate English
             if keys::is_consonant(key) && self.buf.len() >= 2 {
                 // Check if consonant immediately follows a marked character
                 if let Some(prev_char) = self.buf.get(self.buf.len() - 2) {
                     let prev_has_mark = prev_char.mark > 0 || prev_char.tone > 0;
-                    if prev_has_mark {
-                        if let Some(raw_chars) = self.should_auto_restore(false) {
-                            // Restore to raw English
-                            // Note: The new consonant is already in the buffer (added at line 1291)
-                            // but NOT yet displayed on screen. So backspace = buf.len() - 1.
+                    if prev_has_mark && self.has_english_modifier_pattern(false) {
+                        // Clear English pattern detected - restore to raw
+                        if let Some(raw_chars) = self.build_raw_chars() {
                             let backspace = (self.buf.len() - 1) as u8;
 
                             // Repopulate buffer with restored content (plain chars, no marks)
-                            // This allows subsequent typing to build on the restored word
-                            // Example: "express" - after "exp" is restored, "ress" continues
-                            // and buffer contains full "express" for final validation
                             self.buf.clear();
                             for &(key, caps) in &self.raw_input {
                                 self.buf.push(Char::new(key, caps));
                             }
-                            // Keep raw_input for continued tracking
 
                             self.last_transform = None;
                             return Result::send(backspace, &raw_chars);
