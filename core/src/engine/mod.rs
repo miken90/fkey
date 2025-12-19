@@ -558,15 +558,49 @@ impl Engine {
     fn try_stroke(&mut self, key: u16) -> Option<Result> {
         // Find position of un-stroked 'd' to apply stroke
         let pos = if self.method == 0 {
-            // Telex: Issue #51 - require adjacent 'd' for stroke
-            // Check if the LAST character in buffer is an un-stroked 'd'
+            // Telex: First try adjacent 'd' (last char is un-stroked d)
             let last_pos = self.buf.len().checked_sub(1)?;
             let last_char = self.buf.get(last_pos)?;
 
-            if last_char.key != keys::D || last_char.stroke {
-                return None;
+            if last_char.key == keys::D && !last_char.stroke {
+                // Adjacent stroke: "dd" → "đ"
+                last_pos
+            } else {
+                // Delayed stroke: check if initial 'd' can be stroked
+                // Only allow if: first char is 'd', has vowel, and forms valid Vietnamese
+                let first_char = self.buf.get(0)?;
+                if first_char.key != keys::D || first_char.stroke {
+                    return None;
+                }
+
+                // Must have at least one vowel for delayed stroke
+                let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+                let has_vowel = buffer_keys.iter().any(|&k| keys::is_vowel(k));
+                if !has_vowel {
+                    return None;
+                }
+
+                // Must form valid Vietnamese (including vowel pattern) for delayed stroke
+                // Use is_valid() instead of is_valid_for_transform() to check vowel patterns
+                // This prevents "dea" + "d" → "đea" (invalid "ea" diphthong)
+                if !is_valid(&buffer_keys) {
+                    return None;
+                }
+
+                // For open syllables (d + vowel only), defer stroke to try_mark
+                // UNLESS a mark is already applied (confirms Vietnamese intent)
+                // This prevents "de" + "d" → "đe" while allowing:
+                // - "dods" → "đó" (mark key triggers stroke)
+                // - "dojd" → "đọ" (mark already present, stroke applies immediately)
+                let syllable = syllable::parse(&buffer_keys);
+                let has_mark_applied = self.buf.iter().any(|c| c.mark > 0);
+                if syllable.final_c.is_empty() && !has_mark_applied {
+                    // Open syllable without mark - defer stroke decision to try_mark
+                    return None;
+                }
+
+                0 // Position 0 = initial consonant
             }
-            last_pos
         } else {
             // VNI: Allow delayed stroke - find first un-stroked 'd' anywhere in buffer
             // '9' is always intentional stroke command, not a letter
@@ -1055,6 +1089,45 @@ impl Engine {
             }
         }
 
+        // Telex: Check for delayed stroke pattern (d + vowels + d)
+        // When buffer is "dod" and mark key is typed, apply stroke to initial 'd'
+        // This enables "dods" → "đó" while preventing "de" + "d" → "đe"
+        let mut had_delayed_stroke = false;
+        if self.method == 0 && self.buf.len() >= 2 {
+            if let (Some(first_char), Some(last_char)) = (self.buf.get(0), self.buf.last()) {
+                // Pattern: first is unstroked 'd', last is 'd'
+                if first_char.key == keys::D
+                    && !first_char.stroke
+                    && last_char.key == keys::D
+                    && self.buf.len() > 1
+                {
+                    // Check if buffer has vowels (excluding the last 'd')
+                    let has_vowel = self
+                        .buf
+                        .iter()
+                        .take(self.buf.len() - 1)
+                        .any(|c| keys::is_vowel(c.key));
+                    if has_vowel {
+                        // Check if buffer (excluding last 'd') forms valid Vietnamese
+                        let buffer_without_last: Vec<u16> = self
+                            .buf
+                            .iter()
+                            .take(self.buf.len() - 1)
+                            .map(|c| c.key)
+                            .collect();
+                        if is_valid(&buffer_without_last) {
+                            // Apply delayed stroke: stroke initial 'd', remove trigger 'd'
+                            if let Some(c) = self.buf.get_mut(0) {
+                                c.stroke = true;
+                            }
+                            self.buf.pop(); // Remove the trigger 'd'
+                            had_delayed_stroke = true;
+                        }
+                    }
+                }
+            }
+        }
+
         // Issue #44: Apply pending breve before adding mark
         // When user types "aws" (Telex) or "a81" (VNI), they want "ắ" (breve + sắc)
         // Breve was deferred due to open syllable, but adding mark confirms Vietnamese input
@@ -1144,7 +1217,20 @@ impl Engine {
             c.mark = mark_val;
             self.last_transform = Some(Transform::Mark(key, mark_val));
             // Rebuild from the earlier position if compound was formed
-            let rebuild_pos = rebuild_from_compound.map_or(pos, |cp| cp.min(pos));
+            let mut rebuild_pos = rebuild_from_compound.map_or(pos, |cp| cp.min(pos));
+
+            // If delayed stroke was applied, rebuild from position 0
+            // and add extra backspace for the trigger 'd' that was on screen
+            if had_delayed_stroke {
+                rebuild_pos = 0;
+                let result = self.rebuild_from(rebuild_pos);
+                let chars: Vec<char> = result.chars[..result.count as usize]
+                    .iter()
+                    .filter_map(|&c| char::from_u32(c))
+                    .collect();
+                // Add 1 to backspace for the trigger 'd' that was on screen but removed from buffer
+                return Some(Result::send(result.backspace + 1, &chars));
+            }
 
             // If there was pending breve, we need extra backspace
             // Screen has 'w' (Telex) or '8' (VNI) that needs to be deleted

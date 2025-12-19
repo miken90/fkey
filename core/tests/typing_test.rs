@@ -1142,24 +1142,26 @@ fn vni_switch_diacritics() {
 // NON-ADJACENT STROKE - Issue #51
 // ============================================================
 //
-// In Telex, "dd" → "đ" should only apply when the two 'd's are ADJACENT.
-// When there are characters between them (like in "deadline"), they should
-// remain as separate 'd' characters.
+// Telex stroke behavior:
+// - dd → đ (adjacent stroke, always works)
+// - d + vowel + d → deferred (open syllable, waits for mark key)
+// - d + vowel + consonant + d → đ + vowel + consonant (has final, immediate stroke)
 //
-// According to Vietnamese Telex docs (Section 9.2.2):
-// - dd → đ (two adjacent d's)
-// - d...d (with chars between) → d...d (no transformation)
+// Delayed stroke is DEFERRED for open syllables to prevent "dede" → "đê"
+// Only when a mark key (s,f,r,x,j) is typed does the stroke + mark apply together.
+// This enables "dods" → "đó" while preventing "dedicated" → "đeicated".
 
 const TELEX_NON_ADJACENT_STROKE: &[(&str, &str)] = &[
-    // Issue #51: "deadline" should stay as "deadline", not "đealine"
-    // The 'd's are separated by "ea", so stroke should NOT apply
+    // English words with invalid Vietnamese vowel patterns stay unchanged
+    // (ea, io, etc. are NOT valid Vietnamese diphthongs)
     ("deadline", "deadline"),
     ("dedicated", "dedicated"),
     ("decided", "decided"),
-    // Edge case: d + vowels + d + vowels
-    ("dede", "dede"),
-    ("dada", "dada"),
-    ("dodo", "dodo"),
+    // Open syllables (d + vowel + d) - stroke is DEFERRED to mark key
+    // This prevents false transformation of English-like patterns
+    ("dede", "dede"), // No mark key, stroke deferred
+    ("dada", "dada"), // No mark key, stroke deferred
+    ("dodo", "dodo"), // No mark key, stroke deferred
     // Mixed: adjacent dd at start
     ("ddead", "đead"),           // dd at start is adjacent → đ, then "ead"
     ("ddedicated", "đedicated"), // dd at start

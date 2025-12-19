@@ -1243,36 +1243,32 @@ fn z_still_removes_marks_in_telex() {
 /// Issue #24: All possible Telex combinations for "đọc"
 ///
 /// đọc = đ (stroke) + ọ (nặng mark) + c
-/// - đ: requires "dd" (MUST be adjacent - Issue #51)
+/// - đ: can be typed as "dd" (adjacent) OR delayed stroke (d + vowel + d)
 /// - ọ: requires "o" + "j" (j can come after c)
 /// - c: just "c"
 ///
-/// Issue #51: stroke only applies when 'd's are ADJACENT.
-/// Non-adjacent 'd' patterns (like "deadline") no longer trigger stroke.
+/// Delayed stroke is now supported for valid Vietnamese patterns.
+/// Second 'd' triggers stroke on initial 'd' if buffer forms valid Vietnamese.
 #[test]
 fn telex_doc_all_combinations() {
-    // Standard patterns - dd at start (ONLY valid patterns for đ)
+    // Standard patterns - dd at start (adjacent stroke)
     telex(&[
         ("ddojc", "đọc"), // dd + oj + c (most common)
         ("ddocj", "đọc"), // dd + oc + j (mark at end)
     ]);
 
-    // Issue #51: D-postfix patterns NO LONGER produce đ
-    // Stroke requires adjacent 'd's to prevent false positives with English words
+    // Delayed stroke patterns - d at end triggers stroke on initial d
+    // Second 'd' applies stroke to first 'd' when buffer is valid Vietnamese
     telex(&[
-        ("dojcd", "dọcd"), // d + oj + c + d (no stroke - d's not adjacent)
-        ("docjd", "dọcd"), // d + oc + j + d (no stroke - d's not adjacent)
-        // Note: "docdj" → "docdj" because "docd" has invalid final "cd",
-        // so the 'j' mark is rejected by validation
-        ("docdj", "docdj"),
+        ("dojcd", "đọc"), // d + oj + c + d (delayed stroke at end)
+        ("docjd", "đọc"), // d + oc + j + d (delayed stroke at end)
+        ("docdj", "đọc"), // d + oc + d + j (delayed stroke, then tone)
     ]);
 
-    // Issue #51: Mixed order patterns also NO LONGER produce đ
+    // Mixed order patterns - delayed stroke in middle
     telex(&[
-        ("dojdc", "dọdc"), // d + oj + d + c (no stroke - d's not adjacent)
-        // Note: "dodjc" → "dodjc" because "dod" has invalid structure
-        // (d is not a valid final consonant in Vietnamese), so 'j' mark is rejected
-        ("dodjc", "dodjc"),
+        ("dojdc", "đọc"), // d + oj + d + c (delayed stroke, then c)
+        ("dodjc", "đọc"), // d + o + d + j + c (delayed stroke triggers on 3rd char)
     ]);
 }
 
