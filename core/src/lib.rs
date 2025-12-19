@@ -205,6 +205,38 @@ pub extern "C" fn ime_clear() {
     }
 }
 
+/// Get the full composed buffer as UTF-32 codepoints.
+///
+/// Used for "Select All + Replace" injection method where the entire
+/// buffer content is needed instead of incremental backspace + chars.
+///
+/// # Arguments
+/// * `out` - Pointer to output buffer for UTF-32 codepoints
+/// * `max_len` - Maximum number of codepoints to write
+///
+/// # Returns
+/// Number of codepoints written to `out`.
+///
+/// # Safety
+/// `out` must point to valid memory of at least `max_len * sizeof(u32)` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn ime_get_buffer(out: *mut u32, max_len: i64) -> i64 {
+    if out.is_null() || max_len <= 0 {
+        return 0;
+    }
+
+    let guard = lock_engine();
+    if let Some(ref e) = *guard {
+        let full = e.get_buffer_string();
+        let utf32: Vec<u32> = full.chars().map(|c| c as u32).collect();
+        let len = utf32.len().min(max_len as usize);
+        std::ptr::copy_nonoverlapping(utf32.as_ptr(), out, len);
+        len as i64
+    } else {
+        0
+    }
+}
+
 /// Free a result pointer returned by `ime_key`.
 ///
 /// # Safety
