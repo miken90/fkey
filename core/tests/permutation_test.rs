@@ -121,11 +121,7 @@ fn circumflex_diphthong_patterns() {
 /// Horn on single vowel (standard usage)
 #[test]
 fn horn_single_vowel() {
-    telex(&[
-        ("tuw ", "tư "),
-        ("muw ", "mư "),
-        ("nuw ", "nư "),
-    ]);
+    telex(&[("tuw ", "tư "), ("muw ", "mư "), ("nuw ", "nư ")]);
 }
 
 /// Horn in diphthong - typing order variations (critical fix!)
@@ -307,10 +303,10 @@ fn real_phrases_numbers() {
 fn modifier_after_initial() {
     telex(&[
         // These patterns should NOT apply modifier
-        ("sm ", "sm "),   // s at start, no vowel before
-        ("fm ", "fm "),   // f at start
+        ("sm ", "sm "), // s at start, no vowel before
+        ("fm ", "fm "), // f at start
         // But these should work
-        ("sam ", "sam "), // s after vowel a, but no tone
+        ("sam ", "sam "),  // s after vowel a, but no tone
         ("safm ", "sàm "), // f as modifier after a
     ]);
 }
@@ -334,13 +330,13 @@ fn double_modifiers() {
 fn valid_vietnamese_not_restored() {
     telex(&[
         // These are valid Vietnamese, should not auto-restore
-        ("naof ", "nào "),  // not restored to "naof"
-        ("saof ", "sào "),  // not restored to "saof"
-        ("mais ", "mái "),  // not restored to "mais"
-        ("oiw ", "ơi "),    // not restored to "oiw"
-        ("nafo ", "nào "),  // not restored to "nafo"
-        ("gasi ", "gái "),  // not restored to "gasi"
-        ("baro ", "bảo "),  // not restored to "baro"
+        ("naof ", "nào "), // not restored to "naof"
+        ("saof ", "sào "), // not restored to "saof"
+        ("mais ", "mái "), // not restored to "mais"
+        ("oiw ", "ơi "),   // not restored to "oiw"
+        ("nafo ", "nào "), // not restored to "nafo"
+        ("gasi ", "gái "), // not restored to "gasi"
+        ("baro ", "bảo "), // not restored to "baro"
     ]);
 }
 
@@ -348,13 +344,13 @@ fn valid_vietnamese_not_restored() {
 #[test]
 fn english_words_restored() {
     telex(&[
-        ("view ", "view "),   // should restore (not vieư)
-        ("raw ", "raw "),     // should restore
-        ("law ", "law "),     // should restore
-        ("saw ", "saw "),     // should restore
-        ("data ", "data "),   // should restore (not dât)
-        ("half ", "half "),   // should restore
-        ("wolf ", "wolf "),   // should restore
+        ("view ", "view "), // should restore (not vieư)
+        ("raw ", "raw "),   // should restore
+        ("law ", "law "),   // should restore
+        ("saw ", "saw "),   // should restore
+        ("data ", "data "), // should restore (not dât)
+        ("half ", "half "), // should restore
+        ("wolf ", "wolf "), // should restore
     ]);
 }
 

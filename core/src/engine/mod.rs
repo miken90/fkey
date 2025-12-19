@@ -303,6 +303,17 @@ impl Engine {
             // restore to raw English (like ESC but triggered by space)
             let restore_result = self.try_auto_restore_on_space();
 
+            // If auto-restore happened, repopulate buffer with plain chars from raw_input
+            // This ensures word_history stores the correct restored word (not transformed)
+            // Example: "restore" → buffer was "rếtore" (6 chars), raw_input has 7 keys
+            // After this, buffer has "restore" (7 chars) for correct history
+            if restore_result.action != 0 {
+                self.buf.clear();
+                for &(key, caps) in &self.raw_input {
+                    self.buf.push(Char::new(key, caps));
+                }
+            }
+
             // Push buffer to history before clearing (for backspace-after-space feature)
             if !self.buf.is_empty() {
                 self.word_history.push(self.buf.clone());
@@ -686,9 +697,9 @@ impl Engine {
                                 // AND the target vowel is part of a diphthong (has adjacent vowel)
                                 // This allows "rieneg" → "riêng" (ie + n + e, ie is diphthong)
                                 // but blocks "data" → "dât" (a + t + a, no diphthong)
-                                let all_are_valid_finals = consonants_after.iter().all(|&k| {
-                                    constants::VALID_FINALS_1.contains(&k)
-                                });
+                                let all_are_valid_finals = consonants_after
+                                    .iter()
+                                    .all(|&k| constants::VALID_FINALS_1.contains(&k));
 
                                 // Check if there's another vowel adjacent to target (diphthong)
                                 let has_adjacent_vowel = (i > 0
@@ -702,8 +713,30 @@ impl Engine {
                                             .get(i + 1)
                                             .is_some_and(|ch| keys::is_vowel(ch.key)));
 
-                                if !all_are_valid_finals || !has_adjacent_vowel {
-                                    // Not a diphthong pattern OR non-final consonants → likely English
+                                // Check for Vietnamese-specific double initial (nh, ch, th, ph, etc.)
+                                // This allows "nhana" → "nhân" (nh + a + n + a)
+                                // but still blocks "data" → "dât" (d is not a Vietnamese digraph)
+                                let has_vietnamese_double_initial = if i >= 2 {
+                                    // Get first two consonants before the target vowel
+                                    let initial_keys: Vec<u16> = (0..i)
+                                        .filter_map(|j| self.buf.get(j).map(|ch| ch.key))
+                                        .take_while(|k| !keys::is_vowel(*k))
+                                        .collect();
+                                    if initial_keys.len() >= 2 {
+                                        let pair = [initial_keys[0], initial_keys[1]];
+                                        constants::VALID_INITIALS_2.contains(&pair)
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                };
+
+                                if !all_are_valid_finals
+                                    || (!has_adjacent_vowel && !has_vietnamese_double_initial)
+                                {
+                                    // Not a diphthong pattern AND no Vietnamese double initial
+                                    // AND non-final consonants → likely English
                                     continue;
                                 }
                             }
@@ -1480,7 +1513,7 @@ impl Engine {
                 if let Some(prev_char) = self.buf.get(self.buf.len() - 2) {
                     let prev_has_mark = prev_char.mark > 0 || prev_char.tone > 0;
                     if prev_has_mark {
-                        if let Some(raw_chars) = self.should_auto_restore() {
+                        if let Some(raw_chars) = self.should_auto_restore(false) {
                             // Restore to raw English
                             // Note: The new consonant is already in the buffer (added at line 1291)
                             // but NOT yet displayed on screen. So backspace = buf.len() - 1.
@@ -1673,7 +1706,10 @@ impl Engine {
 
     /// Check if buffer has transforms and is invalid Vietnamese
     /// Returns the raw chars if restore is needed, None otherwise
-    fn should_auto_restore(&self) -> Option<Vec<char>> {
+    ///
+    /// `is_word_complete`: true when called on space/break (word is complete)
+    ///                     false when called mid-word (during typing)
+    fn should_auto_restore(&self, is_word_complete: bool) -> Option<Vec<char>> {
         if self.raw_input.is_empty() || self.buf.is_empty() {
             return None;
         }
@@ -1709,7 +1745,7 @@ impl Engine {
 
         // Check 2: English patterns in raw_input
         // Even if buffer is valid, certain patterns suggest English
-        if self.has_english_modifier_pattern() {
+        if self.has_english_modifier_pattern(is_word_complete) {
             return self.build_raw_chars();
         }
 
@@ -1738,7 +1774,8 @@ impl Engine {
     /// 1. Modifier (s/f/r/x/j in Telex) followed by consonant: "text" (x before t)
     /// 2. Modifier at end of long word (>2 chars): "their" (r at end)
     /// 3. Modifier after first vowel then another vowel: "use" (s between u and e)
-    fn has_english_modifier_pattern(&self) -> bool {
+    /// 4. Consonant + W + vowel without tone modifiers (only on word complete): "swim"
+    fn has_english_modifier_pattern(&self, is_word_complete: bool) -> bool {
         // Check for W at start - W is not a valid Vietnamese initial consonant
         // Words like "wow", "window", "water" start with W
         // Exception: standalone "w" → "ư" is valid Vietnamese
@@ -1756,6 +1793,34 @@ impl Engine {
                     .any(|(k, _)| keys::is_consonant(*k) && *k != keys::W);
                 if has_consonant {
                     return true;
+                }
+            }
+
+            // Check for consonant + W + vowel pattern without tone modifiers
+            // Only check when word is complete (on space/break), not mid-word
+            // Mid-word we can't tell if user will add tone modifiers later
+            // - "nwoc" during typing → might become "nwocj" → "nược" (Vietnamese)
+            // - "swim" on space → no tone modifiers → restore to English
+            if is_word_complete {
+                let (second, _) = self.raw_input[1];
+                if second == keys::W && keys::is_consonant(first) && first != keys::Q {
+                    // Q+W is valid Vietnamese (qu-), but other consonant+W may be English
+                    if self.raw_input.len() >= 3 {
+                        let (third, _) = self.raw_input[2];
+                        // Check if third char is a vowel (not a tone modifier like j)
+                        if keys::is_vowel(third) {
+                            // Check if there's ANY tone modifier (j/s/f/r/x) in the rest of the word
+                            let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+                            let has_tone_modifier = self.raw_input[2..]
+                                .iter()
+                                .any(|(k, _)| tone_modifiers.contains(k));
+
+                            // No tone modifier + consonant+W+vowel → likely English like "swim"
+                            if !has_tone_modifier {
+                                return true;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1971,7 +2036,7 @@ impl Engine {
     /// Example: "tẽt" (from typing "text") → "text " (restored + space)
     /// Example: "ễpct" (from typing "expect") → "expect " (restored + space)
     fn try_auto_restore_on_space(&self) -> Result {
-        if let Some(mut raw_chars) = self.should_auto_restore() {
+        if let Some(mut raw_chars) = self.should_auto_restore(true) {
             // Add space at the end
             raw_chars.push(' ');
             // Backspace count = current buffer length (displayed chars)
@@ -1989,7 +2054,7 @@ impl Engine {
     /// Does NOT include the break key (it's passed through by the app).
     /// Example: "ễpct" + comma → "expect" (comma added by app)
     fn try_auto_restore_on_break(&self) -> Result {
-        if let Some(raw_chars) = self.should_auto_restore() {
+        if let Some(raw_chars) = self.should_auto_restore(true) {
             // Backspace count = current buffer length (displayed chars)
             let backspace = self.buf.len() as u8;
             Result::send(backspace, &raw_chars)

@@ -237,10 +237,10 @@ fn w_initial_comprehensive() {
 #[test]
 fn w_vowel_produces_valid_vietnamese() {
     telex(&[
-        ("wa ", "ưa "),  // ưa is valid Vietnamese
-        ("we ", "ưe "),  // ưe is valid Vietnamese (though rare)
-        ("wi ", "ưi "),  // ưi is valid Vietnamese
-        ("wo ", "ươ "),  // ươ is valid Vietnamese
+        ("wa ", "ưa "), // ưa is valid Vietnamese
+        ("we ", "ưe "), // ưe is valid Vietnamese (though rare)
+        ("wi ", "ưi "), // ưi is valid Vietnamese
+        ("wo ", "ươ "), // ươ is valid Vietnamese
     ]);
 }
 
@@ -498,11 +498,7 @@ fn consonant_clusters_comprehensive() {
 #[case("str", "e", "stre")]
 #[case("str", "i", "stri")]
 #[case("str", "o", "stro")]
-fn cluster_vowel_patterns(
-    #[case] cluster: &str,
-    #[case] vowel: &str,
-    #[case] expected: &str,
-) {
+fn cluster_vowel_patterns(#[case] cluster: &str, #[case] vowel: &str, #[case] expected: &str) {
     let input = format!("{}{} ", cluster, vowel);
     let output = format!("{} ", expected);
     telex(&[(&input, &output)]);
@@ -572,11 +568,7 @@ fn modifier_consonant_comprehensive() {
 // text pattern variations
 #[case("text", "", "text")]
 #[case("next", "", "next")]
-fn modifier_consonant_patterns(
-    #[case] prefix: &str,
-    #[case] suffix: &str,
-    #[case] expected: &str,
-) {
+fn modifier_consonant_patterns(#[case] prefix: &str, #[case] suffix: &str, #[case] expected: &str) {
     let input = format!("{}{} ", prefix, suffix);
     let output = format!("{} ", expected);
     telex(&[(&input, &output)]);
@@ -688,11 +680,7 @@ fn ore_are_ure_ire_comprehensive() {
 #[case("f", "ire", "fire")]
 #[case("h", "ire", "hire")]
 #[case("w", "ire", "wire")]
-fn vowel_re_patterns(
-    #[case] prefix: &str,
-    #[case] suffix: &str,
-    #[case] expected: &str,
-) {
+fn vowel_re_patterns(#[case] prefix: &str, #[case] suffix: &str, #[case] expected: &str) {
     let input = format!("{}{} ", prefix, suffix);
     let output = format!("{} ", expected);
     telex(&[(&input, &output)]);
@@ -766,11 +754,7 @@ fn w_final_comprehensive() {
 #[case("d", "ew", "dew")]
 #[case("vi", "ew", "view")]
 #[case("cr", "ew", "crew")]
-fn w_final_patterns(
-    #[case] prefix: &str,
-    #[case] suffix: &str,
-    #[case] expected: &str,
-) {
+fn w_final_patterns(#[case] prefix: &str, #[case] suffix: &str, #[case] expected: &str) {
     let input = format!("{}{} ", prefix, suffix);
     let output = format!("{} ", expected);
     telex(&[(&input, &output)]);
@@ -871,30 +855,50 @@ fn tech_terms_comprehensive() {
 fn valid_vietnamese_structure_not_restored() {
     telex(&[
         // -est pattern produces valid Vietnamese with é + t final
-        ("test ", "tét "),  // tét is valid Vietnamese
-        ("best ", "bét "),  // bét is valid Vietnamese
-        ("rest ", "rét "),  // rét (cold) is a real word
-        ("nest ", "nét "),  // nét (stroke/feature) is a real word
+        ("test ", "tét "), // tét is valid Vietnamese
+        ("best ", "bét "), // bét is valid Vietnamese
+        ("rest ", "rét "), // rét (cold) is a real word
+        ("nest ", "nét "), // nét (stroke/feature) is a real word
         // -ost pattern produces valid Vietnamese with ó + t final
         ("cost ", "cót "), // cót is valid Vietnamese structure
         ("host ", "hót "), // hót (to sing/chirp) is a real word
         ("lost ", "lót "), // lót (to line/pad) is a real word
         ("most ", "mót "), // mót (to glean) is a real word
         ("post ", "pót "), // pót is valid Vietnamese structure
-        // Short words with x producing valid Vietnamese
-        // mix → mĩ, box → bõ, six → sĩ (valid Vietnamese)
+                           // Short words with x producing valid Vietnamese
+                           // mix → mĩ, box → bõ, six → sĩ (valid Vietnamese)
     ]);
 }
 
-/// SW- cluster: W acts as horn modifier, producing Vietnamese patterns
-/// Some may restore depending on subsequent characters
+/// SW- cluster: consonant + W is English pattern, should restore
+/// In Vietnamese, W (horn/breve modifier) must follow a vowel, not a consonant
 #[test]
 fn sw_cluster_edge_case() {
     telex(&[
-        // "sw" → s + w (horn) → produces ư-based Vietnamese
-        ("sweet ", "sưêt "),   // s + ư + ê + t (valid Vietnamese structure)
-        ("swim ", "sưim "),    // s + ư + i + m (valid Vietnamese structure)
-        ("switch ", "switch "), // Has "tch" which is invalid → restores
+        // "sw" → consonant + W → English pattern → restore
+        ("sweet ", "sweet "),   // Restores (consonant+W is English)
+        ("swim ", "swim "),     // Restores (consonant+W is English)
+        ("swing ", "swing "),   // Restores (consonant+W is English)
+        ("switch ", "switch "), // Restores (consonant+W is English)
+        ("swift ", "swift "),   // Restores (consonant+W is English)
+    ]);
+}
+
+/// Test: restore → space → backspace → space → expect restore preserved
+/// Scenario: After auto-restore, the restored text should persist through
+/// space-backspace-space cycles without re-transforming
+#[test]
+fn restore_space_backspace_space_cycle() {
+    telex(&[
+        // "restore" → "rếtore" during typing (s adds sắc to e)
+        // space → auto-restore to "restore "
+        // backspace → "restore" (delete space, word in buffer)
+        // space → "restore " (stays restored, not re-transformed)
+        ("restore < ", "restore "),
+        // SW words
+        ("swim < ", "swim "),
+        ("sweet < ", "sweet "),
+        ("swing < ", "swing "),
     ]);
 }
 
