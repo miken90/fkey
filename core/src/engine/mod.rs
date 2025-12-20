@@ -1154,42 +1154,10 @@ impl Engine {
                 return None;
             }
 
-            // Issue #44 (part 2): Breve in open syllable is also invalid
-            // "raw" → should stay "raw", not "ră"
-            // "trawm" → should become "trăm" (breve valid when final consonant present)
-            // "osaw" → should become "oắ" (mark on 'a' confirms Vietnamese, don't defer)
-            // "uafw" → should become "uằ" (mark on any vowel confirms Vietnamese)
-            // Defer breve only when: no final consonant AND no mark on any vowel
-            //
-            // Check if ANY vowel has a mark (confirms Vietnamese input regardless of position)
-            let any_vowel_has_mark = self.buf.iter().any(|c| c.mark > 0 && keys::is_vowel(c.key));
-
-            let has_breve_open_syllable = target_positions.iter().any(|&pos| {
-                if let Some(c) = self.buf.get(pos) {
-                    if c.key == keys::A {
-                        // If any vowel has a mark, it confirms Vietnamese - don't defer
-                        if any_vowel_has_mark {
-                            return false;
-                        }
-                        // Check if there's a valid final consonant after 'a'
-                        // Valid finals: c, m, n, p, t, ch, ng, nh
-                        let has_valid_final = (pos + 1..self.buf.len()).any(|i| {
-                            if let Some(next) = self.buf.get(i) {
-                                // Single final consonants
-                                if matches!(
-                                    next.key,
-                                    keys::C | keys::M | keys::N | keys::P | keys::T
-                                ) {
-                                    return true;
-                                }
-                            }
-                            false
-                        });
-                        return !has_valid_final;
-                    }
-                }
-                false
-            });
+            // Issue #44 (part 2): Always apply breve for "aw" pattern immediately
+            // "aw" → "ă", "taw" → "tă", "raw" → "ră"
+            // The breve is always applied - English auto-restore handles English words separately
+            let has_breve_open_syllable = false;
 
             if has_breve_open_syllable {
                 // Revert: clear applied tones, defer breve until final consonant
@@ -2573,7 +2541,7 @@ mod tests {
         ("aj", "ạ"),
         ("aa", "â"),
         // Issue #44: Breve deferred in open syllable until final consonant or mark
-        ("aw", "aw"),  // stays "aw" (no final)
+        ("aw", "ă"),   // standalone aw → ă
         ("awm", "ăm"), // breve applied when final consonant typed
         ("aws", "ắ"),  // breve applied when mark typed
         ("ee", "ê"),
@@ -2593,7 +2561,7 @@ mod tests {
         ("a5", "ạ"),
         ("a6", "â"),
         // Issue #44: Breve deferred in open syllable until final consonant or mark
-        ("a8", "a8"),  // stays "a8" (no final)
+        ("a8", "ă"),   // standalone a8 → ă
         ("a8m", "ăm"), // breve applied when final consonant typed
         ("a81", "ắ"),  // breve applied when mark typed
         ("e6", "ê"),

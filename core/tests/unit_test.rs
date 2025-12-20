@@ -75,8 +75,8 @@ const TELEX_MODIFIED_VOWELS: &[(&str, &str)] = &[
     ("oor", "ổ"),
     ("oox", "ỗ"),
     ("ooj", "ộ"),
-    // ă (breve) - Issue #44: standalone "aw" deferred until confirmation
-    ("aw", "aw"), // Deferred: no initial, no final, no mark
+    // ă (breve) - standalone "aw" applies breve immediately (no consonant before 'a')
+    ("aw", "ă"),  // Standalone: no consonant before 'a' → apply breve
     ("aws", "ắ"), // Mark confirms Vietnamese
     ("awf", "ằ"),
     ("awr", "ẳ"),
@@ -124,9 +124,9 @@ const TELEX_UPPERCASE: &[(&str, &str)] = &[
     ("AS", "Á"),
     ("Aa", "Â"),
     ("AA", "Â"),
-    // Issue #44: standalone breve deferred
-    ("Aw", "Aw"),
-    ("AW", "AW"),
+    // Issue #44: standalone breve applies immediately (no consonant before)
+    ("Aw", "Ă"),
+    ("AW", "Ă"),
     ("Ow", "Ơ"),
     ("Uw", "Ư"),
     // Standalone uppercase W → Ư
@@ -141,10 +141,10 @@ const TELEX_UPPERCASE: &[(&str, &str)] = &[
 const TELEX_DELAYED: &[(&str, &str)] = &[
     ("tuw", "tư"),
     ("tow", "tơ"),
-    // Issue #44: breve deferred without final or mark
-    ("taw", "taw"),  // Deferred: no final, no mark
-    ("taws", "tắ"),  // Mark confirms Vietnamese
-    ("tawm", "tăm"), // Final confirms Vietnamese
+    // Issue #44: breve now applies immediately
+    ("taw", "tă"),   // Breve applies immediately
+    ("taws", "tắ"),  // With mark
+    ("tawm", "tăm"), // With final consonant
     ("tungw", "tưng"),
     ("tongw", "tơng"),
     ("tuow", "tươ"),
@@ -236,8 +236,8 @@ const VNI_MODIFIED_VOWELS: &[(&str, &str)] = &[
     ("u73", "ử"),
     ("u74", "ữ"),
     ("u75", "ự"),
-    // ă: 8=breve - Issue #44: standalone "a8" deferred until confirmation
-    ("a8", "a8"), // Deferred: no initial, no final, no mark
+    // ă: 8=breve - standalone "a8" applies breve immediately (no consonant before 'a')
+    ("a8", "ă"),  // Standalone: no consonant before 'a' → apply breve
     ("a81", "ắ"), // Mark confirms Vietnamese
     ("a82", "ằ"),
     ("a83", "ẳ"),
@@ -269,8 +269,8 @@ const VNI_UPPERCASE: &[(&str, &str)] = &[
     ("A6", "Â"),
     ("O7", "Ơ"),
     ("U7", "Ư"),
-    // Issue #44: standalone breve deferred
-    ("A8", "A8"),
+    // Issue #44: standalone breve applies immediately (no consonant before)
+    ("A8", "Ă"),
 ];
 
 const VNI_DELAYED: &[(&str, &str)] = &[
