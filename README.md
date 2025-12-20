@@ -108,6 +108,7 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 |:---|:------------|:---------|
 | `text ` | `têt ` ❌ | `text ` ✅ |
 | `expect ` | `ễpct ` ❌ | `expect ` ✅ |
+| `perfect ` | `pềct ` ❌ | `perfect ` ✅ |
 | `window ` | `ưindow ` ❌ | `window ` ✅ |
 | `with ` | `ưith ` ❌ | `with ` ✅ |
 | `tesla ` | `téla ` ❌ | `tesla ` ✅ |
