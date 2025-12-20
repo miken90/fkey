@@ -61,12 +61,14 @@ VALID_INITIALS_2: [ch, gh, gi, kh, ng, nh, ph, qu, th, tr]
 ### 3.2 Âm cuối (C₂)
 
 ```rust
-// 9 âm cuối đơn (gồm bán nguyên âm)
-VALID_FINALS_1: [c, m, n, p, t, i, y, o, u]
+// 10 âm cuối đơn (gồm bán nguyên âm + k cho tên dân tộc)
+VALID_FINALS_1: [c, k, m, n, p, t, i, y, o, u]
 
 // 3 âm cuối đôi
 VALID_FINALS_2: [ch, ng, nh]
 ```
+
+> **Lưu ý**: `k` được hỗ trợ cho tên riêng từ ngôn ngữ dân tộc thiểu số (Đắk Lắk, Đắk Nông).
 
 ### 3.3 Quy tắc chính tả
 
@@ -144,7 +146,7 @@ parse(buffer_keys: &[u16]) -> Syllable
 
 4. Phần còn lại là final consonant
    - Try 2-char: ch, ng, nh
-   - Try 1-char: c, m, n, p, t, i, y, o, u
+   - Try 1-char: c, k, m, n, p, t, i, y, o, u
 ```
 
 ---

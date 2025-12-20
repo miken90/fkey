@@ -329,6 +329,8 @@ Tiếng Việt chỉ cho phép một số phụ âm ở vị trí cuối âm ti�
 | p           | /p/ | cập, tập   |
 | t           | /t/ | cát, tất   |
 
+> **Lưu ý**: Trong tên riêng từ ngôn ngữ dân tộc thiểu số (Ê Đê, Ba Na, Gia Rai...), chữ **k** có thể xuất hiện ở cuối âm tiết. Ví dụ: Đắk Lắk, Đắk Nông. Bộ gõ hỗ trợ trường hợp này.
+
 ### 4.3 Bảng phân bố phụ âm
 
 | Vị trí →          | Môi   | Môi-răng | Chân răng | Quặt lưỡi | Ngạc cứng | Ngạc mềm | Thanh hầu |
