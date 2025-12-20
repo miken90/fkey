@@ -127,6 +127,8 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 | `text ` | `têt ` ❌ | `text ` ✅ |
 | `expect ` | `ễpct ` ❌ | `expect ` ✅ |
 | `window ` | `ưindow ` ❌ | `window ` ✅ |
+| `with ` | `ưith ` ❌ | `with ` ✅ |
+| `tesla ` | `téla ` ❌ | `tesla ` ✅ |
 | `luxury ` | `lủuy ` ❌ | `luxury ` ✅ |
 | `their ` | `thỉ ` ❌ | `their ` ✅ |
 | `wow ` | `ươ ` ❌ | `wow ` ✅ |
