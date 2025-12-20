@@ -463,6 +463,10 @@ fn ethnic_minority_place_names_not_restored() {
         ("Lawks ", "Lắk "),             // Lắk - capitalized
         ("Ddawks Lawks ", "Đắk Lắk "),  // Đắk Lắk - full province name
         ("Ddawks Noong ", "Đắk Nông "), // Đắk Nông province
+        // Kr initial for ethnic minority words (Krông Búk district)
+        ("Kroong ", "Krông "),          // Krông - Kr initial + ô
+        ("Busk ", "Búk "),              // Búk - B + ú + k
+        ("Kroong Busk ", "Krông Búk "), // Krông Búk - full district name
         // Other breve + final consonant patterns
         ("bawts ", "bắt "),   // bắt - catch
         ("mawts ", "mắt "),   // mắt - eye

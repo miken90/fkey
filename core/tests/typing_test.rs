@@ -1281,6 +1281,10 @@ const TELEX_VALID_BREVE: &[(&str, &str)] = &[
     ("lawks", "lắk"),             // lắk - lowercase
     ("Ddawks Lawks", "Đắk Lắk"),  // Đắk Lắk - full province name
     ("Ddawks Noong", "Đắk Nông"), // Đắk Nông province (oo = ô)
+    // Kr initial for ethnic minority words (Krông Búk district)
+    ("Kroong", "Krông"),          // Krông - Kr initial + ô
+    ("Busk", "Búk"),              // Búk - B + ú + k
+    ("Kroong Busk", "Krông Búk"), // Krông Búk - full district name
 ];
 
 const VNI_VALID_BREVE: &[(&str, &str)] = &[
