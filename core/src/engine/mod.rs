@@ -2313,15 +2313,14 @@ impl Engine {
 
     /// Determine if buffer should be used for restore after a mark revert
     ///
-    /// Heuristic: Use buffer only when it forms a recognizable English word pattern.
-    /// Common patterns that indicate intentional revert (typo correction):
-    /// - Words with common prefixes: dis-, mis-, un-, re-, de-, pre-, etc.
-    /// - Words with common suffixes: -able, -ible, -tion, -ment, etc.
+    /// Heuristic: Use buffer when it forms a recognizable English word pattern,
+    /// OR when raw_input looks like a typo (double letter + single vowel at end).
     ///
     /// Examples:
     /// - "dissable" → buffer "disable" has dis- prefix → use buffer
-    /// - "issue" → buffer "isue" has no pattern → use raw_input "issue"
-    /// - "error" → buffer "eror" has no pattern → use raw_input "error"
+    /// - "soffa" → double ff + single vowel 'a' at end → use buffer "sofa"
+    /// - "issue" → iss + ue pattern (double + multiple chars) → use raw_input "issue"
+    /// - "error" → err + or pattern (double + multiple chars) → use raw_input "error"
     fn should_use_buffer_for_revert(&self) -> bool {
         let buf_str = self.buf.to_lowercase_string();
 
@@ -2345,6 +2344,26 @@ impl Engine {
 
         for suffix in SUFFIXES {
             if buf_str.ends_with(suffix) && buf_str.len() >= suffix.len() + 2 {
+                return true;
+            }
+        }
+
+        // Check if raw_input has double 'f' followed by single vowel at end
+        // Pattern: "soffa" → double 'f' + single 'a' → likely typo, use buffer "sofa"
+        // Only apply for 'f' because:
+        // - Double 'f' + vowel at end is rare in English (no common words like "staffa")
+        // - Double 's'/'r' + vowel has many valid words (worry, sorry, carry, etc.)
+        if self.raw_input.len() >= 4 {
+            let len = self.raw_input.len();
+            let (last_key, _, _) = self.raw_input[len - 1];
+            let (second_last_key, _, _) = self.raw_input[len - 2];
+            let (third_last_key, _, _) = self.raw_input[len - 3];
+
+            // Only for double 'f' + single vowel at end
+            if keys::is_vowel(last_key)
+                && second_last_key == keys::F
+                && third_last_key == keys::F
+            {
                 return true;
             }
         }

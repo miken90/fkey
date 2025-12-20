@@ -456,8 +456,8 @@ fn vietnamese_hoi_with_sonorant_final() {
 fn pattern9_dis_prefix() {
     // "dis-" prefix: double 's' reverts mark, buffer has valid prefix pattern
     telex_auto_restore(&[
-        ("disable ", "disable "),   // normal typing
-        ("dissable ", "disable "),  // double 's' reverts → "disable" (dis- prefix)
+        ("disable ", "disable "),  // normal typing
+        ("dissable ", "disable "), // double 's' reverts → "disable" (dis- prefix)
         ("disscover ", "discover "),
         ("dissconnect ", "disconnect "),
         ("disscuss ", "discuss "),
@@ -567,6 +567,9 @@ fn pattern9_double_mark_no_prefix() {
 fn pattern9_double_f_words() {
     // Double 'f' (huyền mark) - need vowel before ff for revert to happen
     telex_auto_restore(&[
+        // Words where ff reverts and buffer matches suffix pattern
+        ("soffa ", "sofa "), // "soa" buffer + "-fa" → use buffer "sofa"
+        // Words that preserve double f (no prefix/suffix match)
         ("staff ", "staff "),
         ("stuff ", "stuff "),
         ("cliff ", "cliff "),
