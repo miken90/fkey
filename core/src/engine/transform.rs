@@ -57,10 +57,8 @@ impl TransformResult {
 ///
 /// Pattern-based: scans buffer for matching vowels
 pub fn apply_tone(buf: &mut Buffer, key: u16, tone_value: u8, method: u8) -> TransformResult {
-    let buffer_keys: Vec<u16> = buf.iter().map(|c| c.key).collect();
-
     // Find target vowels based on key and method
-    let targets = find_tone_targets(&buffer_keys, key, tone_value, method);
+    let targets = find_tone_targets(buf, key, tone_value, method);
 
     if targets.is_empty() {
         return TransformResult::none();
@@ -87,14 +85,14 @@ pub fn apply_tone(buf: &mut Buffer, key: u16, tone_value: u8, method: u8) -> Tra
 }
 
 /// Find which vowel positions should receive the tone modifier
-fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) -> Vec<usize> {
+fn find_tone_targets(buf: &Buffer, key: u16, tone_value: u8, method: u8) -> Vec<usize> {
     let mut targets = vec![];
 
     // Find all vowel positions
-    let vowel_positions: Vec<usize> = buffer_keys
+    let vowel_positions: Vec<usize> = buf
         .iter()
         .enumerate()
-        .filter(|(_, &k)| keys::is_vowel(k))
+        .filter(|(_, c)| keys::is_vowel(c.key))
         .map(|(i, _)| i)
         .collect();
 
@@ -109,10 +107,23 @@ fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) 
         // This ensures "ee" doubling only works for consecutive presses,
         // not for words like "teacher" where 'e' appears twice non-adjacently
         if tone_value == tone::CIRCUMFLEX && matches!(key, keys::A | keys::E | keys::O) {
+            // Issue #312: If ANY vowel in the buffer already has a tone (horn/circumflex/breve),
+            // don't trigger same-vowel circumflex. The typed vowel should append as raw letter.
+            // Example: "chưa" + "a" → "chưaa" (NOT "chưâ")
+            let any_vowel_has_tone = buf
+                .iter()
+                .filter(|c| keys::is_vowel(c.key))
+                .any(|c| c.has_tone());
+
+            if any_vowel_has_tone {
+                // Skip circumflex, return empty targets to append raw vowel
+                return targets;
+            }
+
             // Find matching vowel (same key) - must be at last position
-            let last_pos = buffer_keys.len().saturating_sub(1);
+            let last_pos = buf.len().saturating_sub(1);
             for &pos in vowel_positions.iter().rev() {
-                if buffer_keys[pos] == key && pos == last_pos {
+                if buf.get(pos).map(|c| c.key) == Some(key) && pos == last_pos {
                     targets.push(pos);
                     break;
                 }
@@ -120,11 +131,14 @@ fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) 
         }
         // w → horn/breve
         else if tone_value == tone::HORN && key == keys::W {
-            targets = Phonology::find_horn_positions(buffer_keys, &vowel_positions);
+            let buffer_keys: Vec<u16> = buf.iter().map(|c| c.key).collect();
+            targets = Phonology::find_horn_positions(&buffer_keys, &vowel_positions);
         }
     }
     // VNI patterns
     else {
+        let buffer_keys: Vec<u16> = buf.iter().map(|c| c.key).collect();
+
         // 6 → circumflex for a, e, o
         if tone_value == tone::CIRCUMFLEX && key == keys::N6 {
             for &pos in vowel_positions.iter().rev() {
@@ -136,7 +150,7 @@ fn find_tone_targets(buffer_keys: &[u16], key: u16, tone_value: u8, method: u8) 
         }
         // 7 → horn for o, u
         else if tone_value == tone::HORN && key == keys::N7 {
-            targets = Phonology::find_horn_positions(buffer_keys, &vowel_positions);
+            targets = Phonology::find_horn_positions(&buffer_keys, &vowel_positions);
         }
         // 8 → breve for a only
         else if tone_value == tone::HORN && key == keys::N8 {

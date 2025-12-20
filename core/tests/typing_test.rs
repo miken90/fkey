@@ -753,14 +753,15 @@ const VNI_MARK_REPOSITION: &[(&str, &str)] = &[
     ("oa26", "oầ"),
     ("o6a2", "ồa"),
     ("oa2", "oà"),
-    // uo compound with marks
-    ("uo71", "ướ"),
-    ("uo72", "ườ"),
-    ("uo73", "ưở"),
-    ("uo74", "ưỡ"),
-    ("uo75", "ượ"),
-    ("uo17", "ướ"),
-    ("uo27", "ườ"),
+    // uo compound with marks - Issue #133: only 'o' gets horn when no final
+    ("uo71", "uớ"), // Issue #133: only 'o' gets horn
+    ("uo72", "uờ"),
+    ("uo73", "uở"),
+    ("uo74", "uỡ"),
+    ("uo75", "uợ"),
+    ("uo17", "uớ"),
+    ("uo27", "uờ"),
+    // When 'u' already has horn (u7...), 'o' gets horn too
     ("u7o71", "ướ"),
     ("u7o72", "ườ"),
     // ua vs qua
@@ -779,14 +780,15 @@ const TELEX_MARK_REPOSITION: &[(&str, &str)] = &[
     ("uafw", "ừa"), // uaf → ùa, then w → ừa (horn on U)
     ("uwaf", "ừa"),
     ("oafw", "oằ"),
-    // ươ compound
+    // ươ compound - when 'u' already has horn (uwow...), 'o' gets horn too
     ("uwows", "ướ"),
     ("uwowf", "ườ"),
     ("uwowr", "ưở"),
     ("uwowx", "ưỡ"),
     ("uwowj", "ượ"),
-    ("uows", "ướ"),
-    ("uowf", "ườ"),
+    // Issue #133: when 'u' doesn't have horn yet (uow...), only 'o' gets horn
+    ("uows", "uớ"),
+    ("uowf", "uờ"),
     // Real words
     ("nuwowcs", "nước"),
     ("buwowms", "bướm"),
@@ -828,8 +830,8 @@ const TELEX_DELAYED_PATTERNS: &[(&str, &str)] = &[
     ("tungw", "tưng"),
     ("tongw", "tơng"),
     ("tangw", "tăng"),
-    ("tuow", "tươ"),
-    ("nguoiw", "ngươi"),
+    ("tuow", "tuơ"),     // Issue #133: only 'o' gets horn when no final
+    ("nguoiw", "ngươi"), // Has 'i' after 'o', so both get horn
     // ua + w -> ưa (horn on u, not breve on a)
     ("chuaw", "chưa"),
     ("thuaw", "thưa"),
@@ -1407,6 +1409,48 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
 ];
 
 // ============================================================
+// ISSUE #133: HORN PLACEMENT - "huơ" vs "hươ"
+// ============================================================
+// In words like "huơ" and "khuơ", only 'o' gets the horn mark.
+// The 'u' remains unchanged because "uơ" is a valid vowel cluster
+// where horn applies only to 'o'.
+// GitHub: https://github.com/tuyenvm/OpenKey/issues/133
+
+const TELEX_HORN_PLACEMENT: &[(&str, &str)] = &[
+    // "uơ" pattern - only 'o' gets horn, 'u' stays unchanged
+    ("huow", "huơ"),   // huơ - to wave hands (NOT hươ)
+    ("khuow", "khuơ"), // khuơ - to stir (dialectal) (NOT khươ)
+    // Contrast with "ươ" pattern - both vowels get horn when there's a final
+    ("duowc", "dươc"),  // both u and o get horn (ươ pattern) when final exists
+    ("duowcj", "dược"), // dược - medicine (horn + nặng mark)
+    ("muowif", "mười"), // mười - ten (horn + huyền mark on ờ)
+    ("luowst", "lướt"), // lướt - to slide (final 't' triggers horn on 'u')
+];
+
+// ============================================================
+// ISSUE #312: SAME VOWEL AFTER MARKED VOWEL
+// ============================================================
+// When a vowel already has a diacritic mark, typing the same vowel
+// again should append the raw vowel, not apply circumflex.
+// Example: "chưa" + "a" → "chưaa" (NOT "chưâ")
+// GitHub: https://github.com/tuyenvm/OpenKey/issues/312
+
+const TELEX_SAME_VOWEL_AFTER_MARK: &[(&str, &str)] = &[
+    // Issue #312: After a vowel already has a mark (horn/circumflex/breve),
+    // typing the same vowel again should append raw, NOT apply circumflex.
+    //
+    // "chuwa" → "chưa" (horn applied via uw pattern)
+    // "chưa" + "a" → should be "chưaa" (NOT "chưâ")
+    ("chuwaa", "chưaa"), // chưa + a → chưaa (NOT chưâ)
+    // More examples with horn on 'u'
+    ("tuwaa", "tưaa"), // tưa + a → tưaa (NOT tưâ)
+    ("muwaa", "mưaa"), // mưa + a → mưaa (NOT mưâ)
+                       // Note: "aaa", "eee", "ooo" use standard revert behavior (third same key reverts)
+                       // "aaa" → "aa" (circumflex applied, then reverted - standard Vietnamese IME)
+                       // This is CORRECT and NOT a bug - it's the standard revert pattern.
+];
+
+// ============================================================
 // EDGE CASES: PARTIAL WORDS / INTERMEDIATE STATES
 // ============================================================
 //
@@ -1470,6 +1514,18 @@ fn telex_english_aw_words() {
 #[test]
 fn telex_breve_edge_cases() {
     telex(TELEX_BREVE_EDGE_CASES);
+}
+
+// Issue #133: Horn placement - "uơ" vs "ươ" patterns
+#[test]
+fn telex_horn_placement() {
+    telex(TELEX_HORN_PLACEMENT);
+}
+
+// Issue #312: Same vowel after marked vowel
+#[test]
+fn telex_same_vowel_after_mark() {
+    telex(TELEX_SAME_VOWEL_AFTER_MARK);
 }
 
 // ============================================================

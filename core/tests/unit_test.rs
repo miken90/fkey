@@ -147,7 +147,7 @@ const TELEX_DELAYED: &[(&str, &str)] = &[
     ("tawm", "tăm"), // With final consonant
     ("tungw", "tưng"),
     ("tongw", "tơng"),
-    ("tuow", "tươ"),
+    ("tuow", "tuơ"), // Issue #133: only 'o' gets horn when no final
     ("truwowng", "trương"),
 ];
 

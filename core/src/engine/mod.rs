@@ -173,6 +173,11 @@ pub struct Engine {
     /// Breve on 'a' in open syllables (like "raw") is invalid Vietnamese
     /// We defer applying breve until a valid final consonant is typed
     pending_breve_pos: Option<usize>,
+    /// Issue #133: Pending horn position on 'u' in "uơ" pattern
+    /// When "uo" + 'w' is typed at end of syllable, only 'o' gets horn initially.
+    /// If a final consonant/vowel is added, also apply horn to 'u'.
+    /// Examples: "huow" → "huơ" (stays), "duow" + "c" → "dược" (u gets horn)
+    pending_u_horn_pos: Option<usize>,
     /// Tracks if stroke was reverted in current word (ddd → dd)
     /// When true, subsequent 'd' keys are treated as normal letters, not stroke triggers
     /// This prevents "ddddd" from oscillating between đ and dd states
@@ -215,6 +220,7 @@ impl Engine {
             word_history: WordHistory::new(),
             spaces_after_commit: 0,
             pending_breve_pos: None,
+            pending_u_horn_pos: None,
             stroke_reverted: false,
             had_mark_revert: false,
             pending_mark_revert_pop: false,
@@ -889,8 +895,24 @@ impl Engine {
                 if let (Some(c1), Some(c2)) = (self.buf.get(pos1), self.buf.get(pos2)) {
                     // Only apply compound when BOTH vowels have no tone
                     if c1.tone == tone::NONE && c2.tone == tone::NONE {
-                        target_positions.push(pos1);
-                        target_positions.push(pos2);
+                        // Issue #133: Check if "uo" pattern is at end of syllable (no final)
+                        // If no final consonant/vowel after "uo", only apply horn to 'o'
+                        // Examples: "huow" → "huơ", "khuow" → "khuơ"
+                        // But: "duowc" → "dược", "muowif" → "mười" (both get horn)
+                        let is_uo_pattern = c1.key == keys::U && c2.key == keys::O;
+                        let has_final = self.buf.get(pos2 + 1).is_some();
+
+                        if is_uo_pattern && !has_final {
+                            // "uơ" pattern - only 'o' gets horn initially
+                            // Set pending so 'u' gets horn if final consonant/vowel is added
+                            target_positions.push(pos2);
+                            self.pending_u_horn_pos = Some(pos1);
+                        } else {
+                            // "ươ" pattern (or has final) - both get horn
+                            target_positions.push(pos1);
+                            target_positions.push(pos2);
+                            self.pending_u_horn_pos = None;
+                        }
                     }
                 }
             }
@@ -920,6 +942,22 @@ impl Engine {
                 let is_telex_circumflex = self.method == 0
                     && tone_type == ToneType::Circumflex
                     && matches!(key, keys::A | keys::E | keys::O);
+
+                // Issue #312: If any vowel already has a tone (horn/circumflex/breve),
+                // don't trigger same-vowel circumflex. The typed vowel should append raw.
+                // Example: "chưa" + "a" → "chưaa" (NOT "chưâ")
+                if is_telex_circumflex {
+                    let any_vowel_has_tone = self
+                        .buf
+                        .iter()
+                        .filter(|c| keys::is_vowel(c.key))
+                        .any(|c| c.has_tone());
+
+                    if any_vowel_has_tone {
+                        // Skip circumflex, let the vowel append as raw letter
+                        return None;
+                    }
+                }
 
                 for (i, c) in self.buf.iter().enumerate().rev() {
                     if targets.contains(&c.key) && c.tone == tone::NONE {
@@ -1808,6 +1846,24 @@ impl Engine {
                 // They might be followed by more letters that complete the syllable
             }
 
+            // Issue #133: Apply deferred horn to 'u' when final consonant/vowel is typed
+            // "duow" → "duơ" (pending on u), then "c" → apply horn to u → "dược"
+            if let Some(u_pos) = self.pending_u_horn_pos {
+                // Apply horn to 'u' at pending position
+                if let Some(c) = self.buf.get_mut(u_pos) {
+                    if c.key == keys::U && c.tone == tone::NONE {
+                        c.tone = tone::HORN;
+                        self.had_any_transform = true;
+                    }
+                }
+                self.pending_u_horn_pos = None;
+
+                // Rebuild from u position: screen has "...uơ...", buffer has "...ươ...+new_char"
+                // The new char was already pushed at line 1799 but not yet on screen
+                // Use rebuild_from_after_insert which accounts for this
+                return self.rebuild_from_after_insert(u_pos);
+            }
+
             // Normalize ưo → ươ immediately when 'o' is typed after 'ư'
             // This ensures "dduwo" → "đươ" (Telex) and "u7o" → "ươ" (VNI)
             // Works for both methods since "ưo" alone is not valid Vietnamese
@@ -2053,6 +2109,7 @@ impl Engine {
         self.last_transform = None;
         self.has_non_letter_prefix = false;
         self.pending_breve_pos = None;
+        self.pending_u_horn_pos = None;
         self.stroke_reverted = false;
         self.had_mark_revert = false;
         self.pending_mark_revert_pop = false;

@@ -828,9 +828,13 @@ Dấu phụ (circumflex ^, horn, breve ˘) được định nghĩa trong cột *
 | Pattern | Input | Output | Dấu phụ | Ghi chú |
 |---------|-------|--------|---------|---------|
 | ươ | u+o+w | ươ | CẢ HAI ← horn | được, mười |
+| uơ | u+o+w | uơ | CHỈ O ← horn (Issue #133) | huơ, khuơ |
 | ươu | u+o+u+w | ươu | Chỉ u,o ← horn (u cuối giữ nguyên) | rượu, hươu |
 | ưu | u+u+w | ưu | THỨ NHẤT ← horn | lưu, hưu |
 | ưa | C+u+a+w | ưa | THỨ NHẤT ← horn (có C đầu) | mưa, cửa |
+
+> **Issue #133**: Trong một số từ như "huơ", "khuơ", chỉ có 'o' nhận dấu móc, 'u' giữ nguyên.
+> Đây là các từ đặc biệt cần xử lý riêng trong engine.
 
 > **Chi tiết đầy đủ**: [Section 7.6.1 - Ma trận kết hợp nguyên âm](#761-ma-trận-kết-hợp-nguyên-âm-hợp-lệ-valid-vowel-combinations)
 
@@ -1077,6 +1081,16 @@ Nhấn phím hai lần để hoàn tác:
 | aaa   | aa     | Hoàn tác mũ    |
 | aww   | aw     | Hoàn tác trăng |
 | oww   | ow     | Hoàn tác móc   |
+
+> **Issue #312**: Khi nguyên âm đã có dấu phụ (horn/circumflex/breve), gõ nguyên âm cùng loại tiếp theo sẽ **thêm nguyên âm thô**, không áp dụng dấu mũ.
+>
+> | Input    | Output | Giải thích                                    |
+> |----------|--------|-----------------------------------------------|
+> | chuwa    | chưa   | u+w → ư, sau đó +a                            |
+> | chuwaa   | chưaa  | chưa + a → thêm 'a' thô (KHÔNG phải chưâ)     |
+> | aaa      | âa     | aa → â, +a → thêm 'a' thô                     |
+>
+> Lý do: Nguyên âm đã biến đổi (ư, â, ă, ơ...) không trigger circumflex khi gõ nguyên âm gốc.
 
 ### 9.5 Thứ tự linh hoạt
 
