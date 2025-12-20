@@ -309,9 +309,11 @@ fn modern_orthography_full() {
 
 #[test]
 fn double_mark_key_includes_both() {
-    // When mark is reverted by pressing same key twice, BOTH keys appear as letters
-    // This allows typing English words like "issue", "bass", "boss"
-    telex(&[("ass", "ass")]);
+    // When mark is reverted by pressing same key twice, only the reverting key appears
+    // This is standard Vietnamese IME behavior (UniKey, ibus-unikey, etc.)
+    // First key was modifier, second key reverts and outputs one letter
+    // English words like "issue", "bass" work via auto-restore feature
+    telex(&[("ass", "as")]);
 }
 
 #[test]
@@ -428,14 +430,14 @@ fn foreign_word_exxpe_no_transform() {
     // When typing "exxpe":
     // - 'e' → buffer="e"
     // - 'x' → mark applied → screen="ẽ"
-    // - 'x' → revert (same key) → screen="exx", buffer="exx" (both x appear)
-    // - 'p' → screen="exxp", buffer="exxp"
-    // - 'e' → buffer="exxpe" invalid → no circumflex applied, just adds 'e'
-    // Result: "exxpe" (both x keys appear after revert)
+    // - 'x' → revert (same key) → screen="ex", buffer="ex" (only reverting key appears)
+    // - 'p' → screen="exp", buffer="exp"
+    // - 'e' → buffer="expe" invalid → no circumflex applied, just adds 'e'
+    // Result: "expe" (standard IME behavior: first x was modifier, second x reverts)
     let result = type_word(&mut e, "exxpe");
     assert_eq!(
-        result, "exxpe",
-        "exxpe should stay exxpe (both x keys appear after revert), got: {}",
+        result, "expe",
+        "exxpe should become expe (standard IME revert behavior), got: {}",
         result
     );
 }

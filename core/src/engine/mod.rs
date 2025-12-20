@@ -173,6 +173,9 @@ pub struct Engine {
     /// Breve on 'a' in open syllables (like "raw") is invalid Vietnamese
     /// We defer applying breve until a valid final consonant is typed
     pending_breve_pos: Option<usize>,
+    /// Tracks if a mark was reverted in current word
+    /// Used by auto-restore to detect words like "issue", "bass" that need restoration
+    had_mark_revert: bool,
 }
 
 impl Default for Engine {
@@ -199,6 +202,7 @@ impl Engine {
             word_history: WordHistory::new(),
             spaces_after_commit: 0,
             pending_breve_pos: None,
+            had_mark_revert: false,
         }
     }
 
@@ -1551,32 +1555,24 @@ impl Engine {
     }
 
     /// Revert mark transformation
-    /// When mark is reverted, both the original mark key AND the reverting key
-    /// should appear as letters. Example: "iss" → "is" is wrong, should be "iss"
+    /// When mark is reverted, only the reverting key appears as a letter.
+    /// Standard behavior: "ass" → "as" (first 's' was modifier, second 's' reverts + outputs one 's')
+    /// This matches standard Vietnamese IME behavior (UniKey, ibus-unikey, etc.)
     fn revert_mark(&mut self, key: u16, caps: bool) -> Result {
         self.last_transform = None;
+        self.had_mark_revert = true; // Track for auto-restore
 
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
                 if c.mark > mark::NONE {
                     c.mark = mark::NONE;
 
-                    // Find the original mark key's caps state from raw_input
-                    // The original mark key is second-to-last in raw_input
-                    // (last one is the current reverting key)
-                    let orig_caps = if self.raw_input.len() >= 2 {
-                        self.raw_input[self.raw_input.len() - 2].1
-                    } else {
-                        caps
-                    };
-
-                    // Add original mark key first (it was consumed as modifier before)
-                    self.buf.push(Char::new(key, orig_caps));
-                    // Then add the current reverting key
+                    // Add only the reverting key (current key being pressed)
+                    // The original mark key was consumed as a modifier and doesn't produce output
                     self.buf.push(Char::new(key, caps));
 
                     // Calculate backspace and output
-                    let backspace = (self.buf.len() - pos - 2) as u8; // -2 because we added 2 chars
+                    let backspace = (self.buf.len() - pos - 1) as u8; // -1 because we added 1 char
                     let output: Vec<char> = (pos..self.buf.len())
                         .filter_map(|i| self.buf.get(i))
                         .filter_map(|c| utils::key_to_char(c.key, c.caps))
@@ -1929,6 +1925,7 @@ impl Engine {
         self.last_transform = None;
         self.has_non_letter_prefix = false;
         self.pending_breve_pos = None;
+        self.had_mark_revert = false;
     }
 
     /// Get the full composed buffer as a Vietnamese string with diacritics.
@@ -1975,11 +1972,13 @@ impl Engine {
         // - Marks (sắc, huyền, hỏi, ngã, nặng): indicate Vietnamese typing intent
         // - Vowel tones (â, ê, ô, ư, ă): indicate Vietnamese typing intent
         // - Stroke (đ): included for longer words that are structurally invalid
+        // - Mark revert: indicates user typed double mark key (e.g., "ss" -> "s")
+        //   This is tracked via had_mark_revert flag, not length mismatch
         let has_marks_or_tones = self.buf.iter().any(|c| c.tone > 0 || c.mark > 0);
         let has_stroke = self.buf.iter().any(|c| c.stroke);
 
-        // If no transforms at all, nothing to restore
-        if !has_marks_or_tones && !has_stroke {
+        // If no transforms at all (including mark revert), nothing to restore
+        if !has_marks_or_tones && !has_stroke && !self.had_mark_revert {
             return None;
         }
 

@@ -103,12 +103,13 @@ const TELEX_MODIFIED_VOWELS: &[(&str, &str)] = &[
 ];
 
 const TELEX_REVERT: &[(&str, &str)] = &[
-    // Mark revert (both keys appear for English words)
-    ("ass", "ass"),
-    ("aff", "aff"),
-    ("arr", "arr"),
-    ("axx", "axx"),
-    ("ajj", "ajj"),
+    // Mark revert (only reverting key appears - standard IME behavior)
+    // First key is modifier, second key reverts and outputs one letter
+    ("ass", "as"),
+    ("aff", "af"),
+    ("arr", "ar"),
+    ("axx", "ax"),
+    ("ajj", "aj"),
     // Tone revert
     ("aaa", "aa"),
     ("eee", "ee"),
@@ -248,12 +249,12 @@ const VNI_MODIFIED_VOWELS: &[(&str, &str)] = &[
 ];
 
 const VNI_REVERT: &[(&str, &str)] = &[
-    // Mark revert (both keys appear)
-    ("a11", "a11"),
-    ("a22", "a22"),
-    ("a33", "a33"),
-    ("a44", "a44"),
-    ("a55", "a55"),
+    // Mark revert (only reverting key appears - standard IME behavior)
+    ("a11", "a1"),
+    ("a22", "a2"),
+    ("a33", "a3"),
+    ("a44", "a4"),
+    ("a55", "a5"),
     // Tone revert (single key)
     ("a66", "a6"),
     ("e66", "e6"),
