@@ -288,6 +288,7 @@ fn vietnamese_multi_syllable_preserved() {
         ("giuwax ", "giữa "),  // giữa (middle)
         ("dduowcj ", "được "), // được (can/get)
         ("muwowjt ", "mượt "), // mượt (smooth)
+        ("ddeso ", "đéo "),    // đéo (slang: no way)
     ]);
 }
 
