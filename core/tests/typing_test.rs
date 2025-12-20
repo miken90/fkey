@@ -1310,6 +1310,8 @@ const TELEX_INVALID_BREVE_DIPHTHONG: &[(&str, &str)] = &[
     // With tone marks
     ("tawis", "tắi"),
     ("tawof", "tằo"),
+    // When vowel is between 'a' and 'w' → no breve (w not adjacent to a)
+    ("taiw", "taiw"), // t + ai + w → 'ai' diphthong, 'w' not applied
 ];
 
 const VNI_INVALID_BREVE_DIPHTHONG: &[(&str, &str)] = &[

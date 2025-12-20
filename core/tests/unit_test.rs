@@ -76,7 +76,7 @@ const TELEX_MODIFIED_VOWELS: &[(&str, &str)] = &[
     ("oox", "ỗ"),
     ("ooj", "ộ"),
     // ă (breve) - standalone "aw" applies breve immediately (no consonant before 'a')
-    ("aw", "ă"), // Standalone: no consonant before 'a' → apply breve
+    ("aw", "ă"),  // Standalone: no consonant before 'a' → apply breve
     ("aws", "ắ"), // Mark confirms Vietnamese
     ("awf", "ằ"),
     ("awr", "ẳ"),
@@ -237,7 +237,7 @@ const VNI_MODIFIED_VOWELS: &[(&str, &str)] = &[
     ("u74", "ữ"),
     ("u75", "ự"),
     // ă: 8=breve - standalone "a8" applies breve immediately (no consonant before 'a')
-    ("a8", "ă"), // Standalone: no consonant before 'a' → apply breve
+    ("a8", "ă"),  // Standalone: no consonant before 'a' → apply breve
     ("a81", "ắ"), // Mark confirms Vietnamese
     ("a82", "ằ"),
     ("a83", "ẳ"),
