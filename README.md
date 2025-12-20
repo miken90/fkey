@@ -120,21 +120,18 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 | **W + nguyên + W** | `wow` | Pattern "wow" đặc trưng tiếng Anh |
 | **F đầu** | `file` `fix` `function` `firebase` | F không tồn tại trong tiếng Việt |
 
-### 📝 Ví dụ thực tế
+### 📝 So sánh: macOS Telex vs Gõ Nhanh
 
-```
-Gõ: "text "     → Kết quả: "text "     ✅ (x+t = pattern Anh)
-Gõ: "expect "   → Kết quả: "expect "   ✅ (x+p = pattern Anh)
-Gõ: "window "   → Kết quả: "window "   ✅ (W đầu + phụ âm)
-Gõ: "firebase " → Kết quả: "firebase " ✅ (F đầu)
-Gõ: "their "    → Kết quả: "their "    ✅ (ei + r)
-Gõ: "pair "     → Kết quả: "pair "     ✅ (P + ai + r)
-Gõ: "wow "      → Kết quả: "wow "      ✅ (W + o + W)
-
-Gõ: "mái "      → Kết quả: "mái "      ✅ (giữ tiếng Việt)
-Gõ: "cái "      → Kết quả: "cái "      ✅ (giữ tiếng Việt)
-Gõ: "được "     → Kết quả: "được "     ✅ (giữ tiếng Việt)
-```
+| Gõ | macOS Telex | Gõ Nhanh |
+|:---|:------------|:---------|
+| `text ` | `têt ` ❌ | `text ` ✅ |
+| `expect ` | `ễpct ` ❌ | `expect ` ✅ |
+| `window ` | `ưindow ` ❌ | `window ` ✅ |
+| `luxury ` | `lủuy ` ❌ | `luxury ` ✅ |
+| `their ` | `thỉ ` ❌ | `their ` ✅ |
+| `wow ` | `ươ ` ❌ | `wow ` ✅ |
+| `mái ` | `mái ` ✅ | `mái ` ✅ |
+| `được ` | `được ` ✅ | `được ` ✅ |
 
 ### ⚠️ Giới hạn
 
