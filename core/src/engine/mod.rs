@@ -996,8 +996,35 @@ impl Engine {
                                         false
                                     };
 
-                                    if !has_adjacent_vowel && !has_vietnamese_double_initial {
-                                        // Single final, no diphthong, no double initial → likely English
+                                    // Same-vowel trigger: typing the same vowel after consonant
+                                    // Example: "nanag" → second 'a' triggers circumflex on first 'a'
+                                    // Pattern: initial + vowel + consonant + SAME_VOWEL (+ optional final)
+                                    // BUT: Only allow when middle consonant can form double final (n→ng/nh)
+                                    // This prevents false positives like "data" → "dât" (t can't form double final)
+                                    let is_same_vowel_trigger =
+                                        self.buf.get(i).is_some_and(|c| c.key == key);
+                                    let middle_can_form_double_final = consonants_after.len() == 1
+                                        && consonants_after[0] == keys::N; // n→ng, n→nh
+
+                                    // Check if initial consonant already has stroke (đ/Đ)
+                                    // If so, it's clearly Vietnamese (from delayed stroke pattern)
+                                    let initial_has_stroke = (0..i)
+                                        .filter_map(|j| self.buf.get(j))
+                                        .take_while(|c| !keys::is_vowel(c.key))
+                                        .any(|c| c.stroke);
+
+                                    // Allow circumflex if any of these conditions are true:
+                                    // 1. Has adjacent vowel (diphthong pattern)
+                                    // 2. Has Vietnamese double initial (nh, th, ph, etc.)
+                                    // 3. Same-vowel trigger with middle 'n' (can form ng/nh final)
+                                    // 4. Initial has stroke (đ) - clearly Vietnamese
+                                    let allow_circumflex = has_adjacent_vowel
+                                        || has_vietnamese_double_initial
+                                        || (is_same_vowel_trigger && middle_can_form_double_final)
+                                        || initial_has_stroke;
+
+                                    if !allow_circumflex {
+                                        // Single final, no diphthong, no double initial, not valid same-vowel → likely English
                                         continue;
                                     }
                                 }
@@ -2207,24 +2234,56 @@ impl Engine {
                 }
 
                 // Analyze pattern: W + vowels + consonants
+                // Find position of first vowel to distinguish consonants from modifiers
+                let first_vowel_pos = self.raw_input[1..]
+                    .iter()
+                    .position(|(k, _, _)| keys::is_vowel(*k) && *k != keys::W);
+
                 let vowels_after: Vec<u16> = self.raw_input[1..]
                     .iter()
                     .filter(|(k, _, _)| keys::is_vowel(*k) && *k != keys::W)
                     .map(|(k, _, _)| *k)
                     .collect();
 
+                // Only exclude Telex mark modifiers (s, f, r, x, j) when they come AFTER a vowel
+                // If they come BEFORE any vowel, they're consonants (e.g., "wra" has 'r' as consonant)
+                let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
                 let consonants_after: Vec<u16> = self.raw_input[1..]
                     .iter()
-                    .filter(|(k, _, _)| keys::is_consonant(*k) && *k != keys::W)
-                    .map(|(k, _, _)| *k)
+                    .enumerate()
+                    .filter(|(i, (k, _, _))| {
+                        if !keys::is_consonant(*k) || *k == keys::W {
+                            return false;
+                        }
+                        // Modifier keys AFTER first vowel are tone modifiers, not consonants
+                        if let Some(vowel_pos) = first_vowel_pos {
+                            if *i > vowel_pos && tone_modifiers.contains(k) {
+                                return false;
+                            }
+                        }
+                        true
+                    })
+                    .map(|(_, (k, _, _))| *k)
                     .collect();
 
                 // W + vowel + consonant → likely English like "win", "water"
-                // But W + vowel only → valid Vietnamese (ưa, ưe, ưi, ươ)
-                // And W + consonant only → valid Vietnamese (ưng, ưn, ưm)
+                // W + consonant only → valid Vietnamese (ưng, ưn, ưm)
                 if !vowels_after.is_empty() && !consonants_after.is_empty() {
                     // Both vowels and consonants after W → likely English
                     return true;
+                }
+
+                // W + vowel only → check if valid Vietnamese pattern
+                // Valid: ưa (W+A), ươ (W+O), ưu (W+U)
+                // Invalid: ưe (W+E), ưi (W+I), ưy (W+Y) → restore as English
+                if !vowels_after.is_empty() && consonants_after.is_empty() {
+                    let valid_vowels_after_w = [keys::A, keys::O, keys::U];
+                    let has_invalid_vowel = vowels_after
+                        .iter()
+                        .any(|v| !valid_vowels_after_w.contains(v));
+                    if has_invalid_vowel {
+                        return true;
+                    }
                 }
 
                 // W + consonants only → check if valid Vietnamese final
@@ -2424,6 +2483,11 @@ impl Engine {
                     // Example: "nafo" = n + a + f + o → a+f+o IS Vietnamese (nào)
                     if has_initial_consonant {
                         let (prev_vowel, _, _) = self.raw_input[i - 1];
+                        // Same vowel is Telex circumflex doubling (aa, ee, oo)
+                        // Example: "loxoi" = l+o+x+O+i → O after X is same vowel doubling
+                        if prev_vowel == next_key {
+                            continue; // Same vowel is Telex pattern, not English
+                        }
                         // Vietnamese exceptions: diphthongs with tone modifier in middle
                         let is_vietnamese_pattern = match prev_vowel {
                             k if k == keys::U => next_key == keys::A || next_key == keys::O,

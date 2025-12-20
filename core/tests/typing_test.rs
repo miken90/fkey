@@ -1336,9 +1336,11 @@ const VNI_INVALID_BREVE_DIPHTHONG: &[(&str, &str)] = &[
 
 const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     // Common English words with "aw" - space triggers auto-restore
-    ("raw ", "raw "),           // raw data
-    ("saw ", "saw "),           // I saw
-    ("law ", "law "),           // law firm
+    ("raw ", "raw "), // raw data
+    ("saw ", "saw "), // I saw
+    ("law ", "law "), // law firm
+    // "w" alone converts to "ư", auto-restore reverts on space
+    ("we ", "we "),             // we → ưe → we (auto-restore)
     ("draw ", "draw "),         // draw a picture
     ("straw ", "straw "),       // drinking straw
     ("claw ", "claw "),         // cat's claw
@@ -1360,6 +1362,14 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     // Mixed with Vietnamese - space separates words
     ("raw data", "raw data"),
     ("raw vieetj", "raw việt"), // "raw" stays, "việt" transforms
+    // Vietnamese words with similar patterns - should NOT be restored
+    ("loxoi ", "lỗi "), // lỗi - Vietnamese, NOT restored
+    ("soso ", "số "),   // số - Vietnamese, NOT restored
+    ("waf ", "ừa "),    // ừa - Vietnamese (ư + huyền + a)
+    ("was ", "ứa "),    // ứa - Vietnamese (ư + sắc + a)
+    ("waj ", "ựa "),    // ựa - Vietnamese (ư + nặng + a)
+    // Delayed stroke + delayed circumflex + mark
+    ("datdas ", "đất "), // đất - delayed stroke (d) + delayed circumflex (a) + sắc (s)
 ];
 
 // ============================================================

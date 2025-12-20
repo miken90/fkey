@@ -233,14 +233,16 @@ fn w_initial_comprehensive() {
 }
 
 /// W + single vowel (wa, we, wo) produces valid Vietnamese (ưa, ưe, ươ)
-/// These are NOT auto-restored because they form valid syllables
+/// W + valid Vietnamese vowel patterns
+/// Valid: ưa (W+A), ươ (W+O), ưu (W+U)
+/// Invalid: ưe (W+E), ưi (W+I), ưy (W+Y) → auto-restore as English
 #[test]
 fn w_vowel_produces_valid_vietnamese() {
     telex_auto_restore(&[
-        ("wa ", "ưa "), // ưa is valid Vietnamese
-        ("we ", "ưe "), // ưe is valid Vietnamese (though rare)
-        ("wi ", "ưi "), // ưi is valid Vietnamese
-        ("wo ", "ươ "), // ươ is valid Vietnamese
+        ("wa ", "ưa "), // ưa is valid Vietnamese - keep
+        ("we ", "we "), // ưe is NOT valid Vietnamese - restore
+        ("wi ", "wi "), // ưi is NOT valid Vietnamese - restore
+        ("wo ", "ươ "), // ươ is valid Vietnamese - keep
     ]);
 }
 

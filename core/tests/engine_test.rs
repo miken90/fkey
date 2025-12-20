@@ -175,6 +175,12 @@ fn tone_circumflex_oo() {
 fn tone_circumflex_delayed() {
     // Delayed circumflex: vowel + consonant + same_vowel → circumflex + consonant
     telex(&[("oio", "ôi"), ("aia", "âi"), ("aua", "âu"), ("eie", "êi")]);
+    // Delayed circumflex with final consonant: initial + vowel + consonant + same_vowel + final
+    telex(&[
+        ("nanag", "nâng"), // nâng - common Vietnamese word
+        ("lanam", "lânm"), // lânm - partial word (tests pattern)
+        ("tanat", "tânt"), // tânt - partial word (tests pattern)
+    ]);
 }
 
 #[test]
