@@ -15,6 +15,8 @@ const TELEX_BACKSPACE: &[(&str, &str)] = &[
     ("ab<<cd", "cd"),
     ("abcd<<<", "a"),
     ("vieets<<<ng", "vng"),
+    // Backspace and retype with compound vowels
+    ("dduowfng<<sng", "đướng"), // đường with ng deleted, then sắc + ng added back
 ];
 
 const VNI_BACKSPACE: &[(&str, &str)] = &[("a1<a2", "à"), ("o6<o7", "ơ")];
@@ -1370,6 +1372,13 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     ("waj ", "ựa "),    // ựa - Vietnamese (ư + nặng + a)
     // Delayed stroke + delayed circumflex + mark
     ("datdas ", "đất "), // đất - delayed stroke (d) + delayed circumflex (a) + sắc (s)
+    // đường pattern
+    ("dduowfng ", "đường "), // đường - dd + ươ + huyền + ng (NOT restored)
+    // Backspace and retype pattern (with auto-restore enabled)
+    ("dduowfng<<sng", "đướng"), // delete ng, retype ng → back to đường
+    // qu + ao + huyền - mark position flexibility
+    ("quaof ", "quào "), // quào - mark typed after vowels
+    ("quafo ", "quào "), // quào - mark typed between vowels (same result)
 ];
 
 // ============================================================

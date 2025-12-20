@@ -1849,8 +1849,17 @@ impl Engine {
             // This catches: "tex" + 't' where 'x' modifier before 't' creates English cluster
             // But preserves: "dọ" + 'd' where 'j' modifier before 'd' doesn't indicate English
             //
+            // IMPORTANT: Skip mark keys (s, f, r, x, j in Telex) because they're tone modifiers,
+            // not true consonants. User typing "đườ" + 's' wants to add sắc mark, not restore.
+            //
             // Only run if english_auto_restore is enabled (experimental feature)
-            if self.english_auto_restore && keys::is_consonant(key) && self.buf.len() >= 2 {
+            let im = input::get(self.method);
+            let is_mark_key = im.mark(key).is_some();
+            if self.english_auto_restore
+                && keys::is_consonant(key)
+                && !is_mark_key
+                && self.buf.len() >= 2
+            {
                 // Check if consonant immediately follows a marked character
                 if let Some(prev_char) = self.buf.get(self.buf.len() - 2) {
                     let prev_has_mark = prev_char.mark > 0 || prev_char.tone > 0;
@@ -2352,7 +2361,11 @@ impl Engine {
             if i + 1 < self.raw_input.len() {
                 let (next_key, _, _) = self.raw_input[i + 1];
                 // W is a vowel modifier in Telex, not a true consonant for this check
-                let is_true_consonant = keys::is_consonant(next_key) && next_key != keys::W;
+                // Also exclude tone modifier keys (S, F, R, X, J) - these are mark keys, not consonants
+                // when they appear after a vowel. Example: "dduowfs" has 'f' then 's', both are modifiers.
+                let is_true_consonant = keys::is_consonant(next_key)
+                    && next_key != keys::W
+                    && !tone_modifiers.contains(&next_key);
                 if is_true_consonant {
                     // Heuristic: In Vietnamese, tone modifiers + consonant is common:
                     // - nặng (j) + consonant: học, bọc, bật, cặp, đọc, etc.

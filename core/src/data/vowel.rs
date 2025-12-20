@@ -289,6 +289,24 @@ impl Phonology {
             };
         }
 
+        // Handle qu-initial: first vowel 'u' is part of consonant, use remaining vowels
+        // Example: "quào" → vowels [u, a, o], but with qu-initial, treat as [a, o] diphthong
+        if has_qu_initial && vowels.len() >= 2 && vowels[0].key == keys::U {
+            let remaining = &vowels[1..];
+            return match remaining.len() {
+                0 => vowels[0].pos, // Shouldn't happen, but fallback
+                1 => remaining[0].pos,
+                2 => Self::find_diphthong_position(
+                    remaining,
+                    has_final_consonant,
+                    modern,
+                    false, // No longer qu-initial for remaining vowels
+                    false,
+                ),
+                _ => Self::find_default_position(remaining),
+            };
+        }
+
         match vowels.len() {
             0 => 0,
             1 => vowels[0].pos,
