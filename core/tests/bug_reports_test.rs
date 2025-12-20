@@ -205,11 +205,17 @@ fn bug8_extra_vowel_after_diphthong_mark() {
     // Fixed: "taifi" now correctly produces "tàii" (mark stays on 'a')
     let result = type_word(&mut e, "taifi");
     println!("'taifi' -> '{}' (expected: 'tàii')", result);
-    assert_eq!(result, "tàii", "'taifi' should produce 'tàii' (mark on 'a')");
+    assert_eq!(
+        result, "tàii",
+        "'taifi' should produce 'tàii' (mark on 'a')"
+    );
 
     // Also verify the 6-key input produces 3 i's
     let mut e2 = Engine::new();
     let result2 = type_word(&mut e2, "taifii");
     println!("'taifii' -> '{}' (expected: 'tàiii')", result2);
-    assert_eq!(result2, "tàiii", "'taifii' should produce 'tàiii' (mark on 'a')");
+    assert_eq!(
+        result2, "tàiii",
+        "'taifii' should produce 'tàiii' (mark on 'a')"
+    );
 }

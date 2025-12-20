@@ -278,7 +278,13 @@ impl Phonology {
             return match remaining.len() {
                 0 => vowels[0].pos, // Shouldn't happen, but fallback
                 1 => remaining[0].pos,
-                2 => Self::find_diphthong_position(remaining, has_final_consonant, modern, false, false),
+                2 => Self::find_diphthong_position(
+                    remaining,
+                    has_final_consonant,
+                    modern,
+                    false,
+                    false,
+                ),
                 _ => Self::find_default_position(remaining),
             };
         }
@@ -425,10 +431,10 @@ impl Phonology {
         // the correct vowel for the original diphthong.
         // Example: "tài" + "i" → "tàii" (mark stays on 'a' because "ai" → first)
         let pair = [k0, k1];
-        if TONE_FIRST_PATTERNS.iter().any(|p| *p == pair) {
+        if TONE_FIRST_PATTERNS.contains(&pair) {
             return vowels[0].pos;
         }
-        if TONE_SECOND_PATTERNS.iter().any(|p| *p == pair) {
+        if TONE_SECOND_PATTERNS.contains(&pair) {
             return vowels[1].pos;
         }
 
@@ -456,10 +462,10 @@ impl Phonology {
         // This handles cases like "tàiii" where the original diphthong "ai" should keep mark on 'a'
         if vowels.len() >= 2 {
             let pair = [vowels[0].key, vowels[1].key];
-            if TONE_FIRST_PATTERNS.iter().any(|p| *p == pair) {
+            if TONE_FIRST_PATTERNS.contains(&pair) {
                 return vowels[0].pos;
             }
-            if TONE_SECOND_PATTERNS.iter().any(|p| *p == pair) {
+            if TONE_SECOND_PATTERNS.contains(&pair) {
                 return vowels[1].pos;
             }
         }
