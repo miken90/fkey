@@ -2425,22 +2425,12 @@ impl Engine {
                     if has_initial_consonant {
                         let (prev_vowel, _, _) = self.raw_input[i - 1];
                         // Vietnamese exceptions: diphthongs with tone modifier in middle
-                        // Also include Telex circumflex patterns: AA→Â, EE→Ê, OO→Ô
-                        // e.g., "loxoi" = l + o + x(hỏi) + o(circumflex) + i = lỗi
-                        // e.g., "soso" = s + o + s(sắc) + o(circumflex) = số
                         let is_vietnamese_pattern = match prev_vowel {
                             k if k == keys::U => next_key == keys::A || next_key == keys::O,
                             k if k == keys::A => {
-                                next_key == keys::I
-                                    || next_key == keys::Y
-                                    || next_key == keys::O
-                                    || next_key == keys::A // AA → Â (circumflex)
+                                next_key == keys::I || next_key == keys::Y || next_key == keys::O
                             }
-                            k if k == keys::E => next_key == keys::E, // EE → Ê (circumflex)
-                            k if k == keys::O => {
-                                next_key == keys::I || next_key == keys::A || next_key == keys::O
-                                // OO → Ô (circumflex)
-                            }
+                            k if k == keys::O => next_key == keys::I || next_key == keys::A,
                             _ => false,
                         };
                         if !is_vietnamese_pattern {
