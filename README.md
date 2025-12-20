@@ -141,6 +141,8 @@ Từ nhu cầu giải quyết vấn đề cá nhân, Gõ Nhanh được phát tr
 
 Hy vọng Gõ Nhanh góp phần truyền cảm hứng cho cộng đồng mã nguồn mở tại Việt Nam.
 
+Nếu các bạn thấy phần mềm hữu ích có thể [ủng hộ tôi tại đây](https://github.com/sponsors/khaphanspace).
+
 ---
 
 ## 🔧 Dành cho Developer
