@@ -1272,6 +1272,15 @@ const TELEX_VALID_BREVE: &[(&str, &str)] = &[
     // Multi-syllable words
     ("trawm nawm", "trăm năm"),    // trăm năm (no tones)
     ("sawngx sangf", "sẵng sàng"), // sẵng sàng (sawngx = sẵng, sangf = sàng)
+    // Ethnic minority language place names (issue #134)
+    // Vietnamese province names use breve patterns: Đắk Lắk, Đắk Nông
+    ("ddawks", "đắk"),            // đắk - lowercase
+    ("Ddawks", "Đắk"),            // Đắk - capitalized (first D caps)
+    ("DDawks", "Đắk"),            // Đắk - DD pattern
+    ("Lawks", "Lắk"),             // Lắk - capitalized
+    ("lawks", "lắk"),             // lắk - lowercase
+    ("Ddawks Lawks", "Đắk Lắk"),  // Đắk Lắk - full province name
+    ("Ddawks Noong", "Đắk Nông"), // Đắk Nông province (oo = ô)
 ];
 
 const VNI_VALID_BREVE: &[(&str, &str)] = &[
@@ -1284,6 +1293,13 @@ const VNI_VALID_BREVE: &[(&str, &str)] = &[
     ("ca8n", "căn"),    // căn - room
     ("na81ng", "nắng"), // nắng - sunny
     ("ma81t", "mắt"),   // mắt - eye
+    // Ethnic minority language place names (issue #134)
+    ("d9a81k", "đắk"),            // đắk - lowercase (d9=đ, a8=ă, 1=sắc)
+    ("D9a81k", "Đắk"),            // Đắk - capitalized
+    ("La81k", "Lắk"),             // Lắk - capitalized
+    ("la81k", "lắk"),             // lắk - lowercase
+    ("D9a81k La81k", "Đắk Lắk"),  // Đắk Lắk - full province name
+    ("D9a81k No6ng", "Đắk Nông"), // Đắk Nông province (o6 = ô)
 ];
 
 // ============================================================

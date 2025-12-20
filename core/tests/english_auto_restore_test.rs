@@ -445,3 +445,27 @@ fn vietnamese_hoi_with_sonorant_final() {
         ("gayx ", "gãy "), // ngã after y (standard)
     ]);
 }
+
+// =============================================================================
+// ETHNIC MINORITY LANGUAGE PLACE NAMES (ISSUE #134)
+// Đắk Lắk, Đắk Nông should stay Vietnamese - NOT auto-restored
+// =============================================================================
+
+#[test]
+fn ethnic_minority_place_names_not_restored() {
+    // Vietnamese province names with breve patterns
+    // These are valid Vietnamese and should NOT be auto-restored
+    telex_auto_restore(&[
+        ("ddawks ", "đắk "),            // đắk - lowercase
+        ("Ddawks ", "Đắk "),            // Đắk - capitalized
+        ("DDawks ", "Đắk "),            // Đắk - DD pattern
+        ("lawks ", "lắk "),             // lắk - lowercase
+        ("Lawks ", "Lắk "),             // Lắk - capitalized
+        ("Ddawks Lawks ", "Đắk Lắk "),  // Đắk Lắk - full province name
+        ("Ddawks Noong ", "Đắk Nông "), // Đắk Nông province
+        // Other breve + final consonant patterns
+        ("bawts ", "bắt "),   // bắt - catch
+        ("mawts ", "mắt "),   // mắt - eye
+        ("nawngs ", "nắng "), // nắng - sunny
+    ]);
+}

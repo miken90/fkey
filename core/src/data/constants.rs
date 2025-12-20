@@ -48,8 +48,10 @@ pub const VALID_INITIALS_2: &[[u16; 2]] = &[
 // =============================================================================
 
 /// Valid single final consonants
+/// Note: K is included for ethnic minority language place names (e.g., Đắk Lắk)
 pub const VALID_FINALS_1: &[u16] = &[
     keys::C,
+    keys::K, // for ethnic minority words (Đắk Lắk)
     keys::M,
     keys::N,
     keys::P,

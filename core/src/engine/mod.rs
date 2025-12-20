@@ -1763,8 +1763,12 @@ impl Engine {
             // Issue #44 (part 2): Apply deferred breve when valid final consonant is typed
             // "trawm" → after "traw" (pending breve on 'a'), typing 'm' applies breve → "trăm"
             if let Some(breve_pos) = self.pending_breve_pos {
-                // Valid final consonants that make breve valid: c, m, n, p, t
-                if matches!(key, keys::C | keys::M | keys::N | keys::P | keys::T) {
+                // Valid final consonants that make breve valid: c, k, m, n, p, t
+                // Note: k is included for ethnic minority words (Đắk Lắk)
+                if matches!(
+                    key,
+                    keys::C | keys::K | keys::M | keys::N | keys::P | keys::T
+                ) {
                     // Find and remove the breve modifier from buffer
                     // Telex uses 'w', VNI uses '8' - it should be right after 'a' at breve_pos
                     let modifier_pos = breve_pos + 1;
