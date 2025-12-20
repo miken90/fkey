@@ -27,7 +27,6 @@ fn engine_on() -> Engine {
 
 #[test]
 fn default_is_off() {
-    let e = Engine::new();
     // Engine should have english_auto_restore = false by default
     // We test this indirectly by checking behavior
 
