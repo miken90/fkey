@@ -52,8 +52,8 @@ C₂ = Final consonant (âm cuối)       - optional
 // 16 phụ âm đơn
 VALID_INITIALS_1: [b, c, d, g, h, k, l, m, n, p, q, r, s, t, v, x]
 
-// 10 phụ âm đôi
-VALID_INITIALS_2: [ch, gh, gi, kh, ng, nh, ph, qu, th, tr]
+// 11 phụ âm đôi (kr cho tên dân tộc: Krông)
+VALID_INITIALS_2: [ch, gh, gi, kh, kr, ng, nh, ph, qu, th, tr]
 
 // 1 phụ âm ba: ngh
 ```

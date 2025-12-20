@@ -159,7 +159,7 @@ CẤU TRÚC ÂM TIẾT:
 │
 ├── C₁ = Phụ âm đầu (Initial) - TÙY CHỌN
 │   ├── Đơn: b, c, d, g, h, k, l, m, n, p, q, r, s, t, v, x (16)
-│   ├── Đôi: ch, gh, gi, kh, ng, nh, ph, qu, th, tr (10)
+│   ├── Đôi: ch, gh, gi, kh, kr, ng, nh, ph, qu, th, tr (11) - kr cho tên dân tộc
 │   └── Ba: ngh (1)
 │
 ├── G = Âm đệm (Glide) - TÙY CHỌN

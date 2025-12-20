@@ -226,11 +226,12 @@ fn tone_breve_aw() {
 
 #[test]
 fn tone_uo_compound() {
-    // ươ compound - both get horn
+    // Issue #133: "uơ" pattern - only 'o' gets horn when no final consonant
+    // "ươ" pattern - both get horn when there IS a final consonant
     telex(&[
-        ("dduowc", "đươc"), // dd for đ
-        ("uow", "ươ"),
-        ("muown", "mươn"),
+        ("dduowc", "đươc"), // dd for đ, final 'c' → both get horn
+        ("uow", "uơ"),      // No final → only 'o' gets horn (Issue #133)
+        ("muown", "mươn"),  // Final 'n' → both get horn
     ]);
 }
 
