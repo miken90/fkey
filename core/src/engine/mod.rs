@@ -2360,10 +2360,7 @@ impl Engine {
             let (third_last_key, _, _) = self.raw_input[len - 3];
 
             // Only for double 'f' + single vowel at end
-            if keys::is_vowel(last_key)
-                && second_last_key == keys::F
-                && third_last_key == keys::F
-            {
+            if keys::is_vowel(last_key) && second_last_key == keys::F && third_last_key == keys::F {
                 return true;
             }
         }
