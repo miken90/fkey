@@ -1121,32 +1121,6 @@ struct LaunchAtLoginToggleRow: View {
     }
 }
 
-// MARK: - Launch at Login Banner
-
-struct LaunchAtLoginBanner: View {
-    let onOpenSettings: () -> Void
-    @State private var hovered = false
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 14)).foregroundColor(.orange)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Chưa bật khởi động cùng hệ thống").font(.system(size: 12, weight: .medium))
-                Text("Nhấn để bật").font(.system(size: 11)).foregroundColor(Color(NSColor.secondaryLabelColor))
-            }
-            Spacer()
-            Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundColor(Color(NSColor.tertiaryLabelColor))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.orange.opacity(hovered ? 0.15 : 0.1)))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange.opacity(0.3), lineWidth: 0.5))
-        .contentShape(Rectangle())
-        .onHover { h in hovered = h; if h { NSCursor.pointingHand.push() } else { NSCursor.pop() } }
-        .onTapGesture { onOpenSettings() }
-    }
-}
-
 // MARK: - Preview
 
 #Preview { MainSettingsView() }
