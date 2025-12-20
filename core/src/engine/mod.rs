@@ -2654,6 +2654,7 @@ impl Engine {
                                 next_key == keys::I || next_key == keys::Y || next_key == keys::O
                             }
                             k if k == keys::O => next_key == keys::I || next_key == keys::A,
+                            k if k == keys::E => next_key == keys::O, // eo: đeo, kẹo, mèo
                             _ => false,
                         };
                         if !is_vietnamese_pattern {
