@@ -80,6 +80,7 @@ jobs:
           generate_release_notes: ${{ steps.tag_message.outputs.message == '' }}
 
   build-linux:
+    if: false  # Temporarily disabled
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
