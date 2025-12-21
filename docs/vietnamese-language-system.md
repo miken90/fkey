@@ -1184,6 +1184,81 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 
 ---
 
+## 10.5 English Auto-Restore Patterns (Phục hồi từ tiếng Anh)
+
+Khi người dùng gõ tiếng Anh bằng bộ gõ Telex, một số ký tự sẽ bị chuyển thành dấu tiếng Việt (s→sắc, f→huyền, etc.). Tính năng Auto-Restore phát hiện các pattern tiếng Anh và tự động phục hồi về text gốc.
+
+### 10.5.1 Các Pattern Phát hiện Tiếng Anh
+
+```
+PATTERN 1: MODIFIER + CONSONANT
+├── "text" → x + t → English (restore)
+├── "expect" → x + p → English (restore)
+└── Ngoại lệ: Modifier + sonorant (m,n,ng,nh) → Vietnamese (keep)
+    └── "làm" = l + à + m → Vietnamese (không restore)
+
+PATTERN 2: W Ở ĐẦU + CONSONANT
+├── "water", "window", "world" → W + consonant → English
+└── Ngoại lệ: "ưng", "ưn" → W + sonorant final → Vietnamese
+
+PATTERN 3: EI VOWEL PAIR
+├── "their", "weird" → ei + modifier → English
+└── Vietnamese không có nguyên âm đôi "ei"
+
+PATTERN 4: P INITIAL + AI PATTERN
+├── "pair" = P + ai + r → English
+└── P đầu từ hiếm trong tiếng Việt thuần
+
+PATTERN 5: W AS FINAL
+├── "raw", "law", "saw" → vowel + W → English
+└── W cuối từ không có trong tiếng Việt
+
+PATTERN 6: F INITIAL
+├── "fix", "file", "focus" → F initial → English
+└── Tiếng Việt dùng PH thay cho âm /f/
+
+PATTERN 7: MODIFIER + K ENDING
+├── "risk", "disk", "task" → modifier + K → English
+├── Tiếng Việt chỉ có K cuối với breve: Đắk, Lắk
+└── Ngoại lệ: B, L initial + K → ethnic minority (keep)
+    └── "Busk" → "Búk" (Vietnamese ethnic minority)
+
+PATTERN 8: DOUBLE VOWEL + TONE AT END
+├── "looks", "took" → oo + k → English (restore)
+└── Khác với Telex "aa" → "â" pattern
+```
+
+### 10.5.2 Invalid Diphthong Blocking
+
+Khi nguyên âm V1 đã có dấu thanh, KHÔNG áp dụng circumflex cho nguyên âm V2 khác:
+
+| Input (Telex) | Wrong | Correct | Reason |
+|---------------|-------|---------|--------|
+| tafoo | taồ | tàoo | à + ô invalid → skip circumflex |
+| tefoo | teồ | tèoo | è + ô invalid → skip circumflex |
+| tofaa | toầ | tòaa | ò + â invalid → skip circumflex |
+| tofee | toề | tòee | ò + ê invalid → skip circumflex |
+| tifaa | tiầ | tìaa | ì + â invalid → skip circumflex |
+| mufaa | muầ | mùaa | ù + â invalid → skip circumflex |
+
+**Ngoại lệ cùng nguyên âm**:
+- "ddense" → "đến" (e + ê = same vowel, cho phép)
+
+### 10.5.3 Ethnic Minority Words (Từ dân tộc thiểu số)
+
+Một số từ dân tộc thiểu số sử dụng K làm phụ âm cuối:
+
+| Input | Output | Note |
+|-------|--------|------|
+| ddawks | đắk | Đắk Lắk province |
+| lawks | lắk | Lắk (part of Đắk Lắk) |
+| Busk | Búk | Búk district |
+| Kroong | Krông | Krông Búk district |
+
+**Lưu ý**: D initial (disk, desk, dusk) được restore vì Đ trong tiếng Việt gõ là DD.
+
+---
+
 ## 11. Tài liệu tham khảo
 
 ### 11.1 Wikipedia tiếng Việt
@@ -1228,10 +1303,24 @@ Telex cho phép gõ dấu phụ và dấu thanh theo thứ tự bất kỳ:
 
 ## Changelog
 
+- **2025-12-21**: Bổ sung triphthongs và English auto-restore patterns
+  - **Section 7.6.1-B**: Thêm 3 triphthongs mới (#41-43)
+    - **uyu** (#41): khuỷu (khuỷu tay)
+    - **uêu** (#42): nguều (nguều ngoào)
+    - **oao** (#43): ngoào
+  - **Section 6.5.5**: Thêm Invalid Diphthongs
+    - Quy tắc: V1 có dấu + V2 khác → không áp circumflex
+    - Examples: tafoo→tàoo, tefoo→tèoo, mufaa→mùaa
+  - **Section 10.5**: NEW - English Auto-Restore Patterns
+    - 8 patterns phát hiện tiếng Anh
+    - Invalid diphthong blocking rules
+    - Ethnic minority word exceptions (Búk, Đắk, Lắk)
+    - Modifier + K ending detection (risk, disk, task)
+
 - **2025-12-18**: Refactor toàn diện - Section 7.6 là SINGLE SOURCE OF TRUTH
   - **Section 7.6.1** redesign: Ma trận với cột thanh điệu tường minh (sắc, huyền, hỏi, ngã, nặng)
     - Mỗi ô hiển thị chính xác output với dấu (bold = nguyên âm nhận dấu)
-    - **40 patterns** (29 diphthongs + 11 triphthongs)
+    - **43 patterns** (29 diphthongs + 14 triphthongs)
     - Cột Modifier: chỉ rõ dấu phụ (^=circumflex, ˘=breve, ʼ=horn)
     - **Added**: uya (#37) - pattern cho từ "khuya"
   - **Section 7.6.2**: Validation & Placement Rules (flowchart)
