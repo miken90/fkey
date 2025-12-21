@@ -2292,16 +2292,78 @@ impl Engine {
     /// When a mark was reverted (e.g., "ss" → "s"), decide between buffer and raw_input:
     /// - If after revert there's vowel + consonant pattern → use buffer ("dissable" → "disable")
     /// - If after revert there's only vowels → use raw_input ("issue" → "issue")
+    ///
+    /// Also handles triple vowel collapse (e.g., "saaas" → "saas"):
+    /// - Triple vowel (aaa, eee, ooo) is collapsed to double vowel
+    /// - This handles circumflex revert in Telex (aa=â, aaa=aa)
     fn build_raw_chars(&self) -> Option<Vec<char>> {
         let raw_chars: Vec<char> = if self.had_mark_revert && self.should_use_buffer_for_revert() {
             // Use buffer content which already has the correct reverted form
             // e.g., "dissable" typed → buffer has "disable" after revert
             self.buf.to_string_preserve_case().chars().collect()
         } else {
-            self.raw_input
+            let mut chars: Vec<char> = self
+                .raw_input
                 .iter()
                 .filter_map(|&(key, caps, shift)| utils::key_to_char_ext(key, caps, shift))
-                .collect()
+                .collect();
+
+            // Collapse vowel patterns for English restore (Telex circumflex patterns)
+            // Only collapse when double/triple vowel is IMMEDIATELY followed by tone modifier at END
+            // This distinguishes Telex patterns (saax → sax) from real English doubles (wheel, looks)
+
+            // Check for SaaS pattern: same consonant at start and end
+            // SaaS, FaaS, etc. should keep the double vowel
+            let is_saas_pattern = chars.len() >= 3
+                && chars.first().map(|c| c.to_ascii_lowercase())
+                    == chars.last().map(|c| c.to_ascii_lowercase())
+                && chars
+                    .first()
+                    .map(|c| !matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'i' | 'o' | 'u' | 'y'))
+                    .unwrap_or(false);
+
+            // Check if double vowel is immediately followed by tone modifier at end
+            // Example: "saax" (s-aa-x) → double 'a' at index 1-2, 'x' at index 3 (end)
+            // Counter-example: "looks" (l-oo-k-s) → double 'o' at index 1-2, 'k' at index 3 (NOT modifier)
+            let tone_modifiers = ['s', 'f', 'r', 'x', 'j'];
+            let has_double_vowel_at_end = chars.len() >= 3 && {
+                let last = chars[chars.len() - 1].to_ascii_lowercase();
+                let second_last = chars[chars.len() - 2].to_ascii_lowercase();
+                let third_last = chars[chars.len() - 3].to_ascii_lowercase();
+                // Check: double vowel (same letter) + tone modifier at end
+                matches!(second_last, 'a' | 'e' | 'o')
+                    && second_last == third_last
+                    && tone_modifiers.contains(&last)
+            };
+
+            // 1. Triple vowel → always collapse to double: "saaas" → "saas"
+            let mut i = 0;
+            while i + 2 < chars.len() {
+                let c = chars[i].to_ascii_lowercase();
+                if matches!(c, 'a' | 'e' | 'o')
+                    && chars[i].to_ascii_lowercase() == chars[i + 1].to_ascii_lowercase()
+                    && chars[i + 1].to_ascii_lowercase() == chars[i + 2].to_ascii_lowercase()
+                {
+                    chars.remove(i + 1);
+                    continue;
+                }
+                i += 1;
+            }
+
+            // 2. Double vowel → single ONLY if:
+            //    - Double vowel immediately precedes tone modifier at end (Telex pattern)
+            //    - NOT SaaS pattern (same consonant at start/end)
+            // Example: "saax" → "sax" (aa + x at end)
+            // Counter-example: "looks" → "looks" (oo + k, not tone modifier)
+            // Counter-example: "saas" → "saas" (SaaS pattern)
+            if has_double_vowel_at_end && !is_saas_pattern {
+                // Collapse the double vowel (remove one of the paired letters)
+                // Position: third_last and second_last are the double vowel
+                let pos = chars.len() - 3;
+                chars.remove(pos);
+            }
+
+            chars
         };
 
         if raw_chars.is_empty() {
@@ -2362,6 +2424,40 @@ impl Engine {
             // Only for double 'f' + single vowel at end
             if keys::is_vowel(last_key) && second_last_key == keys::F && third_last_key == keys::F {
                 return true;
+            }
+        }
+
+        // Check for short words with double modifier at end that reverted
+        // Pattern: "thiss" → buffer "this"
+        // Raw input ends with double modifier (ss, rr, ff, xx, jj)
+        // Buffer has 4+ chars ending with that consonant
+        // Only apply if double modifier at end is the ONLY occurrence of that char
+        // This preserves "assess" (multiple 's') while converting "thiss" → "this"
+        if self.raw_input.len() >= 4 && buf_str.len() >= 4 && buf_str.len() <= 6 {
+            let len = self.raw_input.len();
+            let (last_key, _, _) = self.raw_input[len - 1];
+            let (second_last_key, _, _) = self.raw_input[len - 2];
+
+            // Check for double modifier at end (ss, rr, ff, xx, jj)
+            let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+            if tone_modifiers.contains(&last_key) && last_key == second_last_key {
+                // Count occurrences of this modifier key in raw_input
+                let occurrence_count = self.raw_input.iter().filter(|(k, _, _)| *k == last_key).count();
+                // Only apply if the double at end is the only occurrence (exactly 2)
+                if occurrence_count == 2 {
+                    // Buffer should end with that consonant (after revert)
+                    let expected_char = match last_key {
+                        k if k == keys::S => 's',
+                        k if k == keys::F => 'f',
+                        k if k == keys::R => 'r',
+                        k if k == keys::X => 'x',
+                        k if k == keys::J => 'j',
+                        _ => '\0',
+                    };
+                    if expected_char != '\0' && buf_str.ends_with(expected_char) {
+                        return true;
+                    }
+                }
             }
         }
 
@@ -2605,6 +2701,23 @@ impl Engine {
                         }
                     }
                 }
+
+                // Pattern 2b: P + single vowel + modifier at end → English
+                // P alone (not PH) is rare in native Vietnamese
+                // Example: "per" = P + E + R → pẻ (but "per" is English preposition)
+                if self.raw_input.len() >= 2 && self.raw_input[0].0 == keys::P {
+                    let is_ph = self.raw_input.len() >= 2 && self.raw_input[1].0 == keys::H;
+                    if !is_ph {
+                        // Count vowels before modifier
+                        let vowels_before: usize = (0..i)
+                            .filter(|&j| keys::is_vowel(self.raw_input[j].0))
+                            .count();
+                        // P + single vowel + modifier at end (no more chars after modifier)
+                        if vowels_before == 1 && i + 1 == self.raw_input.len() {
+                            return true;
+                        }
+                    }
+                }
             }
 
             // Pattern 3: Modifier immediately after single vowel, then another vowel
@@ -2641,7 +2754,13 @@ impl Engine {
                     // Example: "gasi" = g + a + s + i → a+s+i IS Vietnamese (gái)
                     // Example: "nafo" = n + a + f + o → a+f+o IS Vietnamese (nào)
                     if has_initial_consonant {
-                        let (prev_vowel, _, _) = self.raw_input[i - 1];
+                        let (prev_char, _, _) = self.raw_input[i - 1];
+                        // Skip if prev char is not a vowel (e.g., "ddense" has n before s)
+                        // Pattern requires vowel + modifier + vowel
+                        if !keys::is_vowel(prev_char) {
+                            continue;
+                        }
+                        let prev_vowel = prev_char;
                         // Same vowel is Telex circumflex doubling (aa, ee, oo)
                         // Example: "loxoi" = l+o+x+O+i → O after X is same vowel doubling
                         if prev_vowel == next_key {
@@ -2712,6 +2831,42 @@ impl Engine {
                 if keys::is_vowel(v1) && v1 == v2 && next == keys::K {
                     return true;
                 }
+            }
+        }
+
+        // Pattern 6b: Double vowel (aa, ee, oo) followed by tone modifier at end → English
+        // ONLY when initial is rare in Vietnamese (S alone, F alone)
+        // Example: "saas" = s + aa + s → S initial + double 'a' + tone modifier 's' → SaaS pattern
+        // Example: "saax" = s + aa + x → S initial + double 'a' + tone modifier 'x' → English
+        // Counter-example: "leex" = l + ee + x → L is common Vietnamese initial → keep "lễ"
+        // Counter-example: "meex" = m + ee + x → M is common Vietnamese initial → keep "mễ"
+        let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+        if self.raw_input.len() >= 4 {
+            let (first, _, _) = self.raw_input[0];
+            let (last, _, _) = self.raw_input[self.raw_input.len() - 1];
+            // Only match if initial is S or F (rare alone in Vietnamese)
+            // S alone (not SH) and F are English patterns
+            if (first == keys::S || first == keys::F) && tone_modifiers.contains(&last) {
+                // Check for double vowel just before the last key
+                let (v1, _, _) = self.raw_input[self.raw_input.len() - 3];
+                let (v2, _, _) = self.raw_input[self.raw_input.len() - 2];
+                if keys::is_vowel(v1) && v1 == v2 {
+                    return true;
+                }
+            }
+        }
+
+        // Pattern 6c: S + A + X pattern → English "sax" (saxophone)
+        // Only match "sax" specifically, not "six" (which is Vietnamese "sĩ")
+        // "sax" = s + a + x → "sã" but should restore to "sax"
+        // "six" = s + i + x → "sĩ" (valid Vietnamese: soldier, scholar)
+        if self.raw_input.len() == 3 {
+            let (first, _, _) = self.raw_input[0];
+            let (second, _, _) = self.raw_input[1];
+            let (third, _, _) = self.raw_input[2];
+            // Only S + A + X (not other vowels)
+            if first == keys::S && second == keys::A && third == keys::X {
+                return true;
             }
         }
 

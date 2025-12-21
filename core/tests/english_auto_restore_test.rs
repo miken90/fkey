@@ -94,6 +94,17 @@ fn pattern2_oo_vowel_pair() {
     telex_auto_restore(&[("looks ", "looks "), ("took ", "took ")]);
 }
 
+#[test]
+fn pattern2_aa_vowel_pair() {
+    telex_auto_restore(&[
+        // Double 'a' creates circumflex â, but result is not valid Vietnamese
+        ("saas ", "saas "),   // s+a+a+s → "sâs" invalid → restore "saas"
+        ("saaas ", "saas "),  // s+a+a+a+s → third 'a' reverts circumflex → "saas"
+        ("sax ", "sax "),     // s+a+x → "sã" invalid word → restore "sax"
+        ("saax ", "sax "),    // s+a+a+x → "sẫ" invalid → restore to buffer "sax"
+    ]);
+}
+
 // =============================================================================
 // PATTERN 3: AI VOWEL PAIR + RARE INITIAL (P)
 // P alone (not PH) is rare in native Vietnamese
@@ -294,6 +305,7 @@ fn vietnamese_multi_syllable_preserved() {
         ("dduowcj ", "được "), // được (can/get)
         ("muwowjt ", "mượt "), // mượt (smooth)
         ("ddeso ", "đéo "),    // đéo (slang: no way)
+        ("ddense ", "đến "),   // đến (to come/arrive)
     ]);
 }
 
@@ -380,6 +392,9 @@ fn pattern7_vowel_modifier_vowel_with_initial() {
         ("wore ", "wore "), // W initial also triggers Pattern 5
         ("store ", "store "),
         ("score ", "score "),
+        // Short words: consonant + vowel + modifier (no final vowel)
+        ("per ", "per "),    // p + e + r → pẻ (invalid) → restore "per"
+        ("thiss ", "this "), // t + h + i + s + s → double s reverts → buffer "this" (4 chars)
     ]);
 }
 

@@ -26,11 +26,13 @@ func typeKey(_ char: Character) {
     if let down = CGEvent(keyboardEventSource: source, virtualKey: keycode, keyDown: true),
        let up = CGEvent(keyboardEventSource: source, virtualKey: keycode, keyDown: false) {
         if isUppercase {
-            down.flags = .maskShift
-            up.flags = .maskShift
+            down.flags = CGEventFlags.maskShift
+        } else {
+            down.flags = CGEventFlags()
         }
         down.post(tap: .cghidEventTap)
         usleep(5000)
+        up.flags = CGEventFlags()
         up.post(tap: .cghidEventTap)
         usleep(typeDelay)
     }
@@ -69,10 +71,10 @@ func setConfig(_ config: String) {
 
 // Short paragraph mixing English and Vietnamese for auto-restore testing
 // Telex input: Vietnamese words use telex (dduwowcj = được, tieengs = tiếng, etc.)
-let testParagraph = "Chafo cacs banfj, tooi ddang test chuwsc nawng auto restore tuwd tieengs Anh treen Gox Nhanh. I expect this text file to work perfectly without any issues. Their luxury Tesla looks stunning with the new window tint, wow. I sincerely express my thanks for your wonderful support with this software."
+let testParagraph = "Chafo cacs banfj, minhf ddang tesst Gox Nhanh. Smart auto restore: text, expect, perfect, window, with, their, wow, luxury, tesla, life, issue, feature, express, wonderful, support, core, care, saas, sax, push. Per app memory: VS Code, Slack. Auto disable: Japanese, Korean, Chinese. DDawsk Lawsk, DDawsk Noong, Kroong Buks. Thanks for your wonderful support with thiss software."
 
 // Expected output: Vietnamese converted, English preserved
-let expectedOutput = "Chào các bạn, tôi đang test chức năng auto restore từ tiếng Anh trên Gõ Nhanh. I expect this text file to work perfectly without any issues. Their luxury Tesla looks stunning with the new window tint, wow. I sincerely express my thanks for your wonderful support with this software."
+let expectedOutput = "Chào các bạn, mình đang test Gõ Nhanh. Smart auto restore: text, expect, perfect, window, with, their, wow, luxury, tesla, life, issue, feature, express, wonderful, support, core, care, saas, sax, push. Per app memory: VS Code, Slack. Auto disable: Japanese, Korean, Chinese. Đắk Lắk, Đắk Nông, Krông Búk. Thanks for your wonderful support with this software."
 
 func runTest() {
     print("")
