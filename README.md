@@ -5,6 +5,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/downloads/khaphanspace/gonhanh.org/total?label=Downloads" />
+  <img src="https://img.shields.io/github/contributors/khaphanspace/gonhanh.org" />
   <img src="https://img.shields.io/github/last-commit/khaphanspace/gonhanh.org" />
 </p>
 <p align="center">
