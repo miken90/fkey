@@ -540,11 +540,15 @@ fn edge_invalid_not_transformed() {
 fn delayed_circumflex_with_mark() {
     // Delayed circumflex triggered by mark key (s/f/r/x/j)
     // Pattern: V + C + V + mark → circumflex on first V + mark
+    // Note: This also works for immediate circumflex (V + V) pattern
     telex(&[
         ("totos", "tốt"),  // tốt - circumflex + sắc
         ("notos", "nốt"),  // nốt - circumflex + sắc
         ("hetes", "hết"),  // hết - circumflex + sắc
         ("datdas", "đất"), // đất - delayed stroke + circumflex + sắc
+        ("soos", "số"),    // số - immediate circumflex (oo) + sắc
+        ("boos", "bố"),    // bố - immediate circumflex (oo) + sắc
+        ("mees", "mế"),    // mế - immediate circumflex (ee) + sắc
     ]);
 }
 
@@ -615,6 +619,7 @@ fn delayed_circumflex_valid_vietnamese_stays() {
     let cases = [
         ("dausa ", "dấu "), // Valid: dấu (mark typed)
         ("totos ", "tốt "), // Valid: tốt (mark typed)
+        ("soos ", "số "),   // Valid: số (mark typed, immediate circumflex)
         ("notos ", "nốt "), // Valid: nốt (mark typed)
     ];
 

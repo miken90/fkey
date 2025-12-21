@@ -3223,6 +3223,7 @@ impl Engine {
         // Example: "saax" = s + aa + x → S initial + double 'a' + tone modifier 'x' → English
         // Counter-example: "leex" = l + ee + x → L is common Vietnamese initial → keep "lễ"
         // Counter-example: "meex" = m + ee + x → M is common Vietnamese initial → keep "mễ"
+        // Counter-example: "soos" = s + oo + s → "số" (Vietnamese for "number") - O vowel is common
         let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
         if self.raw_input.len() >= 4 {
             let (first, _, _) = self.raw_input[0];
@@ -3234,7 +3235,12 @@ impl Engine {
                 let (v1, _, _) = self.raw_input[self.raw_input.len() - 3];
                 let (v2, _, _) = self.raw_input[self.raw_input.len() - 2];
                 if keys::is_vowel(v1) && v1 == v2 {
-                    return true;
+                    // Exception: S/F + OO + modifier → Vietnamese (số, sở, fố are common)
+                    // S/F + AA/EE + modifier → English (SaaS, FaaS patterns)
+                    // The 'ô' sound is very common in Vietnamese words starting with S/F
+                    if v1 != keys::O {
+                        return true;
+                    }
                 }
             }
         }
