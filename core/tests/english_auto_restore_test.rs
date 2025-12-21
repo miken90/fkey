@@ -386,6 +386,7 @@ fn vietnamese_complex_words_preserved() {
         ("dduowngf ", "đường "),   // đường (road)
         ("truwowcs ", "trước "),   // trước (before)
         ("giuwowngf ", "giường "), // giường (bed)
+        ("twong ", "tương "),     // tương (mutual) - shorthand telex
         // Words with circumflex (â, ê, ô)
         ("caaps ", "cấp "), // cấp (level)
         ("taanf ", "tần "), // tần (frequency)

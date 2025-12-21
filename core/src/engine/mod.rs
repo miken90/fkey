@@ -2950,6 +2950,17 @@ impl Engine {
                         let (third, _, _) = self.raw_input[2];
                         // Check if third char is a vowel (not a tone modifier like j)
                         if keys::is_vowel(third) {
+                            // Exception: C+W+O+NG pattern is Vietnamese "ương" (tương, sương, etc.)
+                            // Pattern: consonant + W + O + N + G → valid Vietnamese diphthong
+                            if third == keys::O && self.raw_input.len() >= 5 {
+                                let (fourth, _, _) = self.raw_input[3];
+                                let (fifth, _, _) = self.raw_input[4];
+                                if fourth == keys::N && fifth == keys::G {
+                                    // This is Vietnamese "ương" pattern, don't restore
+                                    return false;
+                                }
+                            }
+
                             // Check if there's ANY tone modifier (j/s/f/r/x) in the rest of the word
                             let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
                             let has_tone_modifier = self.raw_input[2..]

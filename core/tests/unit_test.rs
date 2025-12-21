@@ -149,6 +149,8 @@ const TELEX_DELAYED: &[(&str, &str)] = &[
     ("tongw", "tơng"),
     ("tuow", "tuơ"), // Issue #133: only 'o' gets horn when no final
     ("truwowng", "trương"),
+    // Issue: twong shorthand for tương
+    ("twong", "tương"),
 ];
 
 // ============================================================
