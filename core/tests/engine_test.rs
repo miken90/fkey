@@ -553,10 +553,10 @@ fn delayed_circumflex_vowel_trigger() {
     // Delayed circumflex triggered by second matching vowel
     // Pattern: V + C + V (same vowel) → circumflex on first V, remove trigger
     telex(&[
-        ("toto", "tôt"),   // tôt - second 'o' triggers circumflex
-        ("noto", "nôt"),   // nôt - second 'o' triggers circumflex
-        ("data", "dât"),   // dât - second 'a' triggers circumflex
-        ("hete", "hêt"),   // hêt - second 'e' triggers circumflex
+        ("toto", "tôt"), // tôt - second 'o' triggers circumflex
+        ("noto", "nôt"), // nôt - second 'o' triggers circumflex
+        ("data", "dât"), // dât - second 'a' triggers circumflex
+        ("hete", "hêt"), // hêt - second 'e' triggers circumflex
     ]);
 }
 
@@ -574,9 +574,9 @@ fn delayed_circumflex_diphthong_pattern() {
     // Pattern: C + V₁ + V₂ + mark + V₁ → circumflex on V₁
     // Note: circumflex requires vowel trigger (second V₁) after mark
     telex(&[
-        ("dausa", "dấu"),   // dấu - âu diphthong: sắc then vowel trigger
-        ("dausfa", "dầu"),  // dầu - âu diphthong: sắc → huyền then vowel trigger
-        ("daysa", "dấy"),   // dấy - ây diphthong: sắc then vowel trigger
+        ("dausa", "dấu"),  // dấu - âu diphthong: sắc then vowel trigger
+        ("dausfa", "dầu"), // dầu - âu diphthong: sắc → huyền then vowel trigger
+        ("daysa", "dấy"),  // dấy - ây diphthong: sắc then vowel trigger
     ]);
 }
 
@@ -587,10 +587,10 @@ fn delayed_circumflex_auto_restore_space() {
     use gonhanh_core::utils::type_word;
 
     let cases = [
-        ("toto ", "toto "),   // No mark → restore
-        ("data ", "data "),   // No mark → restore
-        ("noto ", "noto "),   // No mark → restore
-        ("hete ", "hete "),   // No mark → restore
+        ("toto ", "toto "), // No mark → restore
+        ("data ", "data "), // No mark → restore
+        ("noto ", "noto "), // No mark → restore
+        ("hete ", "hete "), // No mark → restore
     ];
 
     for (input, expected) in cases {
@@ -607,16 +607,20 @@ fn delayed_circumflex_valid_vietnamese_stays() {
     use gonhanh_core::utils::type_word;
 
     let cases = [
-        ("dausa ", "dấu "),   // Valid: dấu (mark typed)
-        ("totos ", "tốt "),   // Valid: tốt (mark typed)
-        ("notos ", "nốt "),   // Valid: nốt (mark typed)
+        ("dausa ", "dấu "), // Valid: dấu (mark typed)
+        ("totos ", "tốt "), // Valid: tốt (mark typed)
+        ("notos ", "nốt "), // Valid: nốt (mark typed)
     ];
 
     for (input, expected) in cases {
         let mut e = Engine::new();
         e.set_english_auto_restore(true);
         let result = type_word(&mut e, input);
-        assert_eq!(result, expected, "Valid Vietnamese should stay for '{}'", input);
+        assert_eq!(
+            result, expected,
+            "Valid Vietnamese should stay for '{}'",
+            input
+        );
     }
 }
 
@@ -626,17 +630,21 @@ fn delayed_circumflex_punctuation_restore() {
     use gonhanh_core::utils::type_word;
 
     let cases = [
-        ("toto,", "toto,"),   // Comma triggers restore
-        ("data.", "data."),   // Dot triggers restore
-        ("data;", "data;"),   // Semicolon triggers restore
-        ("dausa,", "dấu,"),   // Valid Vietnamese stays (with punctuation)
+        ("toto,", "toto,"), // Comma triggers restore
+        ("data.", "data."), // Dot triggers restore
+        ("data;", "data;"), // Semicolon triggers restore
+        ("dausa,", "dấu,"), // Valid Vietnamese stays (with punctuation)
     ];
 
     for (input, expected) in cases {
         let mut e = Engine::new();
         e.set_english_auto_restore(true);
         let result = type_word(&mut e, input);
-        assert_eq!(result, expected, "Punctuation auto-restore failed for '{}'", input);
+        assert_eq!(
+            result, expected,
+            "Punctuation auto-restore failed for '{}'",
+            input
+        );
     }
 }
 
@@ -659,5 +667,9 @@ fn delayed_circumflex_no_false_positives() {
     // "teacher" = t-e-a-c-h-e-r: "ea" is not valid diphthong, no circumflex
     let mut e2 = Engine::new();
     let result2 = type_word(&mut e2, "teacher");
-    assert_eq!(result2, "teacher", "teacher should stay unchanged, got: '{}'", result2);
+    assert_eq!(
+        result2, "teacher",
+        "teacher should stay unchanged, got: '{}'",
+        result2
+    );
 }
