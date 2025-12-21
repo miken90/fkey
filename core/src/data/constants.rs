@@ -112,7 +112,7 @@ pub const VALID_DIPHTHONGS: &[[u16; 2]] = &[
     [keys::Y, keys::E], // #29 yê (requires circumflex on E)
 ];
 
-/// Valid triphthong base key patterns (11 patterns from docs 7.6.1-B)
+/// Valid triphthong base key patterns (13 patterns from docs 7.6.1-B)
 pub const VALID_TRIPHTHONGS: &[[u16; 3]] = &[
     [keys::I, keys::E, keys::U], // #30 iêu
     [keys::Y, keys::E, keys::U], // #31 yêu
@@ -125,6 +125,8 @@ pub const VALID_TRIPHTHONGS: &[[u16; 3]] = &[
     [keys::U, keys::O, keys::U], // #39 ươu
     [keys::U, keys::Y, keys::E], // #40 uyê
     [keys::U, keys::Y, keys::U], // #41 uyu (khuỷu - elbow)
+    [keys::U, keys::E, keys::U], // #42 uêu (nguều - requires circumflex on E)
+    [keys::O, keys::A, keys::O], // #43 oao (ngoào - modifier on A for tones)
 ];
 
 // =============================================================================

@@ -156,7 +156,7 @@ Nếu các bạn thấy phần mềm hữu ích có thể [ủng hộ tôi tại
 | **macOS** | SwiftUI + CGEventTap + C FFI |
 | **Windows** | WPF/.NET 8 + SetWindowsHookEx + P/Invoke |
 | **Linux** | Fcitx5 + C++ + C FFI |
-| **Testing** | rstest + serial_test (470+ tests) |
+| **Testing** | rstest + serial_test (600+ tests) |
 | **CI/CD** | GitHub Actions + auto-versioning + AI-generated release notes |
 | **Dev Tools** | [Claude Code](https://claude.ai/code) with [ClaudeKit](https://claudekit.cc/) |
 
@@ -191,7 +191,7 @@ make install   # Copy vào /Applications
 | **Anti-over-engineering** | Không abstraction layer thừa. Inline code khi chỉ dùng 1 chỗ |
 | **Performance-first** | Target: <1ms latency, <10MB RAM. Không allocation trong hot path |
 | **Zero dependency** | Rust core chỉ dùng `std`. Không crates ngoài |
-| **Test-driven** | 470+ tests với coverage 100%. Bao gồm edge cases tiếng Việt và auto-restore tiếng Anh |
+| **Test-driven** | 600+ tests với coverage 100%. Bao gồm edge cases tiếng Việt và auto-restore tiếng Anh |
 | **Validation-first** | Reject invalid input sớm. Validate trước khi transform |
 | **Platform-agnostic core** | Core = pure Rust, no OS-specific code. UI layer riêng cho mỗi platform |
 

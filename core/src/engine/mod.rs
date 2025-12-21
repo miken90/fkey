@@ -957,6 +957,25 @@ impl Engine {
                         // Skip circumflex, let the vowel append as raw letter
                         return None;
                     }
+
+                    // Check if applying circumflex would create an invalid diphthong
+                    // Example: "ngoà" + "o" → would create "ồa" which is invalid
+                    // Valid O diphthongs: oa, oă, oe, oi, ôi, ơi - but NOT "ôa"
+                    if key == keys::O {
+                        // Find the target O and check what vowel comes after it
+                        for (i, c) in self.buf.iter().enumerate().rev() {
+                            if c.key == keys::O && c.tone == tone::NONE {
+                                // Check if there's an 'a' after this 'o' (with or without mark)
+                                if let Some(next) = self.buf.get(i + 1) {
+                                    if next.key == keys::A {
+                                        // "oa" + circumflex on 'o' would create "ôa" - invalid!
+                                        return None;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 for (i, c) in self.buf.iter().enumerate().rev() {

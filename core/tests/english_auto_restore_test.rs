@@ -105,6 +105,9 @@ fn pattern2_aa_vowel_pair() {
         // Triple 'o' with consonant
         ("xooong ", "xoong "), // x+o+o+o+ng → triple 'o' collapses to double
         ("booong ", "boong "), // b+o+o+o+ng → triple 'o' collapses to double
+        // Valid Vietnamese triphthongs - should NOT be restored
+        ("ngueeuf ", "nguều "), // ng+u+ê+u with huyền → valid Vietnamese (ee for ê)
+        ("ngoafo ", "ngoào "),  // ng+o+à+o - ôa is invalid, so 'o' appends raw
     ]);
 }
 
