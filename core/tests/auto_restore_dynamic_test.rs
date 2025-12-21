@@ -741,17 +741,19 @@ const W_FINAL_WORDS: &[(&str, &str)] = &[
     ("stew ", "stew "),
     ("threw ", "threw "),
     ("view ", "view "),
-    // -ow pattern (when pronounced /aʊ/)
-    ("bow ", "bow "),
-    ("brow ", "brow "),
-    ("cow ", "cow "),
-    ("how ", "how "),
-    ("now ", "now "),
-    ("plow ", "plow "),
-    ("row ", "row "),
-    ("sow ", "sow "),
-    ("vow ", "vow "),
-    ("wow ", "wow "),
+    // -ow pattern: single valid consonant + ow → cơ (Vietnamese ơ vowel)
+    // These form valid Vietnamese syllables (consonant + ơ)
+    ("bow ", "bơ "), // bơ = butter
+    ("cow ", "cơ "), // cơ = muscle/rice
+    ("how ", "hơ "), // hơ = to warm by fire
+    ("now ", "nơ "), // nơ = bow/ribbon
+    ("row ", "rơ "), // rơ = to fall/drop
+    ("sow ", "sơ "), // sơ = initial/raw
+    ("vow ", "vơ "), // vơ = to grab/gather
+    // -ow pattern: invalid initials → restore to English
+    ("brow ", "brow "), // br is invalid initial
+    ("plow ", "plow "), // pl is invalid initial
+    ("wow ", "wow "),   // w is invalid initial (handled by Pattern 1)
 ];
 
 #[test]

@@ -3174,14 +3174,16 @@ impl Engine {
         // Pattern 5: W at end after vowel → English (like "raw", "law", "saw", "view")
         // W as final is not valid Vietnamese, it's an English pattern
         // Exception: "uw" ending is Vietnamese (tuw → tư)
+        // Exception: "ow" ending is Vietnamese (cow → cơ)
         // Exception: W modified a diphthong (oiw → ơi where OI is diphthong, W adds horn to O)
         if self.raw_input.len() >= 2 {
             let (last, _, _) = self.raw_input[self.raw_input.len() - 1];
             if last == keys::W {
                 let (second_last, _, _) = self.raw_input[self.raw_input.len() - 2];
-                // W after vowel (not U) at end is English: raw, law, saw
+                // W after vowel (not U or O) at end is English: raw, law, saw
                 // W after U is Vietnamese: tuw → tư
-                if keys::is_vowel(second_last) && second_last != keys::U {
+                // W after O is Vietnamese: cow → cơ
+                if keys::is_vowel(second_last) && second_last != keys::U && second_last != keys::O {
                     // Check if W was absorbed (modified existing vowel vs created new ư)
                     // "oiw" → "ơi": 3 chars → 2 chars (absorbed)
                     // "view" → "vieư": 4 chars → 4 chars (not absorbed)
