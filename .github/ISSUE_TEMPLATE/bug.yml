@@ -98,10 +98,7 @@ body:
     attributes:
       label: Cung cấp debug log
       description: |
-        Bật debug log và dán vào ô này theo hướng dẫn sau:
-        1. Chạy: `touch /tmp/gonhanh_debug.log`
-        2. Theo dõi log: `tail -f /tmp/gonhanh_debug.log`
-        3. Gõ lại các từ/cụm từ bị lỗi
-        4. Paste log vào ô bên dưới
-        5. Xoá file log: `rm -f /tmp/gonhanh_debug.log`
+        1. Bật log: `touch /tmp/gonhanh_debug.log && tail -f /tmp/gonhanh_debug.log`
+        2. Gõ lại từ/cụm từ bị lỗi, copy log paste vào ô dưới
+        3. Xoá log: `rm -f /tmp/gonhanh_debug.log`
       placeholder: Paste debug log vào đây...
