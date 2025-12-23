@@ -2290,6 +2290,53 @@ impl Engine {
             }
         }
 
+        // Telex: Post-tone delayed circumflex (xepse → xếp)
+        // Pattern: initial-consonant + vowel-with-mark + non-extending-final (t, m, p) + same vowel
+        // When user types tone BEFORE circumflex modifier: "xeps" → "xép", then 'e' → "xếp"
+        // The second vowel triggers circumflex on the first vowel (keeping existing mark)
+        // IMPORTANT: Must have initial consonant to form valid Vietnamese syllable
+        // "expect" (e-x-p-e) should NOT trigger because no initial consonant
+        if self.method == 0 && matches!(key, keys::A | keys::E | keys::O) && self.buf.len() >= 3 {
+            let last_idx = self.buf.len() - 1;
+            let vowel_idx = self.buf.len() - 2;
+
+            // Check if there's at least one initial consonant before the vowel
+            let has_initial_consonant =
+                vowel_idx > 0 && self.buf.get(0).is_some_and(|c| keys::is_consonant(c.key));
+
+            // Check if last char is a non-extending final consonant
+            let last_is_non_extending = self
+                .buf
+                .get(last_idx)
+                .is_some_and(|c| matches!(c.key, keys::T | keys::M | keys::P));
+
+            // Check if second-to-last has mark but NO circumflex, and matches typed vowel
+            let should_add_circumflex = has_initial_consonant
+                && last_is_non_extending
+                && self.buf.get(vowel_idx).is_some_and(|c| {
+                    c.mark > 0 // has tone mark (sắc, huyền, etc.)
+                        && c.tone == tone::NONE // but no circumflex yet
+                        && c.key == key // matches typed vowel
+                        && matches!(c.key, keys::A | keys::E | keys::O)
+                });
+
+            if should_add_circumflex {
+                // Add circumflex to the vowel (keeping existing mark)
+                if let Some(c) = self.buf.get_mut(vowel_idx) {
+                    c.tone = tone::CIRCUMFLEX;
+                    self.had_any_transform = true;
+                }
+
+                // Track in raw_input for auto-restore detection
+                self.raw_input.push((key, caps, false));
+
+                // Rebuild from vowel position (second vowel is NOT added to buffer - it's modifier)
+                // Screen has: "xép" (3 chars), buffer stays: "xếp" (3 chars, vowel updated)
+                // Need to delete "ép" (2 chars) and output "ếp" (2 chars)
+                return self.rebuild_from(vowel_idx);
+            }
+        }
+
         self.last_transform = None;
         // Add letters to buffer, and numbers in VNI mode (for pass-through after revert)
         // This ensures buffer.len() stays in sync with screen chars for correct backspace count
@@ -3519,7 +3566,9 @@ impl Engine {
 
         // Pattern 6a: Double E (ee) followed by P at END → English (keep, deep, sleep, seep)
         // Only EE+P, not AA+P or OO+P which can be valid Vietnamese (cấp = caaps)
-        // Exception: I+EE+P is Vietnamese "iệp" pattern (nghiệp, hiệp, kiệp, v.v.)
+        // Exceptions:
+        //   - I+EE+P is Vietnamese "iệp" pattern (nghiệp, hiệp, kiệp, v.v.)
+        //   - X+EE+P is Vietnamese "xếp" pattern (xếp = to arrange)
         if self.raw_input.len() >= 3 {
             let len = self.raw_input.len();
             let (last, _, _) = self.raw_input[len - 1];
@@ -3528,12 +3577,12 @@ impl Engine {
                 let (v2, _, _) = self.raw_input[len - 2];
                 // Only match EE (not AA or OO)
                 if v1 == keys::E && v2 == keys::E {
-                    // Exception: I+EE+P is Vietnamese "iệp" (nghiệp, hiệp, kiệp)
-                    // Check if there's an I before the double E
+                    // Exception: I+EE+P or X+EE+P are Vietnamese patterns
+                    // Check if there's an I or X before the double E
                     if len >= 4 {
                         let (before_ee, _, _) = self.raw_input[len - 4];
-                        if before_ee == keys::I {
-                            // This is Vietnamese "iêp" pattern, don't restore
+                        if before_ee == keys::I || before_ee == keys::X {
+                            // This is Vietnamese "iêp" or "xêp" pattern, don't restore
                             // Continue to check other patterns
                         } else {
                             return true;
