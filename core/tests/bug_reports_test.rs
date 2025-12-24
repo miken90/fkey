@@ -346,3 +346,21 @@ fn bug10_raisse_restore() {
     assert_eq!(result8, "đây ", "'dayda ' should produce 'đây '");
     assert_eq!(result9, "đây ", "'daday ' should produce 'đây '");
 }
+
+// =============================================================================
+// BUG 11: Shortcut "->" → "→" not working
+// Break characters like '-' and '>' are not accumulated in buffer
+// =============================================================================
+
+#[test]
+fn bug11_arrow_shortcut() {
+    use gonhanh_core::engine::shortcut::Shortcut;
+
+    let mut e = Engine::new();
+    // Add shortcut "->" → "→"
+    e.shortcuts_mut().add(Shortcut::immediate("->", "→"));
+
+    let result = type_word(&mut e, "->");
+    println!("'->' -> '{}' (expected: '→')", result);
+    assert_eq!(result, "→", "'->' should produce '→'");
+}

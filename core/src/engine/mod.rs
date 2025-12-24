@@ -43,8 +43,14 @@ pub struct Result {
     pub action: u8,
     pub backspace: u8,
     pub count: u8,
-    pub _pad: u8,
+    /// Flags byte:
+    /// - bit 0 (0x01): key_consumed - if set, the trigger key should NOT be passed through
+    ///   Used for shortcuts where the trigger key is part of the replacement
+    pub flags: u8,
 }
+
+/// Flag: key was consumed by shortcut, don't pass through
+pub const FLAG_KEY_CONSUMED: u8 = 0x01;
 
 impl Result {
     pub fn none() -> Self {
@@ -53,7 +59,7 @@ impl Result {
             action: Action::None as u8,
             backspace: 0,
             count: 0,
-            _pad: 0,
+            flags: 0,
         }
     }
 
@@ -63,12 +69,24 @@ impl Result {
             action: Action::Send as u8,
             backspace,
             count: chars.len().min(MAX) as u8,
-            _pad: 0,
+            flags: 0,
         };
         for (i, &c) in chars.iter().take(MAX).enumerate() {
             result.chars[i] = c as u32;
         }
         result
+    }
+
+    /// Send with key_consumed flag set (shortcut consumed the trigger key)
+    pub fn send_consumed(backspace: u8, chars: &[char]) -> Self {
+        let mut result = Self::send(backspace, chars);
+        result.flags = FLAG_KEY_CONSUMED;
+        result
+    }
+
+    /// Check if key was consumed (should not be passed through)
+    pub fn key_consumed(&self) -> bool {
+        self.flags & FLAG_KEY_CONSUMED != 0
     }
 }
 
@@ -173,21 +191,52 @@ fn should_reset_pending_capitalize(key: u16, shift: bool) -> bool {
     !is_neutral
 }
 
-/// Convert shifted number key to its symbol character
-/// Shift+1 → !, Shift+2 → @, Shift+3 → #, etc.
-fn shifted_number_to_symbol(key: u16) -> Option<char> {
-    match key {
-        keys::N1 => Some('!'),
-        keys::N2 => Some('@'),
-        keys::N3 => Some('#'),
-        keys::N4 => Some('$'),
-        keys::N5 => Some('%'),
-        keys::N6 => Some('^'),
-        keys::N7 => Some('&'),
-        keys::N8 => Some('*'),
-        keys::N9 => Some('('),
-        keys::N0 => Some(')'),
-        _ => None,
+/// Convert break key to its character representation
+/// Handles both shifted and unshifted break characters for shortcut matching.
+/// Examples: MINUS → '-', Shift+DOT → '>', Shift+MINUS → '_'
+fn break_key_to_char(key: u16, shift: bool) -> Option<char> {
+    if shift {
+        // Shifted break characters
+        match key {
+            keys::N1 => Some('!'),
+            keys::N2 => Some('@'),
+            keys::N3 => Some('#'),
+            keys::N4 => Some('$'),
+            keys::N5 => Some('%'),
+            keys::N6 => Some('^'),
+            keys::N7 => Some('&'),
+            keys::N8 => Some('*'),
+            keys::N9 => Some('('),
+            keys::N0 => Some(')'),
+            keys::MINUS => Some('_'),
+            keys::EQUAL => Some('+'),
+            keys::SEMICOLON => Some(':'),
+            keys::QUOTE => Some('"'),
+            keys::COMMA => Some('<'),
+            keys::DOT => Some('>'),
+            keys::SLASH => Some('?'),
+            keys::BACKSLASH => Some('|'),
+            keys::LBRACKET => Some('{'),
+            keys::RBRACKET => Some('}'),
+            keys::BACKQUOTE => Some('~'),
+            _ => None,
+        }
+    } else {
+        // Unshifted break characters
+        match key {
+            keys::MINUS => Some('-'),
+            keys::EQUAL => Some('='),
+            keys::SEMICOLON => Some(';'),
+            keys::QUOTE => Some('\''),
+            keys::COMMA => Some(','),
+            keys::DOT => Some('.'),
+            keys::SLASH => Some('/'),
+            keys::BACKSLASH => Some('\\'),
+            keys::LBRACKET => Some('['),
+            keys::RBRACKET => Some(']'),
+            keys::BACKQUOTE => Some('`'),
+            _ => None,
+        }
     }
 }
 
@@ -257,7 +306,8 @@ pub struct Engine {
     /// Issue #107: Special character prefix for shortcut matching
     /// When a shifted symbol (like #, @, $) is typed first, store it here
     /// so shortcuts like "#fne" can match even though # is normally a break char
-    shortcut_prefix: Option<char>,
+    /// Extended: Now accumulates multiple break chars for shortcuts like "->" → "→"
+    shortcut_prefix: String,
     /// Buffer was just restored from DELETE - clear on next letter input
     /// This prevents typing after restore from appending to old buffer
     restored_pending_clear: bool,
@@ -301,7 +351,7 @@ impl Engine {
             pending_mark_revert_pop: false,
             had_any_transform: false,
             had_vowel_triggered_circumflex: false,
-            shortcut_prefix: None,
+            shortcut_prefix: String::new(),
             restored_pending_clear: false,
             auto_capitalize: false, // Default: OFF
             pending_capitalize: false,
@@ -473,17 +523,44 @@ impl Engine {
         // Also trigger auto-restore for invalid Vietnamese before clearing
         // Use is_break_ext to handle shifted symbols like @, !, #, etc.
         if keys::is_break_ext(key, shift) {
-            // Issue #107: If buffer is empty and it's a shifted symbol (like #, @, $),
-            // store it as shortcut_prefix for shortcut matching instead of treating as break.
-            // This allows shortcuts like "#fne" to work.
-            if self.buf.is_empty() && shift && keys::is_number(key) {
-                if let Some(symbol) = shifted_number_to_symbol(key) {
-                    self.shortcut_prefix = Some(symbol);
+            // Issue #107 + Bug #11: When buffer is empty AND we're at true start of input
+            // (no word history), accumulate break chars for shortcuts.
+            // This allows shortcuts like "#fne", "->", "=>" to work.
+            // BUT: if there's word history (user just typed "du "), break chars should
+            // clear history as before, not accumulate.
+            let at_true_start =
+                self.buf.is_empty() && self.word_history.len == 0 && self.spaces_after_commit == 0;
+
+            // Also continue accumulating if we already started a prefix
+            let continuing_prefix = self.buf.is_empty() && !self.shortcut_prefix.is_empty();
+
+            if at_true_start || continuing_prefix {
+                // Try to get the character for this break key
+                if let Some(ch) = break_key_to_char(key, shift) {
+                    self.shortcut_prefix.push(ch);
+
+                    // Check for immediate shortcut match
+                    let input_method = self.current_input_method();
+                    if let Some(m) = self.shortcuts.try_match_for_method(
+                        &self.shortcut_prefix,
+                        None,
+                        false,
+                        input_method,
+                    ) {
+                        // Found a match! Send the replacement with key_consumed flag
+                        // Note: backspace_count - 1 because current key hasn't been typed yet
+                        // Example: "->" trigger has backspace_count=2, but only '-' is on screen
+                        let output: Vec<char> = m.output.chars().collect();
+                        let backspace_count = (m.backspace_count as u8).saturating_sub(1);
+                        self.shortcut_prefix.clear();
+                        return Result::send_consumed(backspace_count, &output);
+                    }
+
                     // Auto-capitalize: set pending if sentence-ending (! or ?)
                     if self.auto_capitalize && is_sentence_ending(key, shift) {
                         self.pending_capitalize = true;
                     }
-                    return Result::none(); // Let the symbol pass through
+                    return Result::none(); // Let the char pass through, keep accumulating
                 }
             }
 
@@ -745,7 +822,7 @@ impl Engine {
     fn try_word_boundary_shortcut(&mut self) -> Result {
         // Issue #107: Allow shortcuts with special char prefix (like "#fne")
         // If shortcut_prefix is set, we still try to match even with empty buffer
-        if self.buf.is_empty() && self.shortcut_prefix.is_none() {
+        if self.buf.is_empty() && self.shortcut_prefix.is_empty() {
             return Result::none();
         }
 
@@ -756,9 +833,10 @@ impl Engine {
         }
 
         // Build full trigger string including shortcut_prefix if present
-        let full_trigger = match self.shortcut_prefix {
-            Some(prefix) => format!("{}{}", prefix, self.buf.to_full_string()),
-            None => self.buf.to_full_string(),
+        let full_trigger = if self.shortcut_prefix.is_empty() {
+            self.buf.to_full_string()
+        } else {
+            format!("{}{}", self.shortcut_prefix, self.buf.to_full_string())
         };
 
         let input_method = self.current_input_method();
@@ -2675,7 +2753,7 @@ impl Engine {
         self.had_any_transform = false;
         self.had_vowel_triggered_circumflex = false;
         self.restored_pending_clear = false;
-        self.shortcut_prefix = None;
+        self.shortcut_prefix.clear();
     }
 
     /// Clear everything including word history
