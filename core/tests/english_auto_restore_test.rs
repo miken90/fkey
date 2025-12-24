@@ -578,6 +578,23 @@ fn pattern9_trans_prefix() {
 }
 
 #[test]
+fn pattern9_con_prefix() {
+    // "con-" prefix: double 's' reverts mark, buffer has valid prefix pattern
+    telex_auto_restore(&[
+        ("console ", "console "),  // normal typing
+        ("conssole ", "console "), // double 's' reverts → "console" (con- prefix)
+        ("consscious ", "conscious "),
+        ("conssider ", "consider "),
+        ("conssequence ", "consequence "),
+        ("consstant ", "constant "),
+        ("consstruct ", "construct "),
+        ("conssult ", "consult "),
+        ("conssume ", "consume "),
+        ("context ", "context "), // ext pattern restores (x+t)
+    ]);
+}
+
+#[test]
 fn pattern9_re_prefix() {
     // "re-" prefix: double 's' (sắc) after 'e' triggers revert
     // Pattern: re + ss → "rés" → "res" (revert)

@@ -3162,7 +3162,7 @@ impl Engine {
 
         // Common English prefixes that suggest intentional revert
         const PREFIXES: &[&str] = &[
-            "dis", "mis", "un", "re", "de", "pre", "anti", "non", "sub", "trans",
+            "dis", "mis", "un", "re", "de", "pre", "anti", "non", "sub", "trans", "con",
         ];
 
         // Common English suffixes
