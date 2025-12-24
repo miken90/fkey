@@ -1398,6 +1398,13 @@ const TELEX_ENGLISH_AW_WORDS: &[(&str, &str)] = &[
     ("waf ", "ừa "),    // ừa - Vietnamese (ư + huyền + a)
     ("was ", "ứa "),    // ứa - Vietnamese (ư + sắc + a)
     ("waj ", "ựa "),    // ựa - Vietnamese (ư + nặng + a)
+    // W shortcut (w→ư) with marks - should NOT be restored
+    ("wf ", "ừ "),   // w→ư, f→huyền: ừ (valid Vietnamese interjection)
+    ("Wf ", "Ừ "),   // W→Ư, f→huyền: Ừ
+    ("ws ", "ứ "),   // w→ư, s→sắc: ứ
+    ("wmf ", "ừm "), // w→ư, m, f→huyền on ư: ừm (valid Vietnamese)
+    ("Wmf ", "Ừm "), // W→Ư, m, f→huyền on Ư: Ừm
+    ("wms ", "ứm "), // w→ư, m, s→sắc on ư: ứm
     // nghiệp/hiệp patterns - valid Vietnamese, NOT restored
     ("nghieepj ", "nghiệp "), // nghiệp - occupation/karma
     ("hieepj ", "hiệp "),     // hiệp - united/round

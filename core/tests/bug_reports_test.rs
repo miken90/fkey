@@ -172,6 +172,23 @@ fn ddddd_behavior() {
 }
 
 // =============================================================================
+// FIXED: "Wf" → "Ừ", "wmf" → "ừm", "Wmf " → "Ừm "
+// W shortcut converts to ư, then mark 'f' applies to ư correctly
+// Tests added to unit_test.rs TELEX_WORDS section
+// =============================================================================
+
+#[test]
+fn fixed_w_shortcut_with_mark() {
+    telex(&[
+        ("Wf", "Ừ"),
+        ("wf", "ừ"),
+        ("wmf", "ừm"),
+        ("Wmf ", "Ừm "),
+        ("wmf ", "ừm "),
+    ]);
+}
+
+// =============================================================================
 // BUG 7: After "ddddd" → "dddd", backspace to "d", then "d" should produce "đ"
 // The stroke_reverted flag should be reset on backspace
 // =============================================================================
@@ -218,4 +235,114 @@ fn bug8_extra_vowel_after_diphthong_mark() {
         result2, "tàiii",
         "'taifii' should produce 'tàiii' (mark on 'a')"
     );
+}
+
+// =============================================================================
+// BUG 9: Delayed circumflex with post-tone 'd' for stroke
+// "ddoong " -> "đông " (dd=đ, oo=ô, ng=final)
+// "doodng " -> "đông " (d, oo=ô, d=stroke on initial d, ng=final)
+// "duod" -> "đuo" (d, uo, d=stroke on initial d)
+// =============================================================================
+
+#[test]
+fn bug9_delayed_circumflex_stroke() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "ddoong ");
+    println!("'ddoong ' -> '{}' (expected: 'đông ')", result);
+    assert_eq!(result, "đông ", "'ddoong ' should produce 'đông '");
+
+    let mut e2 = Engine::new();
+    let result2 = type_word(&mut e2, "doodng ");
+    println!("'doodng ' -> '{}' (expected: 'đông ')", result2);
+    assert_eq!(result2, "đông ", "'doodng ' should produce 'đông '");
+
+    // Test without space
+    let mut e3 = Engine::new();
+    let result3 = type_word(&mut e3, "duod");
+    println!("'duod' -> '{}' (expected: 'đuo')", result3);
+    assert_eq!(result3, "đuo", "'duod' should produce 'đuo'");
+
+    // Test with space
+    let mut e4 = Engine::new();
+    let result4 = type_word(&mut e4, "duod ");
+    println!("'duod ' -> '{}' (expected: 'đuo ')", result4);
+    assert_eq!(result4, "đuo ", "'duod ' should produce 'đuo '");
+}
+
+// =============================================================================
+// BUG 10: "raisse " should restore to "raise ", "raise " should stay "raise "
+// With auto_restore enabled, English words should be detected and restored
+// =============================================================================
+
+#[test]
+fn bug10_raisse_restore() {
+    // First check without auto_restore
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "raisse ");
+    println!("[no auto_restore] 'raisse ' -> '{}'", result);
+
+    let mut e2 = Engine::new();
+    let result2 = type_word(&mut e2, "raise ");
+    println!("[no auto_restore] 'raise ' -> '{}'", result2);
+
+    // Then with auto_restore
+    let mut e3 = Engine::new();
+    e3.set_english_auto_restore(true);
+    let result3 = type_word(&mut e3, "raisse ");
+    println!("[auto_restore] 'raisse ' -> '{}'", result3);
+
+    let mut e4 = Engine::new();
+    e4.set_english_auto_restore(true);
+    let result4 = type_word(&mut e4, "raise ");
+    println!("[auto_restore] 'raise ' -> '{}'", result4);
+
+    // Assert expected behavior with auto_restore
+    assert_eq!(result3, "raise ", "'raisse ' should produce 'raise '");
+    assert_eq!(result4, "raise ", "'raise ' should produce 'raise '");
+
+    // Check what "theme " produces (without and with auto_restore)
+    let mut e5a = Engine::new();
+    let result5a = type_word(&mut e5a, "theme ");
+    println!("[no auto_restore] 'theme ' -> '{}'", result5a);
+
+    let mut e5b = Engine::new();
+    e5b.set_english_auto_restore(true);
+    let result5b = type_word(&mut e5b, "theme ");
+    println!("[auto_restore] 'theme ' -> '{}'", result5b);
+
+    // "theme " should produce "thêm " (valid Vietnamese, NOT restored)
+    // In Telex: delayed circumflex - 'e' after consonant applies to previous 'e'
+    assert_eq!(
+        result5b, "thêm ",
+        "'theme ' should produce 'thêm ' (valid Vietnamese)"
+    );
+
+    // "sorry " should stay as "sorry " (not "sory ")
+    // This verifies we excluded 'y' from the double-s + vowel pattern
+    let mut e6 = Engine::new();
+    e6.set_english_auto_restore(true);
+    let result6 = type_word(&mut e6, "sorry ");
+    println!("[auto_restore] 'sorry ' -> '{}'", result6);
+    assert_eq!(
+        result6, "sorry ",
+        "'sorry ' should produce 'sorry ' (not 'sory ')"
+    );
+
+    // "dayda " and "daday " should produce "đây " (valid Vietnamese)
+    let mut e7 = Engine::new();
+    let result7 = type_word(&mut e7, "dayda ");
+    println!("[no auto_restore] 'dayda ' -> '{}'", result7);
+
+    let mut e8 = Engine::new();
+    e8.set_english_auto_restore(true);
+    let result8 = type_word(&mut e8, "dayda ");
+    println!("[auto_restore] 'dayda ' -> '{}'", result8);
+
+    let mut e9 = Engine::new();
+    e9.set_english_auto_restore(true);
+    let result9 = type_word(&mut e9, "daday ");
+    println!("[auto_restore] 'daday ' -> '{}'", result9);
+
+    assert_eq!(result8, "đây ", "'dayda ' should produce 'đây '");
+    assert_eq!(result9, "đây ", "'daday ' should produce 'đây '");
 }

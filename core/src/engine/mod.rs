@@ -977,24 +977,28 @@ impl Engine {
                 // For open syllables (d + vowel only), defer stroke to try_mark
                 // UNLESS:
                 // - A mark is already applied (confirms Vietnamese intent)
-                // - The triggering key is 'd' AND buffer is short (d + single vowel)
-                //   This allows "did" → "đi", "dod" → "đo", etc.
+                // - The triggering key is 'd' AND buffer is vowels-only after initial 'd'
+                //   This allows "did" → "đi", "dod" → "đo", "duod" → "đuo", etc.
                 // This prevents "de" + "d" → "đe" while allowing:
                 // - "dods" → "đó" (mark key triggers stroke)
                 // - "dojd" → "đọ" (mark already present, stroke applies immediately)
                 // - "did" → "đi" (d triggers stroke on short open syllable)
+                // - "duod" → "đuo" (d triggers stroke on diphthong open syllable)
                 let syllable = syllable::parse(&buffer_keys);
                 let has_mark_applied = self.buf.iter().any(|c| c.mark > 0);
-                // Only allow 'd' to trigger immediate stroke on short patterns (d + 1 vowel = 2 chars)
-                let is_short_d_pattern = key == keys::D && self.buf.len() == 2;
-                if syllable.final_c.is_empty() && !has_mark_applied && !is_short_d_pattern {
-                    // Open syllable without mark, not short d pattern - defer stroke decision
+                // Allow 'd' to trigger immediate stroke on open syllables with d + vowels only
+                // Examples: "di" (len 2), "duo" (len 3), "dua" (len 3), "duoi" (len 4)
+                let is_d_vowels_only_pattern = key == keys::D
+                    && self.buf.len() >= 2
+                    && self.buf.iter().skip(1).all(|c| keys::is_vowel(c.key));
+                if syllable.final_c.is_empty() && !has_mark_applied && !is_d_vowels_only_pattern {
+                    // Open syllable without mark, not d+vowels pattern - defer stroke decision
                     return None;
                 }
 
                 // Track if this is a short pattern stroke (can be reverted later)
                 // Only revertible if no mark applied - mark confirms Vietnamese intent
-                (0, is_short_d_pattern && !has_mark_applied)
+                (0, is_d_vowels_only_pattern && !has_mark_applied)
             }
         } else {
             // VNI: Allow delayed stroke - find first un-stroked 'd' anywhere in buffer
@@ -2775,10 +2779,28 @@ impl Engine {
         // but no mark key was typed, restore on space (likely English)
         // This prevents "toto " → "tôt " (should be "toto ")
         // but allows "totos" → "tốt" (mark key confirms Vietnamese intent)
+        // EXCEPTION: If buffer starts with 2-char Vietnamese initial (th, ch, nh, etc.)
+        // "theme" → "thêm" starts with "th" → keep as Vietnamese
+        // "data" → "dât" starts with "d" (1-char) → restore to English
         if self.had_vowel_triggered_circumflex {
             let has_marks = self.buf.iter().any(|c| c.mark > 0);
             if !has_marks {
-                return self.build_raw_chars();
+                // Check if buffer starts with 2-char Vietnamese initial
+                // These are clearly Vietnamese patterns, less likely to be English
+                let has_two_char_initial = self.buf.len() >= 2 && {
+                    let first = self.buf.get(0);
+                    let second = self.buf.get(1);
+                    match (first, second) {
+                        (Some(f), Some(s)) => {
+                            let pair = [f.key, s.key];
+                            constants::VALID_INITIALS_2.contains(&pair)
+                        }
+                        _ => false,
+                    }
+                };
+                if !has_two_char_initial {
+                    return self.build_raw_chars();
+                }
             }
         }
 
@@ -2789,7 +2811,9 @@ impl Engine {
         // - "aw" triggers breve on 'a'
         // - "a" triggers circumflex (double-vowel), consuming 'w' and second 'a'
         // - Result: buffer is valid but user typed English word
-        if self.raw_input.len() >= self.buf.len() + 2 {
+        // EXCEPTION: If buffer has stroke (đ), it's intentional Vietnamese
+        // "dayda" → "đây" has stroke, so keep it (valid Vietnamese word)
+        if self.raw_input.len() >= self.buf.len() + 2 && !has_stroke {
             let raw_keys: Vec<u16> = self.raw_input.iter().map(|&(k, _, _)| k).collect();
             if !is_valid(&raw_keys) {
                 // Check if buffer has circumflex without mark (like "await" → "âit")
@@ -3097,6 +3121,18 @@ impl Engine {
             if keys::is_vowel(last_key) && second_last_key == keys::F && third_last_key == keys::F {
                 return true;
             }
+
+            // Double 's' + single vowel at end (but not 'y' to avoid "sorry" → "sory")
+            // Pattern: "raisse" → buffer "raise" (double 's' + single 'e' → use buffer)
+            // This handles cases where user typed extra 's' for sắc mark then reverted
+            // Exclude 'y' because words like "sorry", "carry" are common English
+            let is_core_vowel = matches!(
+                last_key,
+                k if k == keys::A || k == keys::E || k == keys::I || k == keys::O || k == keys::U
+            );
+            if is_core_vowel && second_last_key == keys::S && third_last_key == keys::S {
+                return true;
+            }
         }
 
         // Check for double 's' in middle with exactly 2 chars after
@@ -3180,6 +3216,66 @@ impl Engine {
                     return true;
                 }
 
+                // W-as-vowel pattern: When W is converted to ư, treat it as a vowel position
+                // This means mark modifiers (s, f, r, x, j) immediately after W are tone marks
+                // for the ư vowel, not consonants.
+                // Examples: "wf" → "ừ", "ws" → "ứ", "wmf" → "ừm"
+                let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+
+                // Check for "W + only mark modifiers" pattern → valid Vietnamese (ừ, ứ, ử, ữ, ự)
+                // This handles standalone W with tone marks like "wf " → "ừ "
+                let all_are_modifiers = self.raw_input[1..]
+                    .iter()
+                    .all(|(k, _, _)| tone_modifiers.contains(k));
+                if all_are_modifiers && !self.raw_input[1..].is_empty() {
+                    // W + mark modifiers only → valid Vietnamese, not English
+                    return false;
+                }
+
+                // Check for "W + consonant + mark modifier" pattern → valid Vietnamese
+                // Examples: "wmf" → "ừm", "wms" → "ứm", "wng" → "ưng"
+                // Pattern: W (→ư) + valid_final_consonant + optional_mark (NO other vowels!)
+                // "west" has vowel E, so it should NOT match this pattern
+                if self.raw_input.len() >= 2 {
+                    // First check if there are any other vowels after W
+                    let has_other_vowels = self.raw_input[1..]
+                        .iter()
+                        .any(|(k, _, _)| keys::is_vowel(*k) && *k != keys::W);
+
+                    // Only apply W+consonant+mark pattern if there are NO other vowels
+                    if !has_other_vowels {
+                        let non_modifier_consonants: Vec<u16> = self.raw_input[1..]
+                            .iter()
+                            .filter(|(k, _, _)| {
+                                keys::is_consonant(*k) && !tone_modifiers.contains(k)
+                            })
+                            .map(|(k, _, _)| *k)
+                            .collect();
+
+                        let has_mark_modifier = self.raw_input[1..]
+                            .iter()
+                            .any(|(k, _, _)| tone_modifiers.contains(k));
+
+                        // W + valid_final + mark → valid Vietnamese (ừm, ứng, etc.)
+                        if !non_modifier_consonants.is_empty() && has_mark_modifier {
+                            let is_valid_final = match non_modifier_consonants.len() {
+                                1 => {
+                                    constants::VALID_FINALS_1.contains(&non_modifier_consonants[0])
+                                }
+                                2 => {
+                                    let pair =
+                                        [non_modifier_consonants[0], non_modifier_consonants[1]];
+                                    constants::VALID_FINALS_2.contains(&pair)
+                                }
+                                _ => false,
+                            };
+                            if is_valid_final {
+                                return false; // Valid Vietnamese pattern
+                            }
+                        }
+                    }
+                }
+
                 // Analyze pattern: W + vowels + consonants
                 // Find position of first vowel to distinguish consonants from modifiers
                 let first_vowel_pos = self.raw_input[1..]
@@ -3194,12 +3290,18 @@ impl Engine {
 
                 // Only exclude Telex mark modifiers (s, f, r, x, j) when they come AFTER a vowel
                 // If they come BEFORE any vowel, they're consonants (e.g., "wra" has 'r' as consonant)
-                let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
+                // EXCEPTION: When W is at start (w-as-vowel) and NO other vowels, modifiers are marks
                 let consonants_after: Vec<u16> = self.raw_input[1..]
                     .iter()
                     .enumerate()
                     .filter(|(i, (k, _, _))| {
                         if !keys::is_consonant(*k) || *k == keys::W {
+                            return false;
+                        }
+                        // For W-as-vowel WITHOUT other vowels, treat modifiers as marks
+                        // e.g., "wf" → "ừ", "wmf" → "ừm" (no other vowels, so f is mark)
+                        // But "wra" has vowel A, so R should be treated as consonant
+                        if vowels_after.is_empty() && tone_modifiers.contains(k) {
                             return false;
                         }
                         // Modifier keys AFTER first vowel are tone modifiers, not consonants
