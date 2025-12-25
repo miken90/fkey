@@ -148,17 +148,67 @@ jobs:
         run: |
           cd platforms/macos
           APP="build/Build/Products/Release/GoNhanh.app"
+          SUBMISSION_FILE="notarization-submission.json"
+
+          # Helper function for notarytool commands
+          notary_cmd() {
+            xcrun notarytool "$@" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID"
+          }
 
           echo "Creating ZIP for notarization..."
           ditto -c -k --keepParent "$APP" "GoNhanh-notarize.zip"
 
-          echo "Submitting to Apple for notarization..."
-          xcrun notarytool submit "GoNhanh-notarize.zip" \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait \
-            --timeout 30m
+          echo "Submitting to Apple for notarization (async)..."
+          notary_cmd submit "GoNhanh-notarize.zip" \
+            --output-format json \
+            --no-wait > "$SUBMISSION_FILE"
+
+          SUBMISSION_ID=$(jq -r '.id' "$SUBMISSION_FILE")
+          echo "Submission ID: $SUBMISSION_ID"
+          echo "submission_id=$SUBMISSION_ID" >> $GITHUB_ENV
+
+          # Poll for completion with exponential backoff
+          echo "Waiting for Apple to process (polling every 30s, max 30 min)..."
+          MAX_ATTEMPTS=60  # 60 * 30s = 30 min max
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 30
+
+            STATUS_JSON=$(notary_cmd info "$SUBMISSION_ID" --output-format json 2>/dev/null || echo '{"status":"error"}')
+            STATUS=$(echo "$STATUS_JSON" | jq -r '.status')
+
+            echo "[$ATTEMPT/$MAX_ATTEMPTS] Status: $STATUS"
+
+            case "$STATUS" in
+              "Accepted")
+                echo "✅ Notarization successful!"
+                break
+                ;;
+              "Invalid"|"Rejected")
+                echo "❌ Notarization failed!"
+                notary_cmd log "$SUBMISSION_ID" || true
+                exit 1
+                ;;
+              "In Progress")
+                continue
+                ;;
+              *)
+                echo "Unknown status: $STATUS, continuing..."
+                continue
+                ;;
+            esac
+          done
+
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "❌ Timeout waiting for notarization"
+            echo "Submission ID for manual check: $SUBMISSION_ID"
+            exit 1
+          fi
 
           echo "Stapling notarization ticket to app..."
           xcrun stapler staple "$APP"
@@ -167,9 +217,25 @@ jobs:
           spctl -a -vvv -t install "$APP"
 
           # Cleanup
-          rm -f "GoNhanh-notarize.zip"
+          rm -f "GoNhanh-notarize.zip" "$SUBMISSION_FILE"
 
-          echo "Notarization completed successfully!"
+          echo "✅ Notarization completed successfully!"
+
+      - name: Save Submission ID (for recovery)
+        if: ${{ failure() && env.submission_id != '' }}
+        run: |
+          mkdir -p artifacts
+          echo "${{ env.submission_id }}" > artifacts/submission-id.txt
+          echo "::warning::Notarization failed. Submission ID: ${{ env.submission_id }}"
+          echo "To check status: xcrun notarytool info ${{ env.submission_id }} --apple-id ... --team-id ..."
+
+      - name: Upload Submission ID Artifact
+        if: ${{ failure() && env.submission_id != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: notarization-submission-id
+          path: artifacts/submission-id.txt
+          retention-days: 7
 
       # ============================================================
       # PACKAGE & RELEASE
