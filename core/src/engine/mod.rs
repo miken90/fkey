@@ -460,10 +460,51 @@ impl Engine {
     /// * `ctrl` - true if Cmd/Ctrl/Alt is pressed (bypasses IME)
     /// * `shift` - true if Shift key is pressed (for symbols like @, #, $)
     pub fn on_key_ext(&mut self, key: u16, caps: bool, ctrl: bool, shift: bool) -> Result {
-        if !self.enabled || ctrl {
+        // Issue #129: Process shortcuts even when IME is disabled
+        // Only bypass completely for Ctrl/Cmd modifier keys
+        if ctrl {
             self.clear();
             self.word_history.clear();
             self.spaces_after_commit = 0;
+            return Result::none();
+        }
+
+        // When IME is disabled, only process break keys for shortcuts
+        // Skip Vietnamese processing (tones, marks, etc.) but allow shortcuts to work
+        if !self.enabled {
+            // Clear Vietnamese state but keep processing break keys for shortcuts
+            self.buf.clear();
+            self.raw_input.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
+
+            // Only process break keys for shortcuts when disabled
+            if keys::is_break_ext(key, shift) {
+                // Accumulate break chars for potential shortcut matching
+                if let Some(ch) = break_key_to_char(key, shift) {
+                    self.shortcut_prefix.push(ch);
+
+                    // Check for immediate shortcut match
+                    let input_method = self.current_input_method();
+                    if let Some(m) = self.shortcuts.try_match_for_method(
+                        &self.shortcut_prefix,
+                        None,
+                        false,
+                        input_method,
+                    ) {
+                        // Found a match! Send the replacement
+                        let output: Vec<char> = m.output.chars().collect();
+                        let backspace_count = (m.backspace_count as u8).saturating_sub(1);
+                        self.shortcut_prefix.clear();
+                        return Result::send_consumed(backspace_count, &output);
+                    }
+                    // No match yet, keep accumulating
+                    return Result::none();
+                }
+            }
+
+            // Non-break key: clear shortcut prefix and pass through
+            self.shortcut_prefix.clear();
             return Result::none();
         }
 
@@ -535,6 +576,12 @@ impl Engine {
             let continuing_prefix = self.buf.is_empty() && !self.shortcut_prefix.is_empty();
 
             if at_true_start || continuing_prefix {
+                // Reset has_non_letter_prefix when starting a new shortcut at true start
+                // This ensures shortcuts like "->" work after DELETE cleared the buffer
+                if at_true_start {
+                    self.has_non_letter_prefix = false;
+                }
+
                 // Try to get the character for this break key
                 if let Some(ch) = break_key_to_char(key, shift) {
                     self.shortcut_prefix.push(ch);
@@ -578,6 +625,14 @@ impl Engine {
             self.clear();
             self.word_history.clear();
             self.spaces_after_commit = 0;
+
+            // Issue #130: After clearing buffer, store break char as potential shortcut prefix
+            // This allows shortcuts like "->" to work after "abc->" (where "-" clears "abc")
+            // Example: type "→abc->" should produce "→abc→"
+            if let Some(ch) = break_key_to_char(key, shift) {
+                self.shortcut_prefix.push(ch);
+            }
+
             return restore_result;
         }
 

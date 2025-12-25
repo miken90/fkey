@@ -324,10 +324,16 @@ pub unsafe extern "C" fn ime_add_shortcut(
 
     let mut guard = lock_engine();
     if let Some(ref mut e) = *guard {
-        e.shortcuts_mut().add(engine::shortcut::Shortcut::new(
-            trigger_str,
-            replacement_str,
-        ));
+        // Auto-detect shortcut type:
+        // - If trigger contains only non-letter chars (like "->", "=>"), use immediate trigger
+        // - Otherwise use word boundary trigger (traditional abbreviations like "vn" → "Việt Nam")
+        let is_symbol_trigger = trigger_str.chars().all(|c| !c.is_alphabetic());
+        let shortcut = if is_symbol_trigger {
+            engine::shortcut::Shortcut::immediate(trigger_str, replacement_str)
+        } else {
+            engine::shortcut::Shortcut::new(trigger_str, replacement_str)
+        };
+        e.shortcuts_mut().add(shortcut);
     }
 }
 
@@ -541,6 +547,72 @@ mod tests {
         let guard = lock_engine();
         if let Some(ref e) = *guard {
             assert_eq!(e.shortcuts().len(), 1);
+        }
+        drop(guard);
+
+        ime_clear_shortcuts();
+        ime_clear();
+    }
+
+    #[test]
+    #[serial]
+    fn test_shortcut_ffi_symbol_trigger_immediate() {
+        // Test that symbol-only triggers (like "->") are created as immediate shortcuts
+        ime_init();
+        ime_clear_shortcuts();
+        ime_method(0); // Telex
+
+        // Add arrow shortcut via FFI - should auto-detect as immediate
+        let trigger = CString::new("->").unwrap();
+        let replacement = CString::new("→").unwrap();
+
+        unsafe {
+            ime_add_shortcut(trigger.as_ptr(), replacement.as_ptr());
+        }
+
+        // Verify shortcut was added with immediate trigger
+        let guard = lock_engine();
+        if let Some(ref e) = *guard {
+            assert_eq!(e.shortcuts().len(), 1);
+            let shortcut = e.shortcuts().lookup("->").unwrap().1;
+            assert_eq!(
+                shortcut.condition,
+                engine::shortcut::TriggerCondition::Immediate,
+                "Symbol-only trigger should be immediate"
+            );
+        }
+        drop(guard);
+
+        ime_clear_shortcuts();
+        ime_clear();
+    }
+
+    #[test]
+    #[serial]
+    fn test_shortcut_ffi_letter_trigger_word_boundary() {
+        // Test that letter triggers (like "vn") are created as word boundary shortcuts
+        ime_init();
+        ime_clear_shortcuts();
+        ime_method(0); // Telex
+
+        // Add abbreviation shortcut via FFI - should be word boundary
+        let trigger = CString::new("vn").unwrap();
+        let replacement = CString::new("Việt Nam").unwrap();
+
+        unsafe {
+            ime_add_shortcut(trigger.as_ptr(), replacement.as_ptr());
+        }
+
+        // Verify shortcut was added with word boundary trigger
+        let guard = lock_engine();
+        if let Some(ref e) = *guard {
+            assert_eq!(e.shortcuts().len(), 1);
+            let shortcut = e.shortcuts().lookup("vn").unwrap().1;
+            assert_eq!(
+                shortcut.condition,
+                engine::shortcut::TriggerCondition::OnWordBoundary,
+                "Letter trigger should be word boundary"
+            );
         }
         drop(guard);
 
