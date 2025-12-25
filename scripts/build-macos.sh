@@ -6,6 +6,14 @@ if [ -f "$HOME/.cargo/env" ]; then
     source "$HOME/.cargo/env"
 fi
 
+# Source .env file if exists (for Apple Developer credentials)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/../.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/../.env"
+    set +a
+fi
+
 # Parse arguments
 CLEAN_INSTALL=false
 CUSTOM_VERSION=""
