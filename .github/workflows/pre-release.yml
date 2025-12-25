@@ -113,7 +113,30 @@ jobs:
           fi
 
       # ============================================================
-      # CODE SIGNING
+      # PACKAGE (Set version BEFORE signing)
+      # ============================================================
+      - name: Get version from latest tag
+        id: version
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          BASE_VERSION="${LATEST_TAG#v}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          BUILD_NUM="${GITHUB_RUN_NUMBER}"
+          VERSION="${BASE_VERSION}-pre.${BUILD_NUM}.${SHORT_SHA}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Pre-release version: $VERSION (build #${BUILD_NUM})"
+
+      - name: Set version in app
+        run: |
+          cd platforms/macos
+          APP="build/Build/Products/Release/GoNhanh.app"
+          V="${{ steps.version.outputs.version }}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
+
+      # ============================================================
+      # CODE SIGNING (After version is set)
       # ============================================================
       - name: Sign App with Entitlements
         env:
@@ -142,32 +165,13 @@ jobs:
           codesign -vvv --deep --strict "$APP"
           echo "Signature verified successfully!"
 
-      # ============================================================
-      # PACKAGE
-      # ============================================================
-      - name: Get version from latest tag
-        id: version
-        run: |
-          git fetch --tags
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-          BASE_VERSION="${LATEST_TAG#v}"
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          BUILD_NUM="${GITHUB_RUN_NUMBER}"
-          VERSION="${BASE_VERSION}-pre.${BUILD_NUM}.${SHORT_SHA}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Pre-release version: $VERSION (build #${BUILD_NUM})"
-
       - name: Create DMG
         run: |
           cd platforms/macos
           APP="build/Build/Products/Release/GoNhanh.app"
           V="${{ steps.version.outputs.version }}"
 
-          # Set version in app
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
-
-          # Create DMG
+          # Create DMG (version already set, app already signed)
           ../../scripts/create-dmg.sh "$APP" || {
             # Fallback: simple DMG if script fails
             hdiutil create -volname "GoNhanh" -srcfolder "$APP" -ov -format UDZO "build/GoNhanh-${V}.dmg"

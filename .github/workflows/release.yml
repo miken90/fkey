@@ -98,6 +98,19 @@ jobs:
           fi
 
       # ============================================================
+      # SET VERSION (Before signing)
+      # ============================================================
+      - name: Set Version in App
+        run: |
+          cd platforms/macos
+          V="${GITHUB_REF_NAME#v}"
+          APP="build/Build/Products/Release/GoNhanh.app"
+
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
+          echo "Version set to: $V"
+
+      # ============================================================
       # CODE SIGNING & NOTARIZATION
       # ============================================================
       - name: Sign App with Entitlements
@@ -135,7 +148,6 @@ jobs:
         run: |
           cd platforms/macos
           APP="build/Build/Products/Release/GoNhanh.app"
-          V="${GITHUB_REF_NAME#v}"
 
           echo "Creating ZIP for notarization..."
           ditto -c -k --keepParent "$APP" "GoNhanh-notarize.zip"
@@ -162,15 +174,6 @@ jobs:
       # ============================================================
       # PACKAGE & RELEASE
       # ============================================================
-      - name: Set Version in App
-        run: |
-          cd platforms/macos
-          V="${GITHUB_REF_NAME#v}"
-          APP="build/Build/Products/Release/GoNhanh.app"
-
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" "$APP/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $V" "$APP/Contents/Info.plist"
-
       - name: Create DMG
         run: |
           cd platforms/macos
