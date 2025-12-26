@@ -67,7 +67,7 @@ public static class TextSender
         if (backspaces > 0)
         {
             SendBackspaces(backspaces, marker);
-            Thread.Sleep(2); // Minimal delay for app to process
+            Thread.Sleep(10); // Allow time for app to process backspaces before text injection
         }
 
         // Use Unicode injection for text insertion (preserves clipboard & uppercase)
@@ -123,16 +123,20 @@ public static class TextSender
     /// <summary>
     /// Send text using Unicode input via KEYEVENTF_UNICODE flag
     /// Injects characters directly as keyboard events (similar to macOS CGEvent.keyboardSetUnicodeString)
+    /// Batches all characters in a single SendInput call for better reliability and performance
     /// </summary>
     private static void SendUnicodeText(string text, IntPtr marker)
     {
         const uint KEYEVENTF_UNICODE = 0x0004;
 
+        // Batch all characters: each char needs 2 events (down + up)
+        var inputs = new INPUT[text.Length * 2];
+        int idx = 0;
+
         foreach (char c in text)
         {
-            var inputs = new INPUT[2];
-
-            inputs[0] = new INPUT
+            // Key down
+            inputs[idx++] = new INPUT
             {
                 type = INPUT_KEYBOARD,
                 u = new INPUTUNION
@@ -147,7 +151,8 @@ public static class TextSender
                 }
             };
 
-            inputs[1] = new INPUT
+            // Key up
+            inputs[idx++] = new INPUT
             {
                 type = INPUT_KEYBOARD,
                 u = new INPUTUNION
@@ -161,8 +166,9 @@ public static class TextSender
                     }
                 }
             };
-
-            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
         }
+
+        // Send all inputs in a single batch for atomic delivery
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
     }
 }

@@ -418,6 +418,13 @@ public static class RustBridge
     private const ushort MAC_ESC = 0x35;
     private const ushort MAC_LBRACKET = 0x21;
     private const ushort MAC_RBRACKET = 0x1E;
+    private const ushort MAC_DOT = 0x2F;       // Period/dot key
+    private const ushort MAC_COMMA = 0x2B;     // Comma key
+    private const ushort MAC_SLASH = 0x2C;     // Forward slash key (? with shift)
+    private const ushort MAC_SEMICOLON = 0x29; // Semicolon key (: with shift)
+    private const ushort MAC_QUOTE = 0x27;     // Quote key
+    private const ushort MAC_MINUS = 0x1B;     // Minus key
+    private const ushort MAC_EQUAL = 0x18;     // Equal key
 
     /// <summary>
     /// Translate Windows Virtual Key code to macOS keycode
@@ -475,6 +482,15 @@ public static class RustBridge
             0x20 => MAC_SPACE,    // VK_SPACE
             0xDB => MAC_LBRACKET, // VK_OEM_4 ([{)
             0xDD => MAC_RBRACKET, // VK_OEM_6 (]})
+
+            // Punctuation keys (needed for auto-capitalize: . ! ?)
+            0xBE => MAC_DOT,       // VK_OEM_PERIOD (.)
+            0xBC => MAC_COMMA,     // VK_OEM_COMMA (,)
+            0xBF => MAC_SLASH,     // VK_OEM_2 (/ or ? with shift)
+            0xBA => MAC_SEMICOLON, // VK_OEM_1 (; or : with shift)
+            0xDE => MAC_QUOTE,     // VK_OEM_7 (' or " with shift)
+            0xBD => MAC_MINUS,     // VK_OEM_MINUS (-)
+            0xBB => MAC_EQUAL,     // VK_OEM_PLUS (=)
 
             _ => 0xFFFF  // Unknown key
         };

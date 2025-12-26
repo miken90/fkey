@@ -95,7 +95,7 @@ public static class KeyCodes
 
     /// <summary>
     /// Check if a key code is relevant for Vietnamese input
-    /// Letters, numbers (for VNI), and word-breaking keys
+    /// Letters, numbers (for VNI), punctuation (for auto-capitalize), and word-breaking keys
     /// </summary>
     public static bool IsRelevantKey(ushort keyCode)
     {
@@ -105,7 +105,15 @@ public static class KeyCodes
                keyCode == VK_RETURN ||
                keyCode == VK_BACK ||
                keyCode == VK_OEM_4 ||  // [
-               keyCode == VK_OEM_6;    // ]
+               keyCode == VK_OEM_6 ||  // ]
+               // Punctuation keys for auto-capitalize (. ! ?)
+               keyCode == VK_OEM_PERIOD ||  // .
+               keyCode == VK_OEM_COMMA ||   // ,
+               keyCode == VK_OEM_2 ||       // / (? with shift)
+               keyCode == VK_OEM_1 ||       // ; (: with shift)
+               keyCode == VK_OEM_7 ||       // ' (" with shift)
+               keyCode == VK_OEM_MINUS ||   // -
+               keyCode == VK_OEM_PLUS;      // =
     }
 
     /// <summary>

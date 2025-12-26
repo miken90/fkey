@@ -134,10 +134,16 @@ Central `Engine` struct orchestrating 7-stage keystroke processing:
 6. **Normal letter processing** - Regular keystroke
 7. **Shortcut expansion** (user-defined) - Abbreviation matching
 
-**Uppercase Detection** (line 718, fixed 2025-12-26):
+**Uppercase Detection** (line 721, fixed 2025-12-26):
 - `caps || shift` - Uppercase when CapsLock OR Shift is held
 - Previous bug: Only checked `caps`, causing Shift+DD → đ instead of Đ
 - Now correctly produces uppercase diacritical characters with Shift
+
+**Auto-Capitalize Logic** (line 165-183, fixed 2025-12-26):
+- Space is now a neutral key and does NOT reset pending_capitalize
+- Allows ". " followed by letter to capitalize correctly
+- Other neutral keys: quotes, parentheses, brackets, arrow keys, Tab, ESC
+- Word-breaking keys like comma still reset pending state
 
 **Result**: Returns `Result` struct with action (None/Send/Restore), backspace count, output chars
 
@@ -316,6 +322,21 @@ P/Invoke signatures matching Rust FFI, UTF-32 interop, memory management.
 - `ime_remove_shortcut(IntPtr)` - Remove shortcut
 - `ime_clear_shortcuts()` - Clear all shortcuts
 
+**Punctuation Key Mappings** (added 2025-12-26):
+- Added mappings for 7 punctuation keys to macOS keycodes
+- Required for auto-capitalize: `.` `!` `?` `,` `;` `'` `-` `=`
+- Enables sentence-ending detection in Windows platform
+
+#### `Core/KeyCodes.cs` - Windows Virtual Keycodes
+**Source**: `platforms/windows/Core/KeyCodes.cs`
+
+Maps Windows virtual keycodes to macOS keycode space for FFI compatibility.
+
+**IsRelevantKey Enhancement** (2025-12-26):
+- Added 7 punctuation keys: `.` `,` `/` `;` `'` `-` `=`
+- Required for auto-capitalize detection of sentence-ending punctuation (`.` `!` `?`)
+- Previously only tracked letters, numbers, and basic word-breaking keys
+
 #### `Core/KeyboardShortcut.cs` - Hotkey Model
 **Source**: `platforms/windows/Core/KeyboardShortcut.cs`
 
@@ -326,6 +347,11 @@ Keyboard shortcut representation with KeyCode + Modifiers (Ctrl/Alt/Shift/Win). 
 
 SetWindowsHookEx for system-wide WH_KEYBOARD_LL hook, WM_KEYDOWN processing. Includes Hotkey property for configurable global hotkey and OnHotkeyTriggered event for Vietnamese/English toggle.
 
+**Buffer Clear Logic** (fixed 2025-12-26):
+- Only TAB and ESC clear buffer immediately
+- Space and Enter must pass through to Rust core for auto-capitalize logic
+- Previous implementation cleared buffer on Space/Enter, breaking auto-capitalize
+
 #### `Core/TextSender.cs` - Text Input Simulation
 **Source**: `platforms/windows/Core/TextSender.cs`
 
@@ -335,11 +361,17 @@ Sends text to active window using **Unicode injection via SendInput API** with `
 - **Direct Unicode injection**: Characters injected as keyboard events (similar to macOS `CGEvent.keyboardSetUnicodeString`)
 - **No clipboard pollution**: Previously used `Clipboard.SetText()` + Ctrl+V, now uses direct Unicode
 - **Uppercase correctness**: Properly handles Shift state for diacritical characters (Shift+DD → Đ)
+- **Batched SendInput** (optimized 2025-12-26): All characters sent in single SendInput call for atomic delivery
 
 **Key Methods**:
 - `SendText(string text, int backspaces)` - Main entry point for text replacement
 - `SendBackspaces(int count, IntPtr marker)` - Batch backspace injection
-- `SendUnicodeText(string text, IntPtr marker)` - Unicode character injection with KEYEVENTF_UNICODE flag
+- `SendUnicodeText(string text, IntPtr marker)` - Batched Unicode injection (2 events per char: down+up)
+
+**Performance Optimization** (2025-12-26):
+- Increased backspace delay: 2ms → 10ms (better reliability with some apps)
+- Batched Unicode text injection: Single SendInput call for all characters
+- Reduces Windows event queue pressure and improves atomicity
 
 #### `Services/SettingsService.cs` - Registry Persistence
 **Source**: `platforms/windows/Services/SettingsService.cs`
@@ -377,6 +409,11 @@ Manages user-defined shortcuts (abbreviations like "vn" → "Việt Nam"). Persi
 **Source**: `platforms/windows/Views/TrayIcon.cs`
 
 NotifyIcon creation, context menu: Enable/Disable, Input Method, Settings, About.
+
+**Menu Shortcut Removal** (2025-12-26):
+- Removed Ctrl+0 shortcut from "Bật/Tắt" menu item
+- Users should use global hotkey (Ctrl+Space by default) instead
+- Avoids conflict with browser/IDE shortcuts
 
 #### `Views/OnboardingWindow.xaml.cs` - Setup Wizard
 **Source**: `platforms/windows/Views/OnboardingWindow.xaml.cs`
@@ -549,8 +586,15 @@ RustBridge.cs (Windows)
 **Platforms**: macOS (v1.0.89+), Windows (production, feature parity + hotkey toggle), Linux (beta)
 
 **Windows Platform Recent Updates (2025-12-26)**:
+- ✅ **Phase 1: Core Verification** (auto-capitalize, batched SendInput, punctuation keys)
+  - Auto-capitalize fix: Space no longer resets pending_capitalize
+  - Batched SendInput: Single call for all characters (better atomicity)
+  - Punctuation key mappings: 7 keys added for sentence-ending detection
+  - Buffer clear logic: Only TAB/ESC clear buffer (Space/Enter go to core)
+  - Removed Ctrl+0 menu shortcut (use global hotkey instead)
+  - Increased backspace delay: 2ms → 10ms (better app compatibility)
 - ✅ **Unicode text injection** - Replaced clipboard-based injection (TextSender.cs, preserves clipboard)
-- ✅ **Uppercase fix** - Engine checks CapsLock OR Shift (mod.rs:718, Shift+DD → Đ works correctly)
+- ✅ **Uppercase fix** - Engine checks CapsLock OR Shift (mod.rs:721, Shift+DD → Đ works correctly)
 - ✅ Global hotkey toggle (Ctrl+Space default, configurable)
 - ✅ HotkeyRecorder UserControl with keycap-style UI
 - ✅ KeyboardShortcut model with Registry serialization

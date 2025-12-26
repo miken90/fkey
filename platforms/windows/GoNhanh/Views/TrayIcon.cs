@@ -62,9 +62,8 @@ public class TrayIcon : IDisposable
 
         _contextMenu.Items.Add(new ToolStripSeparator());
 
-        // Toggle enabled
+        // Toggle enabled (no menu shortcut - use global hotkey Ctrl+Space instead)
         var toggleItem = new ToolStripMenuItem("Bật/Tắt");
-        toggleItem.ShortcutKeys = Keys.Control | Keys.D0;
         toggleItem.Click += (s, e) => ToggleEnabled();
         _contextMenu.Items.Add(toggleItem);
 

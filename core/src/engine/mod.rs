@@ -165,17 +165,20 @@ fn is_sentence_ending(key: u16, shift: bool) -> bool {
 }
 
 /// Check if a break key should reset pending_capitalize
-/// Neutral keys like quotes, parentheses, arrows should NOT reset (preserve pending)
+/// Neutral keys like quotes, parentheses, arrows, space should NOT reset (preserve pending)
 /// Word-breaking keys like comma should reset
 #[inline]
 fn should_reset_pending_capitalize(key: u16, shift: bool) -> bool {
     // These neutral characters/keys should NOT reset pending_capitalize:
+    // - Space: ". " followed by letter should capitalize
     // - Quotes: ' " (QUOTE with/without shift)
     // - Parentheses: ( ) (Shift+9, Shift+0)
     // - Brackets: [ ] { } (LBRACKET, RBRACKET with/without shift)
     // - Arrow keys: navigation shouldn't reset pending state
     // - Tab, ESC: navigation/cancel shouldn't reset pending state
-    let is_neutral = key == keys::QUOTE
+    // - Enter: new line should also trigger capitalize (handled separately)
+    let is_neutral = key == keys::SPACE
+        || key == keys::QUOTE
         || key == keys::LBRACKET
         || key == keys::RBRACKET
         || (shift && key == keys::N9)  // (

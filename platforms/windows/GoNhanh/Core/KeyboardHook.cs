@@ -187,8 +187,9 @@ public class KeyboardHook : IDisposable
                     return CallNextHookEx(_hookId, nCode, wParam, lParam);
                 }
 
-                // Handle buffer-clearing keys
-                if (KeyCodes.IsBufferClearKey(keyCode))
+                // Handle buffer-clearing keys (TAB, ESC only - Space and Enter go through IME)
+                // Note: Space and Enter must be processed by Rust core for auto-capitalize logic
+                if (keyCode == KeyCodes.VK_TAB || keyCode == KeyCodes.VK_ESCAPE)
                 {
                     RustBridge.Clear();
                     return CallNextHookEx(_hookId, nCode, wParam, lParam);

@@ -474,14 +474,30 @@ Windows uses **Unicode injection via SendInput API** with `KEYEVENTF_UNICODE` fl
 - **Uppercase correctness**: Shift state properly maintained for diacritical characters (Shift+DD → Đ)
 - **No clipboard pollution**: Previous implementation used `Clipboard.SetText()` + Ctrl+V, which overwrote user's clipboard
 
-**Implementation** (`TextSender.cs`):
+**Implementation** (`TextSender.cs`, optimized 2025-12-26):
 ```csharp
-// Each character sent as Unicode keyboard event
-wVk = 0,
-wScan = c,              // UTF-16 character code
-dwFlags = KEYEVENTF_UNICODE,
-dwExtraInfo = marker    // Mark as injected to avoid re-processing
+// Batched Unicode injection - all characters in single SendInput call
+var inputs = new INPUT[text.Length * 2]; // 2 events per char (down + up)
+foreach (char c in text) {
+    inputs[idx++] = new INPUT { // Key down
+        wVk = 0,
+        wScan = c,              // UTF-16 character code
+        dwFlags = KEYEVENTF_UNICODE,
+        dwExtraInfo = marker    // Mark as injected to avoid re-processing
+    };
+    inputs[idx++] = new INPUT { // Key up
+        wVk = 0, wScan = c,
+        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+        dwExtraInfo = marker
+    };
+}
+SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 ```
+
+**Performance Optimization** (2025-12-26):
+- Backspace delay increased: 2ms → 10ms (better app compatibility)
+- Batched Unicode injection: Single SendInput call instead of per-character calls
+- Reduces Windows event queue pressure and improves atomicity
 
 ### Windows Platform Advanced Features
 
@@ -509,7 +525,8 @@ dwExtraInfo = marker    // Mark as injected to avoid re-processing
 
 5. **Auto-Capitalize** (`ime_auto_capitalize`)
    - Auto-capitalize first letter after sentence-ending punctuation
-   - Triggers after: . ! ? Enter
+   - Triggers after: `.` `!` `?` Enter
+   - Space is neutral key (does not reset pending_capitalize, fixed 2025-12-26)
    - Default: true
 
 **Global Hotkey Toggle** (NEW - 2025-12-26):
@@ -575,6 +592,13 @@ dwExtraInfo = marker    // Mark as injected to avoid re-processing
 **Codebase Metrics**: ~370,000+ tokens (estimated), ~1,400,000+ chars (estimated), 127+ files
 
 **Windows Platform Recent Updates (2025-12-26)**:
+- ✅ **Phase 1: Core Verification** (auto-capitalize, batched SendInput, punctuation keys)
+  - Auto-capitalize fix: Space no longer resets pending_capitalize
+  - Batched SendInput: Single call for all characters (better atomicity)
+  - Punctuation key mappings: 7 keys added for sentence-ending detection
+  - Buffer clear logic: Only TAB/ESC clear buffer (Space/Enter go to core)
+  - Removed Ctrl+0 menu shortcut (use global hotkey instead)
+  - Increased backspace delay: 2ms → 10ms (better app compatibility)
 - ✅ **Unicode text injection** - Replaced clipboard-based injection (preserves clipboard, fixes uppercase)
 - ✅ **Uppercase fix** - Engine checks both CapsLock and Shift (Shift+DD now produces Đ correctly)
 - ✅ Global hotkey toggle (Ctrl+Space default, configurable via HotkeyRecorder)
