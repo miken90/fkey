@@ -3,9 +3,10 @@ using System.Runtime.InteropServices;
 namespace GoNhanh.Core;
 
 /// <summary>
-/// Sends text to the active window using Unicode injection via SendInput API
-/// Uses KEYEVENTF_UNICODE flag to inject characters directly as keyboard events
-/// This preserves clipboard content and maintains uppercase state correctly
+/// Sends text to the active window using Unicode injection via SendInput API.
+/// Supports multiple injection methods for different app compatibility.
+/// Uses KEYEVENTF_UNICODE flag to inject characters directly as keyboard events.
+/// This preserves clipboard content and maintains uppercase state correctly.
 /// </summary>
 public static class TextSender
 {
@@ -13,6 +14,13 @@ public static class TextSender
 
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
+    private const uint KEYEVENTF_UNICODE = 0x0004;
+
+    // Delay settings (ms) for slow mode
+    private const int SlowModeKeyDelay = 5;     // Delay between chars
+    private const int SlowModePreDelay = 20;    // Delay before text
+    private const int SlowModePostDelay = 15;   // Delay after backspaces
+    private const int FastModeDelay = 10;       // Delay between backspace and text
 
     #endregion
 
@@ -51,29 +59,71 @@ public static class TextSender
     #endregion
 
     /// <summary>
-    /// Send text replacement using Unicode injection via SendInput API
-    /// Preserves clipboard content and maintains uppercase state
+    /// Send text replacement using auto-detected injection method.
+    /// Detects foreground app and applies appropriate method.
     /// </summary>
     public static void SendText(string text, int backspaces)
     {
+        var method = AppDetector.GetMethod();
+        SendText(text, backspaces, method);
+    }
+
+    /// <summary>
+    /// Send text replacement with specified injection method.
+    /// </summary>
+    public static void SendText(string text, int backspaces, InjectionMethod method)
+    {
         if (string.IsNullOrEmpty(text) && backspaces == 0)
-        {
             return;
-        }
 
         var marker = KeyboardHook.GetInjectedKeyMarker();
 
-        // Send all backspaces in one batch for better performance
+        switch (method)
+        {
+            case InjectionMethod.Fast:
+                SendFast(text, backspaces, marker);
+                break;
+
+            case InjectionMethod.Slow:
+                SendSlow(text, backspaces, marker);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Fast mode: batch backspaces and text in single SendInput calls.
+    /// Best for standard apps (Notepad, Word, etc.)
+    /// </summary>
+    private static void SendFast(string text, int backspaces, IntPtr marker)
+    {
         if (backspaces > 0)
         {
             SendBackspaces(backspaces, marker);
-            Thread.Sleep(10); // Allow time for app to process backspaces before text injection
+            Thread.Sleep(FastModeDelay);
         }
 
-        // Use Unicode injection for text insertion (preserves clipboard & uppercase)
         if (!string.IsNullOrEmpty(text))
         {
-            SendUnicodeText(text, marker);
+            SendUnicodeTextBatch(text, marker);
+        }
+    }
+
+    /// <summary>
+    /// Slow mode: add delays between backspaces and text.
+    /// Best for Electron apps, terminals, and browsers.
+    /// </summary>
+    private static void SendSlow(string text, int backspaces, IntPtr marker)
+    {
+        if (backspaces > 0)
+        {
+            SendBackspaces(backspaces, marker);
+            Thread.Sleep(SlowModePostDelay);
+        }
+
+        if (!string.IsNullOrEmpty(text))
+        {
+            Thread.Sleep(SlowModePreDelay);
+            SendUnicodeTextSlow(text, marker, SlowModeKeyDelay);
         }
     }
 
@@ -121,15 +171,11 @@ public static class TextSender
     }
 
     /// <summary>
-    /// Send text using Unicode input via KEYEVENTF_UNICODE flag
-    /// Injects characters directly as keyboard events (similar to macOS CGEvent.keyboardSetUnicodeString)
-    /// Batches all characters in a single SendInput call for better reliability and performance
+    /// Send text using Unicode input - batched for fast mode.
+    /// Injects all characters in a single SendInput call.
     /// </summary>
-    private static void SendUnicodeText(string text, IntPtr marker)
+    private static void SendUnicodeTextBatch(string text, IntPtr marker)
     {
-        const uint KEYEVENTF_UNICODE = 0x0004;
-
-        // Batch all characters: each char needs 2 events (down + up)
         var inputs = new INPUT[text.Length * 2];
         int idx = 0;
 
@@ -168,7 +214,55 @@ public static class TextSender
             };
         }
 
-        // Send all inputs in a single batch for atomic delivery
         SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    /// <summary>
+    /// Send text using Unicode input - with delay between characters.
+    /// Better compatibility for slow apps (Electron, browsers, terminals).
+    /// </summary>
+    private static void SendUnicodeTextSlow(string text, IntPtr marker, int delayMs)
+    {
+        foreach (char c in text)
+        {
+            var inputs = new INPUT[2];
+
+            // Key down
+            inputs[0] = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new INPUTUNION
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = 0,
+                        wScan = c,
+                        dwFlags = KEYEVENTF_UNICODE,
+                        dwExtraInfo = marker
+                    }
+                }
+            };
+
+            // Key up
+            inputs[1] = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new INPUTUNION
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = 0,
+                        wScan = c,
+                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+                        dwExtraInfo = marker
+                    }
+                }
+            };
+
+            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+
+            if (delayMs > 0)
+                Thread.Sleep(delayMs);
+        }
     }
 }
