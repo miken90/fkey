@@ -90,15 +90,18 @@ jobs:
 
       - name: Create Notarized DMG
         run: |
+          # Create output directory (script writes to platforms/macos/build/)
+          mkdir -p platforms/macos/build
+
           ./scripts/create-dmg.sh "GoNhanh.app"
-          ls -la *.dmg
+          ls -la platforms/macos/build/*.dmg
 
       - name: Update Release Asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ inputs.tag }}"
-          DMG_FILE=$(ls *.dmg | head -1)
+          DMG_FILE=$(ls platforms/macos/build/*.dmg | head -1)
 
           echo "Updating release $TAG with notarized DMG..."
 
