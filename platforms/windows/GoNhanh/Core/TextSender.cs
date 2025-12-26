@@ -1,11 +1,11 @@
 using System.Runtime.InteropServices;
-using Clipboard = System.Windows.Clipboard;
 
 namespace GoNhanh.Core;
 
 /// <summary>
-/// Sends text to the active window using clipboard-based injection
-/// Uses Ctrl+V paste for better terminal compatibility (xterm.js, etc.)
+/// Sends text to the active window using Unicode injection via SendInput API
+/// Uses KEYEVENTF_UNICODE flag to inject characters directly as keyboard events
+/// This preserves clipboard content and maintains uppercase state correctly
 /// </summary>
 public static class TextSender
 {
@@ -13,8 +13,6 @@ public static class TextSender
 
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
-    private const ushort VK_CONTROL = 0x11;
-    private const ushort VK_V = 0x56;
 
     #endregion
 
@@ -53,8 +51,8 @@ public static class TextSender
     #endregion
 
     /// <summary>
-    /// Send text replacement using clipboard-based injection
-    /// This works better with terminal emulators like xterm.js
+    /// Send text replacement using Unicode injection via SendInput API
+    /// Preserves clipboard content and maintains uppercase state
     /// </summary>
     public static void SendText(string text, int backspaces)
     {
@@ -69,13 +67,13 @@ public static class TextSender
         if (backspaces > 0)
         {
             SendBackspaces(backspaces, marker);
-            Thread.Sleep(2); // Minimal delay for terminal to process
+            Thread.Sleep(2); // Minimal delay for app to process
         }
 
-        // Use clipboard-based paste for text insertion
+        // Use Unicode injection for text insertion (preserves clipboard & uppercase)
         if (!string.IsNullOrEmpty(text))
         {
-            SendViaClipboard(text, marker);
+            SendUnicodeText(text, marker);
         }
     }
 
@@ -123,97 +121,8 @@ public static class TextSender
     }
 
     /// <summary>
-    /// Send text via clipboard + Ctrl+V
-    /// </summary>
-    private static void SendViaClipboard(string text, IntPtr marker)
-    {
-        try
-        {
-            // Set our text to clipboard
-            Clipboard.SetText(text);
-
-            // Send Ctrl+V immediately (clipboard is synchronous)
-            SendCtrlV(marker);
-        }
-        catch
-        {
-            // Fallback to direct Unicode if clipboard fails
-            SendUnicodeText(text, marker);
-        }
-    }
-
-    /// <summary>
-    /// Send Ctrl+V keystroke
-    /// </summary>
-    private static void SendCtrlV(IntPtr marker)
-    {
-        var inputs = new INPUT[4];
-
-        // Ctrl down
-        inputs[0] = new INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new INPUTUNION
-            {
-                ki = new KEYBDINPUT
-                {
-                    wVk = VK_CONTROL,
-                    dwFlags = 0,
-                    dwExtraInfo = marker
-                }
-            }
-        };
-
-        // V down
-        inputs[1] = new INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new INPUTUNION
-            {
-                ki = new KEYBDINPUT
-                {
-                    wVk = VK_V,
-                    dwFlags = 0,
-                    dwExtraInfo = marker
-                }
-            }
-        };
-
-        // V up
-        inputs[2] = new INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new INPUTUNION
-            {
-                ki = new KEYBDINPUT
-                {
-                    wVk = VK_V,
-                    dwFlags = KEYEVENTF_KEYUP,
-                    dwExtraInfo = marker
-                }
-            }
-        };
-
-        // Ctrl up
-        inputs[3] = new INPUT
-        {
-            type = INPUT_KEYBOARD,
-            u = new INPUTUNION
-            {
-                ki = new KEYBDINPUT
-                {
-                    wVk = VK_CONTROL,
-                    dwFlags = KEYEVENTF_KEYUP,
-                    dwExtraInfo = marker
-                }
-            }
-        };
-
-        SendInput(4, inputs, Marshal.SizeOf<INPUT>());
-    }
-
-    /// <summary>
-    /// Fallback: Send text using Unicode input (for non-terminal apps)
+    /// Send text using Unicode input via KEYEVENTF_UNICODE flag
+    /// Injects characters directly as keyboard events (similar to macOS CGEvent.keyboardSetUnicodeString)
     /// </summary>
     private static void SendUnicodeText(string text, IntPtr marker)
     {
