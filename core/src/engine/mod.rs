@@ -715,7 +715,7 @@ impl Engine {
                 self.pending_capitalize = false;
                 self.auto_capitalize_used = false; // Number after punctuation, reset
             }
-            caps
+            caps || shift // Uppercase when CapsLock is on OR Shift is held
         };
 
         // Record raw keystroke for ESC restore (letters and numbers only)
