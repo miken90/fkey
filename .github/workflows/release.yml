@@ -225,6 +225,96 @@ jobs:
         run: |
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
 
+    outputs:
+      submission_id: ${{ steps.notarize.outputs.submission_id }}
+
+  # ============================================================
+  # AUTOMATIC STAPLING (runs in background after release)
+  # ============================================================
+  staple-notarization:
+    needs: build-macos
+    if: ${{ needs.build-macos.outputs.submission_id != '' }}
+    runs-on: macos-latest
+    continue-on-error: true  # Don't fail the whole workflow if stapling fails
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Signed App
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-app
+          path: GoNhanh.app
+
+      - name: Wait for Notarization & Staple
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SUBMISSION_ID: ${{ needs.build-macos.outputs.submission_id }}
+        run: |
+          echo "Waiting for notarization: $SUBMISSION_ID"
+          echo "Polling every 30s, max 60 minutes..."
+
+          MAX_ATTEMPTS=120  # 120 * 30s = 60 min
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 30
+
+            STATUS=$(xcrun notarytool info "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              --output-format json 2>/dev/null | jq -r '.status' || echo "error")
+
+            echo "[$ATTEMPT/$MAX_ATTEMPTS] Status: $STATUS"
+
+            case "$STATUS" in
+              "Accepted")
+                echo "✅ Notarization accepted!"
+                xcrun stapler staple "GoNhanh.app"
+                echo "stapled=true" >> $GITHUB_ENV
+                exit 0
+                ;;
+              "Invalid"|"Rejected")
+                echo "❌ Notarization rejected"
+                exit 1
+                ;;
+              "In Progress")
+                continue
+                ;;
+            esac
+          done
+
+          echo "❌ Timeout waiting for notarization"
+          exit 1
+
+      - name: Create Stapled DMG
+        if: ${{ env.stapled == 'true' }}
+        run: |
+          mkdir -p platforms/macos/build
+          ./scripts/create-dmg.sh "GoNhanh.app"
+
+      - name: Update Release with Stapled DMG
+        if: ${{ env.stapled == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          DMG_FILE=$(ls platforms/macos/build/*.dmg | head -1)
+
+          # Delete old asset and upload new one
+          ASSET_ID=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" \
+            --jq '.assets[] | select(.name == "GoNhanh.dmg") | .id' 2>/dev/null || echo "")
+
+          if [ -n "$ASSET_ID" ]; then
+            gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$ASSET_ID"
+          fi
+
+          gh release upload "$TAG" "$DMG_FILE" --clobber
+          echo "✅ Release updated with stapled DMG!"
+
   build-linux:
     if: false  # Temporarily disabled
     runs-on: ubuntu-latest
