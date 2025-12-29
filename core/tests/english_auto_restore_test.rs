@@ -356,6 +356,8 @@ fn vietnamese_single_syllable_preserved() {
         ("laf ", "là "), // là (is)
         ("tas ", "tá "), // tá (dozen)
         ("taf ", "tà "), // tà (side)
+        // Post-tone delayed circumflex
+        ("onro ", "ổn "), // ổn (okay) - o + n + r(hỏi) + o(circumflex)
     ]);
 }
 

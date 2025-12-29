@@ -3914,7 +3914,15 @@ impl Engine {
                     // Only restore if NO initial consonant (pure vowel-start like "use")
                     // EXCEPT: Vietnamese diphthongs without initial consonant
                     // U + modifier + A: ủa, ùa, úa, ũa, ụa (interjections)
-                    if !has_initial_consonant {
+                    //
+                    // LINGUISTIC RULE: Vietnamese syllables have consonant BETWEEN vowel and modifier
+                    // - "onro" = O + N + R + O → N separates first O from R → Vietnamese "ổn"
+                    // - "use"  = U + S + E     → S directly after U → English
+                    // This distinguishes intentional Vietnamese (vowel-consonant-modifier-vowel)
+                    // from accidental English (vowel-modifier-vowel without consonant)
+                    let has_consonant_between = (first_vowel_pos + 1 < i)
+                        && keys::is_consonant(self.raw_input[first_vowel_pos + 1].0);
+                    if !has_initial_consonant && !has_consonant_between {
                         let first_vowel = self.raw_input[first_vowel_pos].0;
                         let is_vietnamese_no_initial =
                             first_vowel == keys::U && next_key == keys::A;
@@ -4321,6 +4329,8 @@ mod tests {
         // Mark after consonant
         ("tex", "tẽ"), // t + e + x(ngã) → tẽ
         ("ver", "vẻ"), // v + e + r(hỏi) → vẻ (test for #issue)
+        // Post-tone delayed circumflex: o + n + r(hỏi) + o(circumflex) → ổn
+        ("onro", "ổn"),
     ];
 
     const VNI_BASIC: &[(&str, &str)] = &[
