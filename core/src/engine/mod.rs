@@ -678,12 +678,10 @@ impl Engine {
             // User might delete all new input and want to restore previous word.
             // Reset only happens on: break keys, ESC, ctrl, or new commit.
 
-            // If buffer is already empty, user is deleting content from previous word
-            // that we don't track. Mark this to prevent false shortcut matches.
-            // e.g., "đa" + SPACE + backspace×2 + "a" should NOT match shortcut "a"
-            if self.buf.is_empty() {
-                self.has_non_letter_prefix = true;
-            }
+            // NOTE: We no longer set has_non_letter_prefix on backspace.
+            // The flag is only set when user TYPES non-letter characters (numbers, symbols).
+            // This allows shortcuts to work after backspace to beginning of sentence.
+            // The previous word restore mechanism handles "đa" + backspace×2 + "a" case.
             self.buf.pop();
             self.raw_input.pop();
             self.last_transform = None;

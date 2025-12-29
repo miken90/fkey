@@ -7,18 +7,24 @@ using GoNhanh.Core;
 namespace GoNhanh.Services;
 
 /// <summary>
+/// Data structure for a shortcut with enabled state
+/// </summary>
+public record ShortcutData(string Replacement, bool IsEnabled);
+
+/// <summary>
 /// Manages user shortcuts (abbreviations like vn → Việt Nam)
-/// Persists shortcuts to Registry
+/// Persists shortcuts to Registry with enabled/disabled state
 /// </summary>
 public class ShortcutsManager
 {
     private const string RegistryPath = @"Software\GoNhanh\Shortcuts";
-    private readonly Dictionary<string, string> _shortcuts = new();
+    private const string EnabledSuffix = "_enabled";
+    private readonly Dictionary<string, ShortcutData> _shortcuts = new();
 
     /// <summary>
-    /// Get all shortcuts as dictionary
+    /// Get all shortcuts as dictionary with data
     /// </summary>
-    public IReadOnlyDictionary<string, string> Shortcuts => _shortcuts;
+    public IReadOnlyDictionary<string, ShortcutData> Shortcuts => _shortcuts;
 
     /// <summary>
     /// Load shortcuts from Registry and sync with Rust engine
@@ -33,13 +39,27 @@ public class ShortcutsManager
             using var key = Registry.CurrentUser.OpenSubKey(RegistryPath);
             if (key == null) return;
 
-            foreach (var valueName in key.GetValueNames())
+            // Get all value names and filter out the _enabled suffix ones
+            var valueNames = key.GetValueNames()
+                .Where(n => !n.EndsWith(EnabledSuffix))
+                .ToList();
+
+            foreach (var valueName in valueNames)
             {
                 var replacement = key.GetValue(valueName) as string;
                 if (!string.IsNullOrEmpty(replacement))
                 {
-                    _shortcuts[valueName] = replacement;
-                    RustBridge.AddShortcut(valueName, replacement);
+                    // Check if there's an enabled flag
+                    var enabledValue = key.GetValue(valueName + EnabledSuffix);
+                    var isEnabled = enabledValue == null || (int)enabledValue != 0;
+
+                    _shortcuts[valueName] = new ShortcutData(replacement, isEnabled);
+
+                    // Only add to Rust engine if enabled
+                    if (isEnabled)
+                    {
+                        RustBridge.AddShortcut(valueName, replacement);
+                    }
                 }
             }
 
@@ -64,9 +84,10 @@ public class ShortcutsManager
             using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
             if (key == null) return;
 
-            foreach (var (trigger, replacement) in _shortcuts)
+            foreach (var (trigger, data) in _shortcuts)
             {
-                key.SetValue(trigger, replacement, RegistryValueKind.String);
+                key.SetValue(trigger, data.Replacement, RegistryValueKind.String);
+                key.SetValue(trigger + EnabledSuffix, data.IsEnabled ? 1 : 0, RegistryValueKind.DWord);
             }
 
             System.Diagnostics.Debug.WriteLine($"[Shortcuts] Saved {_shortcuts.Count} shortcuts");
@@ -78,15 +99,69 @@ public class ShortcutsManager
     }
 
     /// <summary>
-    /// Add or update a shortcut
+    /// Sync all shortcuts to Rust engine (respecting enabled state)
     /// </summary>
-    public void Add(string trigger, string replacement)
+    private void SyncToEngine()
+    {
+        RustBridge.ClearShortcuts();
+        foreach (var (trigger, data) in _shortcuts)
+        {
+            if (data.IsEnabled)
+            {
+                RustBridge.AddShortcut(trigger, data.Replacement);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Add or update a shortcut (enabled by default)
+    /// </summary>
+    public void Add(string trigger, string replacement, bool isEnabled = true)
     {
         if (string.IsNullOrWhiteSpace(trigger) || string.IsNullOrWhiteSpace(replacement))
             return;
 
-        _shortcuts[trigger] = replacement;
-        RustBridge.AddShortcut(trigger, replacement);
+        _shortcuts[trigger] = new ShortcutData(replacement, isEnabled);
+
+        // Update Rust engine
+        if (isEnabled)
+        {
+            RustBridge.AddShortcut(trigger, replacement);
+        }
+        else
+        {
+            RustBridge.RemoveShortcut(trigger);
+        }
+
+        Save();
+    }
+
+    /// <summary>
+    /// Update an existing shortcut's replacement and/or enabled state
+    /// </summary>
+    public void Update(string trigger, string replacement, bool isEnabled)
+    {
+        if (string.IsNullOrWhiteSpace(trigger))
+            return;
+
+        if (!_shortcuts.ContainsKey(trigger))
+        {
+            Add(trigger, replacement, isEnabled);
+            return;
+        }
+
+        _shortcuts[trigger] = new ShortcutData(replacement, isEnabled);
+
+        // Update Rust engine
+        if (isEnabled)
+        {
+            RustBridge.AddShortcut(trigger, replacement);
+        }
+        else
+        {
+            RustBridge.RemoveShortcut(trigger);
+        }
+
         Save();
     }
 
@@ -135,7 +210,7 @@ public class ShortcutsManager
         {
             if (!_shortcuts.ContainsKey(trigger))
             {
-                _shortcuts[trigger] = replacement;
+                _shortcuts[trigger] = new ShortcutData(replacement, true);
                 RustBridge.AddShortcut(trigger, replacement);
             }
         }
