@@ -9,8 +9,8 @@ namespace GoNhanh.Core;
 public static class AppMetadata
 {
     // App Info
-    public static readonly string Name = "GoNhanh";
-    public static readonly string DisplayName = "GoNhanh - Gõ Nhanh";
+    public static readonly string Name = "FKey";
+    public static readonly string DisplayName = "FKey";
     public static readonly string Tagline = "Bộ gõ tiếng Việt hiệu suất cao";
 
     // Version
@@ -24,14 +24,15 @@ public static class AppMetadata
     }
 
     // Author
-    public static readonly string Author = "Kha Phan";
-    public static readonly string AuthorEmail = "nhatkha1407@gmail.com";
-    public static readonly string AuthorLinkedin = "https://www.linkedin.com/in/khaphanspace";
+    public static readonly string Author = "Canh Nguyen";
+    public static readonly string AuthorEmail = "nguyenminhcanh1990@gmail.com";
+    public static readonly string AuthorLinkedin = "";
 
     // Links
-    public static readonly string Website = "https://gonhanh.org";
-    public static readonly string Repository = "https://github.com/khaphanspace/gonhanh.org";
-    public static readonly string IssuesUrl = "https://github.com/khaphanspace/gonhanh.org/issues";
+    public static readonly string Website = "";
+    public static readonly string Repository = "https://github.com/miken90/gonhanh.org";
+    public static readonly string IssuesUrl = "https://github.com/miken90/gonhanh.org/issues";
+    public static readonly string SpecialThanks = "Special thanks to Kha Phan <nhatkha1407@gmail.com>";
 
     // Legal
     public static readonly string Copyright = $"Copyright (c) 2025 {Author}. All rights reserved.";

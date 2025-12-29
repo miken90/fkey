@@ -26,14 +26,15 @@ public partial class AboutWindow : Window
         AuthorText.Text = AppMetadata.Author;
         EmailText.Text = AppMetadata.AuthorEmail;
         EmailLink.NavigateUri = new Uri($"mailto:{AppMetadata.AuthorEmail}");
-        LinkedInLink.NavigateUri = new Uri(AppMetadata.AuthorLinkedin);
+        // LinkedInLink.NavigateUri = new Uri(AppMetadata.AuthorLinkedin);
 
         // Links
-        WebsiteLink.NavigateUri = new Uri(AppMetadata.Website);
+        // WebsiteLink.NavigateUri = new Uri(AppMetadata.Website);
         GitHubLink.NavigateUri = new Uri(AppMetadata.Repository);
 
         // Copyright
         CopyrightText.Text = AppMetadata.Copyright;
+        SpecialThanks.Text = AppMetadata.SpecialThanks;
     }
 
     private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

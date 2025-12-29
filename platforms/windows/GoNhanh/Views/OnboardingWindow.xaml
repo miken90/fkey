@@ -1,7 +1,7 @@
 <Window x:Class="GoNhanh.Views.OnboardingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Chào mừng đến GoNhanh"
+        Title="Chào mừng đến FKey"
         Height="500" Width="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
@@ -28,7 +28,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" VerticalAlignment="Center">
-                        <TextBlock Text="GoNhanh"
+                        <TextBlock Text="FKey"
                                    FontSize="36"
                                    FontWeight="Bold"
                                    Foreground="{StaticResource PrimaryBrush}"
@@ -147,7 +147,7 @@
                         <TextBlock Text="Sẵn sàng!"
                                    FontSize="32"
                                    FontWeight="Bold"
-                                   Foreground="{StaticResource PrimaryBrush}"
+                                   Foreground="{StaticResource AccentBrush}"
                                    HorizontalAlignment="Center"/>
 
                         <TextBlock TextWrapping="Wrap"
@@ -155,17 +155,17 @@
                                    Margin="0,24,0,0"
                                    FontSize="14"
                                    Foreground="{StaticResource TextBrush}">
-                            <Run Text="GoNhanh đang chạy trong khay hệ thống (system tray)."/>
+                            <Run Text="FKey đang chạy trong khay hệ thống (system tray)."/>
                             <LineBreak/>
                             <LineBreak/>
-                            <Run Text="Nhấp chuột phải vào biểu tượng 'V' để:" FontWeight="SemiBold"/>
+                            <Run Text="Nhấp chuột phải vào biểu tượng 'F' để:" FontWeight="SemiBold"/>
                             <LineBreak/>
                             <Run Text="• Đổi kiểu gõ (Telex/VNI)"/>
                             <LineBreak/>
                             <Run Text="• Bật/tắt bộ gõ"/>
                         </TextBlock>
 
-                        <Border Background="#F3F4F6"
+                        <Border Background="{StaticResource BackgroundBrush}"
                                 CornerRadius="8"
                                 Padding="16"
                                 Margin="0,24,0,0">
@@ -201,9 +201,9 @@
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
                     Margin="0,0,0,20">
-            <Ellipse x:Name="Dot1" Width="8" Height="8" Fill="{StaticResource PrimaryBrush}" Margin="4"/>
-            <Ellipse x:Name="Dot2" Width="8" Height="8" Fill="#E5E7EB" Margin="4"/>
-            <Ellipse x:Name="Dot3" Width="8" Height="8" Fill="#E5E7EB" Margin="4"/>
+            <Ellipse x:Name="Dot1" Width="8" Height="8" Fill="{StaticResource AccentBrush}" Margin="4"/>
+            <Ellipse x:Name="Dot2" Width="8" Height="8" Fill="{StaticResource BorderBrush}" Margin="4"/>
+            <Ellipse x:Name="Dot3" Width="8" Height="8" Fill="{StaticResource BorderBrush}" Margin="4"/>
         </StackPanel>
     </Grid>
 </Window>
