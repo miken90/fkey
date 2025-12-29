@@ -1,12 +1,14 @@
 # GoNhanh - GitHub Release Script
 # Builds and uploads release to GitHub Releases using standardized build script
 # Usage: .\github-release.ps1 -Version "1.5.9"
+# Note: Only pushes to origin (miken90), never to upstream
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$Version,
 
     [string]$ProjectRoot = "",
+    [string]$Repo = "miken90/gonhanh.org",  # Target repo for release (never upstream)
     [switch]$SkipBuild,
     [switch]$Draft
 )
@@ -25,12 +27,12 @@ if (-not $ProjectRoot) {
 $WindowsDir = Join-Path $ProjectRoot "platforms\windows"
 $BuildScript = Join-Path $WindowsDir "build-release.ps1"
 $PublishDir = Join-Path $WindowsDir "GoNhanh\bin\Release\net8.0-windows\win-x64\publish"
-$ZipName = "GoNhanh-v$Version-portable.zip"
+$ZipName = "FKey-v$Version-portable.zip"
 $ZipPath = Join-Path $PublishDir $ZipName
 $TagName = "v$Version"
 
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host " GoNhanh GitHub Release" -ForegroundColor Cyan
+Write-Host " FKey GitHub Release" -ForegroundColor Cyan
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
@@ -94,7 +96,7 @@ try {
     # Generate notes from commits
     if ($LastTag) {
         $Commits = git log "$LastTag..HEAD" --pretty=format:"- %s" --no-merges 2>$null
-        $CompareLink = "**Full Changelog**: https://github.com/khaphanspace/gonhanh.org/compare/$LastTag...v$Version"
+        $CompareLink = "**Full Changelog**: https://github.com/$Repo/compare/$LastTag...v$Version"
     } else {
         # No previous tags, get last 10 commits
         $Commits = git log -10 --pretty=format:"- %s" --no-merges 2>$null
@@ -112,12 +114,12 @@ $Commits
 
 ## 💾 Download
 
-- **Windows Portable**: [GoNhanh-v$Version-portable.zip](https://github.com/khaphanspace/gonhanh.org/releases/download/v$Version/$ZipName) (~$ZipSize MB)
+- **Windows Portable**: [FKey-v$Version-portable.zip](https://github.com/$Repo/releases/download/v$Version/$ZipName) (~$ZipSize MB)
 
 ## 🔧 Installation
 
-1. Download ``GoNhanh-v$Version-portable.zip``
-2. Extract and run ``GoNhanh.exe``
+1. Download ``FKey-v$Version-portable.zip``
+2. Extract and run ``FKey.exe``
 3. App runs in system tray
 
 $CompareLink
@@ -135,18 +137,29 @@ Write-Host "[3/3] Creating GitHub release..." -ForegroundColor Yellow
 
 Push-Location $ProjectRoot
 try {
-    $DraftFlag = if ($Draft) { "--draft" } else { "" }
-
+    Write-Host "  Repo: $Repo" -ForegroundColor Gray
     Write-Host "  Tag: $TagName" -ForegroundColor Gray
     Write-Host "  Asset: $ZipName" -ForegroundColor Gray
     Write-Host ""
 
-    # Create release with gh CLI
+    # Create tag locally and push to origin only (never upstream)
+    git tag $TagName 2>$null
+    git push origin $TagName 2>&1 | Out-Null
+
+    # Create release with gh CLI - explicitly specify repo to avoid pushing to wrong remote
+    $ReleaseArgs = @(
+        "release", "create", $TagName, $ZipPath,
+        "--repo", $Repo,
+        "--title", "FKey v$Version",
+        "--notes", $ReleaseNotes
+    )
     if ($Draft) {
-        gh release create $TagName $ZipPath --title "GoNhanh v$Version" --notes $ReleaseNotes --draft
-    } else {
-        gh release create $TagName $ZipPath --title "GoNhanh v$Version" --notes $ReleaseNotes
+        $ReleaseArgs += "--draft"
     }
+
+    # Clear GITHUB_TOKEN to use gh's stored credentials
+    $env:GH_TOKEN = ""
+    & gh @ReleaseArgs
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create GitHub release"
