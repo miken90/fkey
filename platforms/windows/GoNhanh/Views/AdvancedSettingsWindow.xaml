@@ -123,16 +123,22 @@
                                   BorderBrush="{StaticResource BorderBrush}"
                                   GridLinesVisibility="Horizontal"
                                   HorizontalGridLinesBrush="{StaticResource BackgroundBrush}"
+                                  SelectionMode="Single"
+                                  SelectionChanged="ShortcutsDataGrid_SelectionChanged"
+                                  CellEditEnding="ShortcutsDataGrid_CellEditEnding"
                                   Margin="0,0,0,12">
                             <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header=""
+                                                        Binding="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="40"/>
                                 <DataGridTextColumn Header="Phím tắt"
-                                                    Binding="{Binding Trigger}"
+                                                    Binding="{Binding Trigger, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                                     Width="*"
-                                                    IsReadOnly="True"/>
+                                                    IsReadOnly="False"/>
                                 <DataGridTextColumn Header="Thay thế bằng"
-                                                    Binding="{Binding Replacement}"
+                                                    Binding="{Binding Replacement, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                                     Width="*"
-                                                    IsReadOnly="True"/>
+                                                    IsReadOnly="False"/>
                             </DataGrid.Columns>
                         </DataGrid>
 

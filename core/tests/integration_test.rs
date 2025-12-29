@@ -1228,6 +1228,150 @@ fn shortcut_works_standalone() {
     assert_eq!(chars, "không ");
 }
 
+/// User issue: Multiple consecutive shortcuts should all work
+/// "ko " → "không " then "dc " → "được "
+#[test]
+fn shortcut_works_consecutively() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ko", "không"));
+    e.shortcuts_mut().add(Shortcut::new("dc", "được"));
+
+    // First shortcut: "ko" + SPACE
+    e.on_key(keys::K, false, false);
+    e.on_key(keys::O, false, false);
+    let r1 = e.on_key(keys::SPACE, false, false);
+    assert_eq!(r1.action, Action::Send as u8, "first shortcut 'ko' should trigger");
+
+    // Second shortcut: "dc" + SPACE (should also work!)
+    e.on_key(keys::D, false, false);
+    e.on_key(keys::C, false, false);
+    let r2 = e.on_key(keys::SPACE, false, false);
+    assert_eq!(r2.action, Action::Send as u8, "second shortcut 'dc' should trigger");
+
+    let chars: String = (0..r2.count as usize)
+        .map(|i| char::from_u32(r2.chars[i]).unwrap_or('?'))
+        .collect();
+    assert_eq!(chars, "được ");
+}
+
+/// User issue: Shortcuts should work after backspace deletes current word
+/// "ko " → "dc" → backspace×2 → "dc " should trigger
+#[test]
+fn shortcut_works_after_backspace_delete_current_word() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ko", "không"));
+    e.shortcuts_mut().add(Shortcut::new("dc", "được"));
+
+    // First shortcut
+    e.on_key(keys::K, false, false);
+    e.on_key(keys::O, false, false);
+    e.on_key(keys::SPACE, false, false);
+
+    // Type "dc" then delete it
+    e.on_key(keys::D, false, false);
+    e.on_key(keys::C, false, false);
+    e.on_key(keys::DELETE, false, false); // delete 'c'
+    e.on_key(keys::DELETE, false, false); // delete 'd'
+
+    // Type "dc" again and trigger shortcut
+    e.on_key(keys::D, false, false);
+    e.on_key(keys::C, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8, "shortcut 'dc' should work after backspace");
+}
+
+/// User issue: Shortcut works after backspace within same word (no space before)
+/// Type "koko" → backspace×2 → "ko " should trigger
+#[test]
+fn shortcut_works_after_backspace_in_same_word() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ko", "không"));
+
+    // Type "koko" without space
+    e.on_key(keys::K, false, false);
+    e.on_key(keys::O, false, false);
+    e.on_key(keys::K, false, false);
+    e.on_key(keys::O, false, false);
+
+    // Backspace twice to get "ko"
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+
+    // SPACE - should trigger shortcut
+    let r = e.on_key(keys::SPACE, false, false);
+    assert_eq!(r.action, Action::Send as u8, "shortcut 'ko' should trigger after backspace in same word");
+}
+
+/// User issue: Shortcut works after backspace to beginning of sentence
+/// "ko " → type "test" → backspace×4 → backspace (into empty) → "dc " should trigger
+#[test]
+fn shortcut_works_after_backspace_to_beginning() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ko", "không"));
+    e.shortcuts_mut().add(Shortcut::new("dc", "được"));
+
+    // First shortcut
+    e.on_key(keys::K, false, false);
+    e.on_key(keys::O, false, false);
+    e.on_key(keys::SPACE, false, false); // "ko" → "không "
+
+    // Type "test"
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::E, false, false);
+    e.on_key(keys::S, false, false);
+    e.on_key(keys::T, false, false);
+
+    // Delete all: "test"
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+    e.on_key(keys::DELETE, false, false);
+
+    // Buffer is now empty, continue deleting (backspace into "untracked" territory)
+    e.on_key(keys::DELETE, false, false);
+
+    // Type "dc" and trigger shortcut - THIS IS THE BUG!
+    e.on_key(keys::D, false, false);
+    e.on_key(keys::C, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8, "shortcut 'dc' should work after backspace to beginning");
+}
+
+/// User issue: Shortcut works after Ctrl+A + Delete (select all and delete)
+/// Type "hello" → Ctrl+A → Del → "ko " should trigger
+#[test]
+fn shortcut_works_after_ctrl_a_delete() {
+    let mut e = Engine::new();
+    e.set_method(0);
+    e.shortcuts_mut().add(Shortcut::new("ko", "không"));
+
+    // Type some text first
+    e.on_key(keys::H, false, false);
+    e.on_key(keys::E, false, false);
+    e.on_key(keys::L, false, false);
+    e.on_key(keys::L, false, false);
+    e.on_key(keys::O, false, false);
+
+    // Ctrl+A - clears engine buffer (ctrl modifier triggers clear)
+    e.on_key(keys::A, false, true); // ctrl=true
+
+    // Del - user deletes the selection
+    e.on_key(keys::DELETE, false, false);
+
+    // Type "ko " - should trigger shortcut on first try!
+    e.on_key(keys::K, false, false);
+    e.on_key(keys::O, false, false);
+    let r = e.on_key(keys::SPACE, false, false);
+
+    assert_eq!(r.action, Action::Send as u8, "shortcut 'ko' should work after Ctrl+A+Del");
+}
+
 /// Issue #23: Shortcut "zz" should work in Telex mode
 /// Even though "z" is a remove modifier, when there's nothing to remove,
 /// it should be added to buffer so shortcuts like "zz" can trigger.

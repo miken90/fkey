@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using GoNhanh.Core;
 using GoNhanh.Services;
 
@@ -15,6 +16,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly SettingsService _settings;
     private readonly ShortcutsManager _shortcuts;
     private readonly ObservableCollection<ShortcutItem> _shortcutItems = new();
+    private string? _editingOldTrigger; // Track old trigger for editing
 
     public AdvancedSettingsWindow(SettingsService settings, ShortcutsManager shortcuts)
     {
@@ -47,12 +49,13 @@ public partial class AdvancedSettingsWindow : Window
     {
         _shortcutItems.Clear();
 
-        foreach (var (trigger, replacement) in _shortcuts.Shortcuts)
+        foreach (var (trigger, data) in _shortcuts.Shortcuts)
         {
             _shortcutItems.Add(new ShortcutItem
             {
                 Trigger = trigger,
-                Replacement = replacement
+                Replacement = data.Replacement,
+                IsEnabled = data.IsEnabled
             });
         }
 
@@ -76,9 +79,65 @@ public partial class AdvancedSettingsWindow : Window
         _settings.Save();
     }
 
+    private void SaveShortcuts()
+    {
+        // Clear and rebuild all shortcuts from UI
+        _shortcuts.Clear();
+        foreach (var item in _shortcutItems)
+        {
+            if (!string.IsNullOrWhiteSpace(item.Trigger) && !string.IsNullOrWhiteSpace(item.Replacement))
+            {
+                _shortcuts.Add(item.Trigger, item.Replacement, item.IsEnabled);
+            }
+        }
+    }
+
     #endregion
 
     #region Event Handlers
+
+    private void ShortcutsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Store the old trigger when a row is selected for potential editing
+        if (ShortcutsDataGrid.SelectedItem is ShortcutItem item)
+        {
+            _editingOldTrigger = item.Trigger;
+        }
+    }
+
+    private void ShortcutsDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+    {
+        if (e.EditAction == DataGridEditAction.Cancel)
+            return;
+
+        var item = e.Row.Item as ShortcutItem;
+        if (item == null)
+            return;
+
+        // Commit the edit
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            // If trigger was changed, update the key
+            if (_editingOldTrigger != null && _editingOldTrigger != item.Trigger)
+            {
+                // Remove old shortcut and add with new trigger
+                _shortcuts.Remove(_editingOldTrigger);
+                if (!string.IsNullOrWhiteSpace(item.Trigger))
+                {
+                    _shortcuts.Add(item.Trigger, item.Replacement, item.IsEnabled);
+                }
+            }
+            else
+            {
+                // Just update the replacement or enabled state
+                if (!string.IsNullOrWhiteSpace(item.Trigger))
+                {
+                    _shortcuts.Update(item.Trigger, item.Replacement, item.IsEnabled);
+                }
+            }
+            _editingOldTrigger = item.Trigger;
+        }), System.Windows.Threading.DispatcherPriority.Background);
+    }
 
     private void AddShortcut_Click(object sender, RoutedEventArgs e)
     {
@@ -118,13 +177,14 @@ public partial class AdvancedSettingsWindow : Window
         }
 
         // Add shortcut
-        _shortcuts.Add(trigger, replacement);
+        _shortcuts.Add(trigger, replacement, true);
 
         // Update UI
         _shortcutItems.Add(new ShortcutItem
         {
             Trigger = trigger,
-            Replacement = replacement
+            Replacement = replacement,
+            IsEnabled = true
         });
 
         // Clear input
@@ -163,6 +223,7 @@ public partial class AdvancedSettingsWindow : Window
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         SaveSettings();
+        SaveShortcuts();
 
         // Apply settings to Rust engine
         ((GoNhanh.App)System.Windows.Application.Current).ApplySettings();
@@ -185,6 +246,7 @@ public class ShortcutItem : INotifyPropertyChanged
 {
     private string _trigger = "";
     private string _replacement = "";
+    private bool _isEnabled = true;
 
     public string Trigger
     {
@@ -203,6 +265,16 @@ public class ShortcutItem : INotifyPropertyChanged
         {
             _replacement = value;
             OnPropertyChanged(nameof(Replacement));
+        }
+    }
+
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set
+        {
+            _isEnabled = value;
+            OnPropertyChanged(nameof(IsEnabled));
         }
     }
 
