@@ -1,6 +1,6 @@
 # GoNhanh - GitHub Release Script
-# Builds and uploads release to GitHub Releases
-# Usage: .\github-release.ps1 -Version "1.3.0"
+# Builds and uploads release to GitHub Releases using standardized build script
+# Usage: .\github-release.ps1 -Version "1.5.9"
 
 param(
     [Parameter(Mandatory=$true)]
@@ -17,22 +17,24 @@ $ErrorActionPreference = "Stop"
 if (-not $ProjectRoot) {
     $ProjectRoot = (Get-Item $PSScriptRoot).Parent.Parent.Parent.FullName
     # Fallback: look for gonhanh.org in common locations
-    if (-not (Test-Path "$ProjectRoot\core\Cargo.toml")) {
+    if (-not (Test-Path "$ProjectRoot\platforms\windows\build-release.ps1")) {
         $ProjectRoot = "C:\WORKSPACES\PERSONAL\gonhanh.org"
     }
 }
 
-$WindowsDir = Join-Path $ProjectRoot "platforms\windows\GoNhanh"
-$CoreDir = Join-Path $ProjectRoot "core"
-$ReleasesDir = Join-Path $WindowsDir "Releases"
-$ZipName = "GoNhanh-$Version-win-x64.zip"
-$ZipPath = Join-Path $ReleasesDir $ZipName
+$WindowsDir = Join-Path $ProjectRoot "platforms\windows"
+$BuildScript = Join-Path $WindowsDir "build-release.ps1"
+$PublishDir = Join-Path $WindowsDir "GoNhanh\bin\Release\net8.0-windows\win-x64\publish"
+$ZipName = "GoNhanh-v$Version-portable.zip"
+$ZipPath = Join-Path $PublishDir $ZipName
 $TagName = "v$Version"
 
-Write-Host "=== GoNhanh GitHub Release ===" -ForegroundColor Cyan
-Write-Host "Version: $Version"
-Write-Host "Tag: $TagName"
-Write-Host "Project: $ProjectRoot"
+Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host " GoNhanh GitHub Release" -ForegroundColor Cyan
+Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "Version:  $Version" -ForegroundColor White
+Write-Host "Tag:      $TagName" -ForegroundColor White
+Write-Host "Project:  $ProjectRoot" -ForegroundColor White
 Write-Host ""
 
 # Verify gh CLI is available
@@ -46,79 +48,43 @@ if ($LASTEXITCODE -ne 0) {
     throw "GitHub CLI not authenticated. Run: gh auth login"
 }
 
-# Step 1: Build Rust core
-if (-not $SkipBuild) {
-    Write-Host "[1/5] Building Rust core..." -ForegroundColor Yellow
-    Push-Location $CoreDir
-    try {
-        cargo build --release
-        if ($LASTEXITCODE -ne 0) { throw "Rust build failed" }
-        Write-Host "   Rust core built!" -ForegroundColor Green
-    }
-    finally {
-        Pop-Location
-    }
-
-    # Copy DLL to Native folder
-    $RustDll = Join-Path $CoreDir "target\release\gonhanh_core.dll"
-    $NativeDir = Join-Path $WindowsDir "Native"
-    if (-not (Test-Path $NativeDir)) {
-        New-Item -ItemType Directory -Path $NativeDir -Force | Out-Null
-    }
-    Copy-Item $RustDll -Destination $NativeDir -Force
-    Write-Host "   Copied gonhanh_core.dll to Native/" -ForegroundColor Green
-}
-else {
-    Write-Host "[1/5] Skipping Rust build (--SkipBuild)" -ForegroundColor Gray
+# Verify build script exists
+if (-not (Test-Path $BuildScript)) {
+    throw "Build script not found: $BuildScript"
 }
 
-# Step 2: Build .NET app
+# Step 1: Build portable package
 if (-not $SkipBuild) {
-    Write-Host "[2/5] Building .NET app..." -ForegroundColor Yellow
+    Write-Host "[1/3] Building portable package..." -ForegroundColor Yellow
+    Write-Host ""
+
     Push-Location $WindowsDir
     try {
-        # Build settings are in .csproj (SelfContained, Compression, etc.)
-        dotnet publish -c Release `
-            -p:Version=$Version `
-            -o ./publish
-
-        if ($LASTEXITCODE -ne 0) { throw ".NET build failed" }
-        Write-Host "   .NET app built!" -ForegroundColor Green
+        & $BuildScript -Version $Version
+        if ($LASTEXITCODE -ne 0) { throw "Build failed" }
     }
     finally {
         Pop-Location
     }
 
-    # Copy Rust DLL to publish
-    $PublishDir = Join-Path $WindowsDir "publish"
-    Copy-Item (Join-Path $WindowsDir "Native\gonhanh_core.dll") -Destination $PublishDir -Force
-
-    # PDB already excluded via DebugType=none in .csproj
+    Write-Host ""
 }
 else {
-    Write-Host "[2/5] Skipping .NET build (--SkipBuild)" -ForegroundColor Gray
+    Write-Host "[1/3] Skipping build (--SkipBuild)" -ForegroundColor Gray
+    Write-Host ""
 }
 
-# Step 3: Create zip package
-Write-Host "[3/5] Creating release package..." -ForegroundColor Yellow
-
-if (-not (Test-Path $ReleasesDir)) {
-    New-Item -ItemType Directory -Path $ReleasesDir -Force | Out-Null
+# Verify ZIP exists
+if (-not (Test-Path $ZipPath)) {
+    throw "Build artifact not found: $ZipPath"
 }
-
-$PublishDir = Join-Path $WindowsDir "publish"
-if (Test-Path $ZipPath) {
-    Remove-Item $ZipPath -Force
-}
-
-Compress-Archive -Path "$PublishDir\GoNhanh.exe", "$PublishDir\gonhanh_core.dll" `
-    -DestinationPath $ZipPath -CompressionLevel Optimal
 
 $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
-Write-Host "   Created: $ZipName ($ZipSize MB)" -ForegroundColor Green
+Write-Host "Package ready: $ZipName ($ZipSize MB)" -ForegroundColor Green
+Write-Host ""
 
-# Step 4: Generate release notes
-Write-Host "[4/5] Generating release notes..." -ForegroundColor Yellow
+# Step 2: Generate release notes
+Write-Host "[2/3] Generating release notes..." -ForegroundColor Yellow
 
 Push-Location $ProjectRoot
 try {
@@ -128,9 +94,11 @@ try {
     # Generate notes from commits
     if ($LastTag) {
         $Commits = git log "$LastTag..HEAD" --pretty=format:"- %s" --no-merges 2>$null
+        $CompareLink = "**Full Changelog**: https://github.com/khaphanspace/gonhanh.org/compare/$LastTag...v$Version"
     } else {
         # No previous tags, get last 10 commits
         $Commits = git log -10 --pretty=format:"- %s" --no-merges 2>$null
+        $CompareLink = ""
     }
 
     if (-not $Commits) {
@@ -138,48 +106,53 @@ try {
     }
 
     $ReleaseNotes = @"
-## What's New in $Version
+## 📦 What's New in v$Version
 
 $Commits
 
-## Downloads
+## 💾 Download
 
-- **Windows**: Download `$ZipName`, extract, and run `GoNhanh.exe`
+- **Windows Portable**: [GoNhanh-v$Version-portable.zip](https://github.com/khaphanspace/gonhanh.org/releases/download/v$Version/$ZipName) (~$ZipSize MB)
 
-## Installation
+## 🔧 Installation
 
-1. Extract the zip file
-2. Run `GoNhanh.exe`
-3. Grant accessibility permissions if prompted
-4. Start typing Vietnamese!
+1. Download ``GoNhanh-v$Version-portable.zip``
+2. Extract and run ``GoNhanh.exe``
+3. App runs in system tray
+
+$CompareLink
 "@
 
-    Write-Host "   Release notes generated!" -ForegroundColor Green
+    Write-Host "[OK] Release notes generated" -ForegroundColor Green
+    Write-Host ""
 }
 finally {
     Pop-Location
 }
 
-# Step 5: Create GitHub release
-Write-Host "[5/5] Creating GitHub release..." -ForegroundColor Yellow
+# Step 3: Create GitHub release
+Write-Host "[3/3] Creating GitHub release..." -ForegroundColor Yellow
 
 Push-Location $ProjectRoot
 try {
     $DraftFlag = if ($Draft) { "--draft" } else { "" }
 
+    Write-Host "  Tag: $TagName" -ForegroundColor Gray
+    Write-Host "  Asset: $ZipName" -ForegroundColor Gray
+    Write-Host ""
+
     # Create release with gh CLI
-    $ReleaseCmd = "gh release create `"$TagName`" `"$ZipPath`" --title `"GoNhanh $Version`" --notes `"$ReleaseNotes`" $DraftFlag"
-
-    Write-Host "   Creating release $TagName..." -ForegroundColor Gray
-
-    # Execute release creation
-    gh release create $TagName $ZipPath --title "GoNhanh $Version" --notes "$ReleaseNotes" $DraftFlag
+    if ($Draft) {
+        gh release create $TagName $ZipPath --title "GoNhanh v$Version" --notes $ReleaseNotes --draft
+    } else {
+        gh release create $TagName $ZipPath --title "GoNhanh v$Version" --notes $ReleaseNotes
+    }
 
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create GitHub release"
     }
 
-    Write-Host "   Release created!" -ForegroundColor Green
+    Write-Host "[OK] Release created" -ForegroundColor Green
 }
 finally {
     Pop-Location
@@ -187,10 +160,12 @@ finally {
 
 # Summary
 Write-Host ""
-Write-Host "=== Release Complete ===" -ForegroundColor Cyan
-Write-Host "Version: $Version" -ForegroundColor White
-Write-Host "Tag: $TagName" -ForegroundColor White
-Write-Host "Local: $ZipPath" -ForegroundColor White
+Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host " Release Complete" -ForegroundColor Cyan
+Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "Version:  $Version" -ForegroundColor White
+Write-Host "Tag:      $TagName" -ForegroundColor White
+Write-Host "Package:  $ZipSize MB" -ForegroundColor White
 
 # Get release URL
 Push-Location $ProjectRoot
@@ -198,8 +173,9 @@ $RepoUrl = gh repo view --json url -q .url 2>$null
 Pop-Location
 
 if ($RepoUrl) {
-    Write-Host "GitHub: $RepoUrl/releases/tag/$TagName" -ForegroundColor White
+    Write-Host "GitHub:   $RepoUrl/releases/tag/$TagName" -ForegroundColor White
 }
 
 Write-Host ""
-Write-Host "Done!" -ForegroundColor Green
+Write-Host "[SUCCESS] Release published!" -ForegroundColor Green
+Write-Host ""
