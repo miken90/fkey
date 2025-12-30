@@ -677,3 +677,95 @@ fn issue146_tom_s_should_produce_tom_sac() {
         ("noms", "nóm"), // Similar pattern
     ]);
 }
+
+// =============================================================================
+// BUG: "nesue " → "nếu " (delayed circumflex with tone before vowel)
+// In Telex: n=initial, e=vowel, s=sắc on 'e', u=vowel, e=circumflex on first 'e'
+// Pattern: typing 's' (sắc) then 'ue' should form "nếu" (if) not "néue"
+// =============================================================================
+
+#[test]
+fn bug_nesue_to_neu_circumflex() {
+    use gonhanh_core::engine::Action;
+    use gonhanh_core::utils::telex_auto_restore;
+
+    // Debug: step by step
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+
+    let mut screen = String::new();
+    let inputs = ['n', 'e', 's', 'u', 'e', ' '];
+
+    for c in inputs {
+        let key = gonhanh_core::utils::char_to_key(c);
+        let r = e.on_key(key, false, false);
+
+        if r.action == Action::Send as u8 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+            println!(
+                "Key '{}': backspace={}, output='{}', screen='{}'",
+                c,
+                r.backspace,
+                (0..r.count as usize)
+                    .filter_map(|i| char::from_u32(r.chars[i]))
+                    .collect::<String>(),
+                screen
+            );
+        } else {
+            screen.push(c);
+            println!("Key '{}': passthrough, screen='{}'", c, screen);
+        }
+    }
+
+    println!("\nFinal: 'nesue ' -> '{}' (expected: 'nếu ')", screen);
+
+    // Now test with telex_auto_restore helper
+    telex_auto_restore(&[("nesue ", "nếu ")]);
+}
+
+#[test]
+fn test_neus_tone_position() {
+    use gonhanh_core::engine::Action;
+
+    let mut e = Engine::new();
+    let mut screen = String::new();
+    let inputs = ['n', 'e', 'u', 's'];
+
+    for c in inputs {
+        let key = gonhanh_core::utils::char_to_key(c);
+        let r = e.on_key(key, false, false);
+
+        if r.action == Action::Send as u8 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+            println!(
+                "Key '{}': backspace={}, output='{}', screen='{}'",
+                c,
+                r.backspace,
+                (0..r.count as usize)
+                    .filter_map(|i| char::from_u32(r.chars[i]))
+                    .collect::<String>(),
+                screen
+            );
+        } else {
+            screen.push(c);
+            println!("Key '{}': passthrough, screen='{}'", c, screen);
+        }
+    }
+
+    println!("\nFinal: 'neus' -> '{}' (expected: 'néu')", screen);
+    assert_eq!(screen, "néu", "'neus' should produce 'néu' (tone on e)");
+}

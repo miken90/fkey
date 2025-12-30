@@ -860,3 +860,26 @@ fn issue151_mua_horn_not_restored() {
         ("muwaj ", "mựa "), // mựa (nặng)
     ]);
 }
+
+// =============================================================================
+// Vietnamese "êu" diphthong patterns - should NOT be auto-restored
+// Pattern: E + tone modifier + U + E → delayed circumflex creates êu
+// =============================================================================
+
+#[test]
+fn vietnamese_eu_diphthong_not_restored() {
+    // "nếu" (if), "kêu" (to call), "nêu" (to state) are valid Vietnamese words
+    // Pattern: consonant + e + tone + u + e → delayed circumflex on e → êu diphthong
+    telex_auto_restore(&[
+        // nếu (if) - common Vietnamese word
+        ("nesue ", "nếu "), // n + e + s(sắc) + u + e → nếu
+        ("neeus ", "nếu "), // n + e + e(circumflex) + u + s(sắc) → nếu (standard)
+        // kêu (to call/cry)
+        ("kesue ", "kếu "), // k + e + s + u + e → kếu
+        ("keeu ", "kêu "),  // k + e + e + u → kêu (no tone)
+        // Similar patterns with valid Vietnamese initials
+        ("lesue ", "lếu "), // l + e + s + u + e → lếu
+        ("tesue ", "tếu "), // t + e + s + u + e → tếu
+        ("mesue ", "mếu "), // m + e + s + u + e → mếu
+    ]);
+}

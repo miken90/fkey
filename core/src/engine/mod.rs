@@ -4077,7 +4077,11 @@ impl Engine {
                                     || next_key == keys::U
                             }
                             k if k == keys::O => next_key == keys::I || next_key == keys::A,
-                            k if k == keys::E => next_key == keys::O, // eo: đeo, kẹo, mèo
+                            k if k == keys::E => {
+                                // eo: đeo, kẹo, mèo
+                                // eu: nếu, kêu (êu diphthong with tone on ê)
+                                next_key == keys::O || next_key == keys::U
+                            }
                             k if k == keys::I => next_key == keys::U, // iu: chịu, nịu, lịu
                             _ => false,
                         };
