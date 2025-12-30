@@ -34,7 +34,7 @@
 brew install --cask gonhanh
 ```
 
-> **Cập nhật:** App tự động kiểm tra phiên bản mới mỗi 24h. Hoặc dùng `brew reinstall gonhanh` (app sẽ tự tắt → cập nhật → khởi động lại).
+> **Cập nhật:** App tự động kiểm tra phiên bản mới mỗi 24h. Hoặc dùng `brew upgrade --cask gonhanh`.
 
 ### 📦 Tải thủ công
 

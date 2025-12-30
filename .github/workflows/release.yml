@@ -417,7 +417,10 @@ jobs:
         with:
           files: "*.tar.gz"
 
+  # DEPRECATED: Gõ Nhanh now on official Homebrew (https://formulae.brew.sh/cask/gonhanh)
+  # Homebrew autobump bot handles updates via livecheck. Keep for reference only.
   update-homebrew:
+    if: false
     needs: build-macos
     runs-on: ubuntu-latest
     steps:
@@ -494,7 +497,7 @@ jobs:
           git push
 
   build-windows:
-    if: false
+    if: false  # Temporarily disabled
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
