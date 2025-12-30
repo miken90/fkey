@@ -4072,11 +4072,12 @@ impl Engine {
                         && keys::is_consonant(self.raw_input[first_vowel_pos + 1].0);
                     if !has_initial_consonant && !has_consonant_between {
                         let first_vowel = self.raw_input[first_vowel_pos].0;
-                        // Vietnamese no-initial diphthongs:
+                        // Vietnamese no-initial patterns:
+                        // - Same vowel doubling: OFO → ồ, EFE → ề, AFA → ầ (circumflex + tone)
                         // - U + modifier + A: ủa, ùa, úa (interjections)
                         // - A + modifier + O: ảo, ào, áo (ảo giác, ảo tưởng)
-                        let is_vietnamese_no_initial = (first_vowel == keys::U
-                            && next_key == keys::A)
+                        let is_vietnamese_no_initial = first_vowel == next_key // Same vowel = Telex circumflex
+                            || (first_vowel == keys::U && next_key == keys::A)
                             || (first_vowel == keys::A && next_key == keys::O);
                         if !is_vietnamese_no_initial {
                             return true;
