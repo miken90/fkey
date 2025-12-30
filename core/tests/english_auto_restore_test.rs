@@ -897,24 +897,24 @@ fn standalone_vowel_circumflex_with_tone() {
     // These are valid Vietnamese exclamations/interjections and should NOT be restored.
     telex_auto_restore(&[
         // Circumflex vowels with huyền (f)
-        ("ofo ", "ồ "),  // ồ - exclamation "oh" (surprised)
-        ("efe ", "ề "),  // ề - (less common standalone)
-        ("afa ", "ầ "),  // ầ - exclamation sound
+        ("ofo ", "ồ "), // ồ - exclamation "oh" (surprised)
+        ("efe ", "ề "), // ề - (less common standalone)
+        ("afa ", "ầ "), // ầ - exclamation sound
         // Circumflex vowels with sắc (s)
-        ("oso ", "ố "),  // ố - exclamation
-        ("ese ", "ế "),  // ế - (contextual)
-        ("asa ", "ấ "),  // ấ - exclamation
+        ("oso ", "ố "), // ố - exclamation
+        ("ese ", "ế "), // ế - (contextual)
+        ("asa ", "ấ "), // ấ - exclamation
         // Circumflex vowels with hỏi (r)
-        ("oro ", "ổ "),  // ổ - (contextual)
-        ("ere ", "ể "),  // ể - (contextual)
-        ("ara ", "ẩ "),  // ẩ - (contextual)
+        ("oro ", "ổ "), // ổ - (contextual)
+        ("ere ", "ể "), // ể - (contextual)
+        ("ara ", "ẩ "), // ẩ - (contextual)
         // Circumflex vowels with ngã (x)
-        ("oxo ", "ỗ "),  // ỗ - (contextual)
-        ("exe ", "ễ "),  // ễ - (contextual)
-        ("axa ", "ẫ "),  // ẫ - (contextual)
+        ("oxo ", "ỗ "), // ỗ - (contextual)
+        ("exe ", "ễ "), // ễ - (contextual)
+        ("axa ", "ẫ "), // ẫ - (contextual)
         // Circumflex vowels with nặng (j)
-        ("ojo ", "ộ "),  // ộ - (contextual)
-        ("eje ", "ệ "),  // ệ - (contextual)
-        ("aja ", "ậ "),  // ậ - (contextual)
+        ("ojo ", "ộ "), // ộ - (contextual)
+        ("eje ", "ệ "), // ệ - (contextual)
+        ("aja ", "ậ "), // ậ - (contextual)
     ]);
 }
