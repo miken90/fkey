@@ -44,6 +44,7 @@ gonhanh.org/
 │           │   ├── RustBridge.cs         # FFI bridge (11 methods)
 │           │   ├── KeyboardHook.cs       # SetWindowsHookEx
 │           │   ├── KeyEventQueue.cs      # Thread-safe async event queue
+│           │   ├── KeyboardWorker.cs     # Background thread processor
 │           │   ├── TextSender.cs         # SendInput Unicode injection
 │           │   ├── AppDetector.cs        # Fast/Slow mode detection
 │           │   ├── KeyCodes.cs           # Windows VK codes
@@ -262,6 +263,19 @@ Thread-safe queue for keyboard events. Producer-consumer pattern with lock-free 
 - `Dispose()` - Atomic disposal with graceful thread exit
 - Thread-safe with Volatile reads and Interlocked operations
 
+### `Core/KeyboardWorker.cs` - Background Thread Processor
+**Lines**: ~100 | **Complexity**: Medium | **Source**: `platforms/windows/GoNhanh/Core/KeyboardWorker.cs`
+
+Dedicated background thread for processing keyboard events asynchronously.
+
+**KeyboardWorker class**:
+- `OnKeyProcess` callback - Set by App.xaml.cs to ProcessKeyFromWorker
+- `Start()` - Starts worker thread with AboveNormal priority
+- `Stop(timeoutMs)` - Graceful shutdown with timeout
+- `ProcessLoop()` - Main worker loop, runs on dedicated thread
+- Error handling with catch-all, logs via Debug.WriteLine
+- Thread-safe disposal with Interlocked atomic exchange
+
 ### `Core/KeyboardHook.cs` - Keyboard Interception
 SetWindowsHookEx for WH_KEYBOARD_LL hook. Includes global hotkey detection via OnHotkeyTriggered event.
 
@@ -415,7 +429,7 @@ RustBridge.cs (Windows)
 **Coverage**: 100% of directories documented
 
 **Known Issues**:
-- Race condition with fast typing (Phase 1 async queue complete, Phase 2 integration pending)
+- Race condition with fast typing (Phase 2 worker thread complete, Phase 3 wiring pending)
 
 **Complete Features**:
 - ✅ 5 Advanced Settings

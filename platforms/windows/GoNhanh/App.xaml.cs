@@ -14,6 +14,8 @@ public partial class App : System.Windows.Application
 {
     private TrayIcon? _trayIcon;
     private KeyboardHook? _keyboardHook;
+    private KeyEventQueue? _keyQueue;      // Phase 2: Async queue for keyboard events
+    private KeyboardWorker? _keyWorker;    // Phase 2: Background processor
     private readonly SettingsService _settings = new();
     private readonly ShortcutsManager _shortcuts = new();
     private System.Threading.Mutex? _mutex;
@@ -43,6 +45,13 @@ public partial class App : System.Windows.Application
         }
 
         ApplySettings();
+
+        // Initialize async keyboard processing (Phase 2)
+        // Note: Worker is ready but not wired to hook yet (Phase 3)
+        _keyQueue = new KeyEventQueue();
+        _keyWorker = new KeyboardWorker(_keyQueue);
+        _keyWorker.OnKeyProcess = ProcessKeyFromWorker;
+        _keyWorker.Start();
 
         // Initialize keyboard hook
         _keyboardHook = new KeyboardHook();
@@ -116,6 +125,29 @@ public partial class App : System.Windows.Application
         else if (result.Action == ImeAction.Restore)
         {
             e.Handled = true;
+            TextSender.SendText(result.GetText(), result.Backspace);
+        }
+    }
+
+    /// <summary>
+    /// Process key from worker thread (Phase 2).
+    /// Same logic as OnKeyPressed but runs asynchronously.
+    /// Will be used when KeyboardHook is refactored in Phase 3.
+    /// Note: SendInput works from any thread - no UI thread requirement.
+    /// </summary>
+    private void ProcessKeyFromWorker(KeyEvent evt)
+    {
+        // Settings.IsEnabled is atomic bool read - safe for cross-thread access
+        if (!_settings.IsEnabled) return;
+
+        var result = RustBridge.ProcessKey(evt.VirtualKeyCode, evt.Shift, evt.CapsLock);
+
+        if (result.Action == ImeAction.Send && result.Count > 0)
+        {
+            TextSender.SendText(result.GetText(), result.Backspace);
+        }
+        else if (result.Action == ImeAction.Restore)
+        {
             TextSender.SendText(result.GetText(), result.Backspace);
         }
     }
@@ -195,6 +227,10 @@ public partial class App : System.Windows.Application
 
     private void ExitApplication()
     {
+        // Stop worker first (before hook, to prevent new events)
+        _keyWorker?.Dispose();
+        _keyQueue?.Dispose();
+
         _keyboardHook?.Stop();
         _keyboardHook?.Dispose();
         _trayIcon?.Dispose();
@@ -205,6 +241,8 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _keyWorker?.Dispose();
+        _keyQueue?.Dispose();
         _keyboardHook?.Dispose();
         _trayIcon?.Dispose();
         _mutex?.Dispose();

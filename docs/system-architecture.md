@@ -246,7 +246,7 @@ SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 
 ### Keyboard Event Processing Architecture
 
-**Current State**: Async queue architecture (Phase 1 - in progress)
+**Current State**: Async queue architecture (Phase 2 - worker thread added)
 
 **Components**:
 1. **KeyEvent struct** (`Core/KeyEventQueue.cs`)
@@ -261,10 +261,16 @@ SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
    - Consumer: Worker thread (dequeues and processes)
    - Atomic disposal with Interlocked for thread-safe cleanup
 
-**Legacy Issue** (to be resolved in Phase 2):
-- Thread.Sleep() in TextSender blocks KeyboardHook callback
-- Causes character ordering issues during fast typing
-- Will be eliminated once worker thread integration is complete
+3. **KeyboardWorker class** (`Core/KeyboardWorker.cs`)
+   - Dedicated background thread processor
+   - AboveNormal priority for responsiveness
+   - ProcessLoop with graceful shutdown (timeout-based)
+   - Error handling via catch-all with Debug.WriteLine
+   - OnKeyProcess callback delegates to App.ProcessKeyFromWorker
+
+**Phase 3 Remaining Work**:
+- Wire KeyboardHook to enqueue events (currently still using OnKeyPressed)
+- Remove legacy OnKeyPressed path once validated
 
 ### Engine Result Cases
 
