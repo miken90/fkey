@@ -866,3 +866,19 @@ fn debug_vni_o2o() {
     // like "oo", "aa", "ee" which are NOT valid Vietnamese diphthongs.
     assert_eq!(result, "òo", "VNI 'o2o' should produce 'òo'");
 }
+
+// =============================================================================
+// BUG: "desp" → "dép" (tone mark before final consonant)
+// In Telex: d=initial, e=vowel, s=sắc on 'e', p=final consonant
+// Pattern: "dép" (Vietnamese for slippers) is valid Vietnamese
+// =============================================================================
+
+#[test]
+fn bug_desp_to_dep_sac() {
+    // "desp" in Telex should produce "dép" (sắc tone on 'e')
+    // Previously blocked by foreign word pattern check (D+E → describe/design)
+    telex(&[
+        ("desp", "dép"),   // dép - slippers
+        ("desp ", "dép "), // with space
+    ]);
+}
