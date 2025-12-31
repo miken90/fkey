@@ -230,8 +230,8 @@ SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 
 | Mode | Delay | Apps | Method |
 |------|-------|------|--------|
-| **Fast** | 2ms after backspace | Notepad, Word, standard apps | Batch SendInput |
-| **Slow** | 3ms + 5ms + 1ms/char | Electron, terminals, browsers | Character-by-character |
+| **Fast** | 5ms after backspace | Notepad, Word, standard apps | Batch SendInput |
+| **Slow** | 20ms + 15ms + 5ms/char | Electron, terminals, browsers | Character-by-character |
 
 ### App Detection (AppDetector.cs)
 
