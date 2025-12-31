@@ -1,6 +1,6 @@
 # FKey: System Architecture
 
-> **Note**: FKey v1.6.0 - Windows-only Vietnamese keyboard input
+> **Note**: FKey v1.7.4 - Windows-only Vietnamese keyboard input
 
 ## High-Level Architecture
 
@@ -237,9 +237,9 @@ SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 
 **Slow Apps** (require delays for compatibility):
 - Electron apps: Claude, Notion, Slack, Discord, VS Code, Cursor
-- Terminals: Windows Terminal, cmd, PowerShell
+- Terminals: **Wave**, Windows Terminal, cmd, PowerShell
 - Browsers: Chrome, Edge, Firefox
-- IDEs: VS Code, Cursor, Obsidian, Figma
+- IDEs: Obsidian, Figma
 
 **Fast Apps** (default):
 - Notepad, Word, Excel, native Windows apps
@@ -453,6 +453,7 @@ Check if async mode (_queue != null):
 
 **Resolved Issues**:
 - ✅ Race condition with fast typing (FIXED via async queue architecture Phase 4 complete)
+- ✅ Character loss in Wave terminal (FIXED in v1.7.4 - added Wave to SlowApps list)
 
 **Complete Features**:
 - ✅ 11 RustBridge FFI methods

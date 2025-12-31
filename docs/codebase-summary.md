@@ -1,6 +1,6 @@
 # FKey: Codebase Summary
 
-> **Note**: FKey v1.6.0 - Windows-only Vietnamese keyboard input
+> **Note**: FKey v1.7.4 - Windows-only Vietnamese keyboard input
 
 Complete directory structure, module responsibilities, and development entry points for the FKey Vietnamese Input Method Engine.
 
@@ -279,12 +279,17 @@ Dedicated background thread for processing keyboard events asynchronously.
 ### `Core/KeyboardHook.cs` - Keyboard Interception
 SetWindowsHookEx for WH_KEYBOARD_LL hook. Includes global hotkey detection via OnHotkeyTriggered event.
 
-### `Core/TextSender.cs` - Text Injection
-Unicode injection via SendInput API with KEYEVENTF_UNICODE. Batched delivery, preserves clipboard.
+### `Core/AppDetector.cs` - App Detection
+Auto-detects foreground app to determine Fast/Slow text injection mode.
 
-**Modes** (optimized for low latency):
-- Fast: 2ms delay after backspaces
-- Slow: 3ms + 5ms + 1ms per char (Electron/terminals)
+**Slow Apps** (require delays, 20ms + 15ms + 5ms per char):
+- Electron apps: Claude, Notion, Slack, Discord, VS Code, Cursor
+- Terminals: **Wave**, Windows Terminal, cmd, PowerShell
+- Browsers: Chrome, Edge, Firefox
+- IDEs: Obsidian, Figma
+
+**Fast Apps** (default, 2ms batch delay):
+- Notepad, Word, Excel, native Windows apps
 
 ### `Services/SettingsService.cs` - Registry Persistence
 Registry path: `HKCU\SOFTWARE\GoNhanh`
@@ -430,6 +435,7 @@ RustBridge.cs (Windows)
 
 **Resolved Issues**:
 - ✅ Race condition with fast typing (Phase 4 complete - async queue + key passthrough)
+- ✅ Character loss in Wave terminal (v1.7.4 - added to SlowApps list)
 
 **Complete Features**:
 - ✅ 5 Advanced Settings

@@ -92,22 +92,33 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 
 ### Build & Test
 
-```bash
+**Windows**:
+```powershell
 # Build Rust core
-cd core
-cargo build --release
-cargo test
+.\scripts\build-core-windows.ps1
 
 # Build Windows app
-cd platforms/windows/GoNhanh
-dotnet build -c Release
+.\scripts\build-windows.sh
+
+# Run tests
+cd core
+cargo test
+```
+
+**Setup Development**:
+```powershell
+# Install dependencies
+.\scripts\setup-windows.ps1
 ```
 
 ### Known Issues
 
-- **Fast typing race condition**: Gõ quá nhanh có thể gây sai thứ tự ký tự
-  - Ví dụ: "hiện" → "hinệ", "không" → "kohng"
-  - Đang phát triển fix: async queue architecture
+- ✅ **Fast typing race condition** (FIXED - v1.6.0+)
+  - Vấn đề cũ: Gõ quá nhanh gây sai thứ tự ký tự ("hiện" → "hinệ")
+  - Đã fix: Async queue architecture (Phase 4 complete)
+- ✅ **Character loss in Wave terminal** (FIXED - v1.7.4)
+  - Vấn đề cũ: Ký tự bị mất khi gõ trong Wave terminal (Claude Code)
+  - Đã fix: Thêm Wave vào SlowApps list cho text injection chính xác
 
 ---
 
@@ -118,6 +129,11 @@ FKey được fork từ dự án **[Gõ Nhanh](https://github.com/khaphanspace/g
 Xin chân thành cảm ơn Kha Phan và các contributors của Gõ Nhanh đã tạo ra nền tảng tuyệt vời này. FKey kế thừa và tiếp nối sứ mệnh mang đến bộ gõ tiếng Việt chất lượng cao cho cộng đồng.
 
 Dự án này cũng là sự tiếp nối từ **UniKey**, **OpenKey** và **EVKey**.
+
+## 📦 Repository
+
+- **Original**: [khaphanspace/gonhanh.org](https://github.com/khaphanspace/gonhanh.org)
+- **FKey Fork**: [miken90/gonhanh.org](https://github.com/miken90/gonhanh.org)
 
 ---
 

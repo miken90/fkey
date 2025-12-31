@@ -131,12 +131,13 @@ User Keystroke (SetWindowsHookEx WH_KEYBOARD_LL)
 - ✅ Async keyboard processing (race condition fixed)
 
 ### Resolved Issues
-- ✅ **Race condition with fast typing** (FIXED in Phase 3 - async queue architecture)
+- ✅ **Race condition with fast typing** (FIXED in Phase 4 - async queue complete)
   - Previous symptoms: "hiện" → "hinệ", "không" → "kohng"
   - Root cause: Thread.Sleep() in TextSender blocked hook callback
-  - Solution: Async queue architecture (Hook → Queue → Worker thread)
+  - Solution: Async queue architecture (Hook → Queue → Worker thread → TextSender)
     - Hook enqueues events in <1μs (non-blocking)
     - Worker thread processes on background (Thread.Sleep doesn't block hook)
+    - Key passthrough added for Action=None (Phase 4 bugfix)
     - Implementation: `Core/KeyEventQueue.cs`, `Core/KeyboardWorker.cs`, `Core/KeyboardHook.cs`
 
 ### Future Enhancements
@@ -198,14 +199,15 @@ Examples:
 
 ---
 
-**Last Updated**: 2025-12-30
+**Last Updated**: 2025-12-31
 **Status**: Active Development
-**Current Version**: v1.6.0
+**Current Version**: v1.7.4
 **Platform**: Windows 10/11 (.NET 8, WPF)
-**Repository**: https://github.com/khaphanspace/gonhanh.org
+**Repository**: https://github.com/miken90/gonhanh.org (fork from khaphanspace/gonhanh.org)
 
 **Resolved Issues**:
-- ✅ Race condition with fast typing (FIXED via async queue architecture)
+- ✅ Race condition with fast typing (FIXED via async queue architecture - Phase 4 complete)
+- ✅ Character loss in Wave terminal (FIXED in v1.7.4 - added Wave to SlowApps list)
 
 **Complete Features**:
 - ✅ Telex + VNI input methods
@@ -214,4 +216,4 @@ Examples:
 - ✅ Global hotkey toggle (configurable)
 - ✅ Auto-start configuration
 - ✅ Unicode text injection (clipboard-safe)
-- ✅ Async queue keyboard processing (Phase 3 complete)
+- ✅ Async queue keyboard processing (Phase 4 complete with key passthrough)

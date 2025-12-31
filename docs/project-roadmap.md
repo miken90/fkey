@@ -1,10 +1,10 @@
 # FKey: Project Roadmap
 
-> **Note**: FKey v1.6.0 - Windows Vietnamese IME forked from Gõ Nhanh
+> **Note**: FKey v1.7.4 - Windows Vietnamese IME forked from Gõ Nhanh
 
 ## Project Status
 
-**Current Version**: v1.6.0
+**Current Version**: v1.7.4
 **Platform**: Windows 10/11 (production-ready)
 **Repository**: [miken90/gonhanh.org](https://github.com/miken90/gonhanh.org)
 **Original**: [khaphanspace/gonhanh.org](https://github.com/khaphanspace/gonhanh.org)
@@ -73,7 +73,12 @@
 - [x] Expected ~25% latency improvement for Win32 apps
 - [x] Tests: 616/616 passed
 - [x] Code review: APPROVED
-- [x] Manual testing: Pending
+- [x] Manual testing: Completed
+
+**Phase 7**: Wave Terminal Support (2025-12-31) ✅ COMPLETE
+- [x] Added Wave to SlowApps list
+- [x] Fixed character loss bug in Wave terminal (Claude Code environment)
+- [x] Verified proper text injection with delays
 
 **Results**:
 - ✅ Race condition eliminated
@@ -81,10 +86,21 @@
 - ✅ All keys work correctly (transformation + passthrough)
 - ✅ No more "hiện" → "hinệ" errors
 - ✅ Typing feels instant (<12ms per keystroke)
+- ✅ Wave terminal fully supported
 
 ## Current Development
 
-### 🔄 v1.6.1 - Stability & Polish (2025 Q1)
+### ✅ v1.7.4 - Wave Terminal Support (2025-12-31) COMPLETE
+
+**Status**: Released
+
+**Completed**:
+- [x] Added Wave terminal to SlowApps list
+- [x] Fixed character loss in Wave terminal (Claude Code environment)
+- [x] Verified proper text injection with delays
+- [x] Documentation updated
+
+### 🔄 v1.8.0 - Stability & Polish (2025 Q1)
 **Status**: Planning
 
 **Priorities**:
@@ -103,7 +119,7 @@
 
 ## Future Roadmap
 
-### v1.8.0 - UI/UX Improvements (2025 Q1-Q2)
+### v2.0.0 - UI/UX Improvements (2025 Q1-Q2)
 **Goal**: Enhance user experience and discoverability
 
 **Features**:
@@ -120,7 +136,7 @@
 - Accessibility support (screen readers, high contrast)
 - Minimal clicks to common tasks
 
-### v2.0.0 - Dictionary & Intelligence (2025 Q2-Q3)
+### v2.2.0 - Dictionary & Intelligence (2025 Q2-Q3)
 **Goal**: Smart typing with context awareness
 
 **Features**:
@@ -137,7 +153,7 @@
 - No latency increase (<1ms maintained)
 - Privacy-first (local processing only)
 
-### v2.2.0 - Developer Tools (2025 Q3-Q4)
+### v2.4.0 - Developer Tools (2025 Q3-Q4)
 **Goal**: Support developers and power users
 
 **Features**:
@@ -258,14 +274,24 @@
 
 ## Long-Term Vision
 
+### Long-Term Vision (2025-2028)
+
+**Roadmap Summary**:
+- **v1.7.4**: Wave terminal support (COMPLETE - 2025-12-31)
+- **v1.8.0**: Stability & polish (2025 Q1)
+- **v2.0.0**: UI/UX improvements (2025 Q1-Q2)
+- **v2.2.0**: Dictionary & intelligence (2025 Q2-Q3)
+- **v2.4.0**: Developer tools (2025 Q3-Q4)
+- **v3.0.0**: Cross-platform expansion (2026+)
+
 ### 2025 Goals
-1. Achieve production stability (v1.6.1)
+1. Achieve production stability (v1.8.0)
 2. Grow user base to 1,000+ active users
 3. Build community of contributors
-4. Complete v1.8.0 UI refresh
+4. Complete v2.0.0 UI refresh
 
 ### 2026 Goals
-1. Launch v2.0.0 with dictionary features
+1. Launch v2.2.0 with dictionary features
 2. Begin cross-platform expansion (macOS, Linux)
 3. Establish FKey as go-to Vietnamese IME for Windows
 4. Partner with educational institutions
@@ -281,6 +307,6 @@
 
 **Philosophy**: Free forever. No ads. No tracking. Built with ❤️ for Vietnamese developers.
 
-**Next Milestone**: v1.6.1 - Stability testing (2025 Q1)
+**Next Milestone**: v1.8.0 - Stability testing (2025 Q1)
 
 **Contribution**: Welcome! See [Contributing Guide](../README.md) for details.

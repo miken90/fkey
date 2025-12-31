@@ -108,15 +108,15 @@ try {
     }
 
     $ReleaseNotes = @"
-## 📦 What's New in v$Version
+## What's New in v$Version
 
 $Commits
 
-## 💾 Download
+## Download
 
 - **Windows Portable**: [FKey-v$Version-portable.zip](https://github.com/$Repo/releases/download/v$Version/$ZipName) (~$ZipSize MB)
 
-## 🔧 Installation
+## Installation
 
 1. Download ``FKey-v$Version-portable.zip``
 2. Extract and run ``FKey.exe``
@@ -143,8 +143,14 @@ try {
     Write-Host ""
 
     # Create tag locally and push to origin only (never upstream)
-    git tag $TagName 2>$null
-    git push origin $TagName 2>&1 | Out-Null
+    # Temporarily allow errors for git commands (stderr output is not actual errors)
+    $prevErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
+    $null = git tag $TagName 2>&1
+    $null = git push origin $TagName 2>&1
+
+    $ErrorActionPreference = $prevErrorAction
 
     # Create release with gh CLI - explicitly specify repo to avoid pushing to wrong remote
     $ReleaseArgs = @(
@@ -180,14 +186,9 @@ Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
 Write-Host "Package:  $ZipSize MB" -ForegroundColor White
 
-# Get release URL
-Push-Location $ProjectRoot
-$RepoUrl = gh repo view --json url -q .url 2>$null
-Pop-Location
-
-if ($RepoUrl) {
-    Write-Host "GitHub:   $RepoUrl/releases/tag/$TagName" -ForegroundColor White
-}
+# Show release URL (use $Repo directly, not gh repo view which may pick wrong repo)
+$ReleaseUrl = "https://github.com/$Repo/releases/tag/$TagName"
+Write-Host "GitHub:   $ReleaseUrl" -ForegroundColor White
 
 Write-Host ""
 Write-Host "[SUCCESS] Release published!" -ForegroundColor Green

@@ -1,4 +1,4 @@
-# Gõ Nhanh: Code Standards & Guidelines
+# FKey: Code Standards & Guidelines
 
 ## Rust Coding Standards
 
@@ -49,7 +49,7 @@
 ### Testing
 - **Coverage**: Every module must have `#[cfg(test)] mod tests { }` and integration tests in `core/tests/`
 - **Parametrization**: Use `#[rstest]` for multiple test cases
-- **Integration**: `core/tests/` directory for full pipeline tests (600+ tests across 19 test files)
+- **Integration**: `core/tests/` directory for full pipeline tests (700+ tests across 15 test files)
 - **Test Files**:
   - `unit_test.rs` - Individual module tests
   - `typing_test.rs` - Full keystroke sequences (Telex + VNI)
@@ -65,8 +65,9 @@
   - `dynamic_test.rs` - Dynamic input scenarios
   - `permutation_test.rs` - Input permutation coverage
   - `revert_auto_restore_test.rs` - Revert behavior
+  - `shortcut_test.rs` - Shortcut expansion tests
 - **Naming**: `test_feature_case_expected` (e.g., `test_telex_a_s_returns_á`)
-- **Run**: `make test` or `cd core && cargo test`
+- **Run**: `cd core && cargo test`
 
 ### Examples
 ```rust
@@ -96,66 +97,64 @@ mod tests {
 }
 ```
 
-## Swift Coding Standards
+## C# Coding Standards (Windows Platform)
 
 ### Style Guide
-- **Authority**: [Google Swift Style Guide](https://google.github.io/swift-style-guide/)
-- **Formatting**: Follow Xcode default formatting (4-space indentation)
-- **Naming**: camelCase for variables/functions, PascalCase for types/enums
+- **Authority**: [Microsoft C# Coding Conventions](https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+- **Formatting**: Follow Visual Studio default formatting (4-space indentation)
+- **Naming**: PascalCase for public members, camelCase for private fields with `_` prefix
 
 ### File Organization
-```swift
-// MARK: - Imports
-import Foundation
-import AppKit
+```csharp
+// MARK: - Usings
+using System;
+using System.Windows;
 
-// MARK: - Constants & Type Definitions
-let kSomeConstant = "value"
+// MARK: - Namespace
+namespace GoNhanh.Core
+{
+    // MARK: - Class
+    public class KeyboardHook
+    {
+        // MARK: - Fields
+        private IntPtr _hookId;
 
-class MyClass {
-    // MARK: - Properties
-    var property: Type
+        // MARK: - Properties
+        public bool IsEnabled { get; set; }
 
-    // MARK: - Lifecycle
-    init() { }
+        // MARK: - Constructor
+        public KeyboardHook() { }
 
-    // MARK: - Public Methods
-    func publicMethod() { }
+        // MARK: - Public Methods
+        public void Start() { }
 
-    // MARK: - Private Methods
-    private func privateMethod() { }
+        // MARK: - Private Methods
+        private void ProcessKey() { }
+    }
 }
-
-// MARK: - Extensions
-extension MyClass: SomeProtocol { }
 ```
 
-### Accessibility & Permissions
-- **Accessibility Permission**: Required for CGEventTap (keyboard hook)
-- **User Prompt**: Show alert if permission denied on first run
-- **Debug Mode**: Check `/tmp/gonhanh_debug.log` for detailed logs
-  ```swift
-  func debugLog(_ message: String) {
-      let logPath = "/tmp/gonhanh_debug.log"
-      guard FileManager.default.fileExists(atPath: logPath) else { return }
-      // ... write to file
-  }
+### Threading & Async
+- **UI Thread**: All WPF UI updates must be on Dispatcher thread
+- **Background Work**: Use async/await pattern
+- **Thread-Safe**: Use lock or concurrent collections
+- **Example**:
+  ```csharp
+  Application.Current.Dispatcher.Invoke(() => {
+      // Update UI
+  });
   ```
+
+### Text Injection Modes
+- **Fast Mode** (default): 2ms batch delay for standard Win32 apps
+- **Slow Mode** (app-aware): 20ms + 15ms + 5ms per char for Electron/terminals
+- **App Detection**: AppDetector.cs checks foreground window process
+- **Slow Apps List**: Wave, Windows Terminal, cmd, PowerShell, Chrome, VS Code, Cursor, Notion, Slack, Discord, Obsidian, Figma
 
 ### Error Handling
-- **Assertions**: Use for debug-only checks
-- **Errors**: Handle gracefully with user-facing messages
-- **Logging**: Debug logs for troubleshooting, not production errors
-
-### Concurrency
-- **Main Thread**: UI updates always on `DispatchQueue.main`
-- **Background**: Use `async` for network requests, CPU-intensive work
-- **Example**:
-  ```swift
-  DispatchQueue.main.async {
-      self.updateUI()
-  }
-  ```
+- **Try-Catch**: Handle exceptions at boundary (hooks, FFI calls)
+- **Logging**: Use Debug.WriteLine for development, structured logging for production
+- **User Messages**: Show MessageBox for critical errors only
 
 ## FFI (Foreign Function Interface) Conventions
 
@@ -177,40 +176,62 @@ pub struct Result {
 }
 ```
 
-```swift
-// Swift - MUST match Rust layout byte-for-byte
-struct ImeResult {
-    var chars: (UInt32, UInt32, ..., UInt32)  // 32 elements
-    var action: UInt8
-    var backspace: UInt8
-    var count: UInt8
-    var _pad: UInt8
+```csharp
+// C# - MUST match Rust layout byte-for-byte
+[StructLayout(LayoutKind.Sequential)]
+public struct ImeResult
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+    public uint[] chars;     // 32 elements
+    public byte action;
+    public byte backspace;
+    public byte count;
+    public byte _pad;
 }
 ```
 
 ### Pointer Management
 - **Ownership**: Function that allocates owns the pointer
 - **Deallocation**: Caller must call `ime_free(ptr)` to deallocate
-- **Safety**: Use `defer { ime_free(ptr) }` to guarantee cleanup
+- **Safety**: Use try/finally to guarantee cleanup
 
-```swift
-guard let resultPtr = ime_key(keyCode, caps, ctrl) else { return }
-defer { ime_free(resultPtr) }
-
-let result = resultPtr.pointee
-// Process result...
+```csharp
+IntPtr resultPtr = RustBridge.ime_key(keyCode, caps, ctrl);
+try
+{
+    if (resultPtr != IntPtr.Zero)
+    {
+        var result = Marshal.PtrToStructure<ImeResult>(resultPtr);
+        // Process result...
+    }
+}
+finally
+{
+    if (resultPtr != IntPtr.Zero)
+        RustBridge.ime_free(resultPtr);
+}
 ```
 
 ### Function Declarations
-```swift
+```csharp
 // Import with exact name and signature
-@_silgen_name("ime_key")
-func ime_key(_ key: UInt16, _ caps: Bool, _ ctrl: Bool) -> UnsafeMutablePointer<ImeResult>?
+[DllImport("gonhanh_core.dll", CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr ime_key(ushort key, bool caps, bool ctrl);
 
-// Safety: Check for null, use defer for cleanup
-if let resultPtr = ime_key(keyCode, caps, ctrl) {
-    defer { ime_free(resultPtr) }
-    // Safe to use
+// Safety: Check for null, use try/finally for cleanup
+IntPtr resultPtr = ime_key(keyCode, caps, ctrl);
+try
+{
+    if (resultPtr != IntPtr.Zero)
+    {
+        var result = Marshal.PtrToStructure<ImeResult>(resultPtr);
+        // Safe to use
+    }
+}
+finally
+{
+    if (resultPtr != IntPtr.Zero)
+        ime_free(resultPtr);
 }
 ```
 
@@ -309,12 +330,12 @@ pub extern "C" fn ime_key(key: u16, caps: bool, ctrl: bool) -> *mut Result { }
 
 ## Version Numbering
 
-- **Semantic Versioning**: MAJOR.MINOR.PATCH (e.g., 1.0.89)
+- **Semantic Versioning**: MAJOR.MINOR.PATCH (e.g., 1.6.0)
 - **MAJOR**: Breaking changes (rare)
 - **MINOR**: New features, backward compatible
 - **PATCH**: Bug fixes only
-- **Release**: Tag with `v` prefix (e.g., `v1.0.89`)
-- **Current Version**: v1.0.89 (macOS + Windows production-ready, Linux beta)
+- **Release**: Tag with `v` prefix (e.g., `v1.7.4`)
+- **Current Version**: v1.7.4 (Windows production-ready)
 
 ## Pull Request Guidelines
 
@@ -327,7 +348,8 @@ pub extern "C" fn ime_key(key: u16, caps: bool, ctrl: bool) -> *mut Result { }
 
 ---
 
-**Last Updated**: 2025-12-25
+**Last Updated**: 2025-12-31
 **Enforced By**: GitHub Actions CI (`ci.yml`)
-**Test Coverage**: 600+ integration tests across 19 test files in `core/tests/`
-**Platforms**: macOS (v1.0.89+), Windows (production), Linux (beta)
+**Test Coverage**: 700+ integration tests across 15 test files in `core/tests/`
+**Platforms**: Windows 10/11 (production)
+**Repository**: https://github.com/miken90/gonhanh.org
