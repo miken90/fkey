@@ -20,7 +20,7 @@ public static class TextSender
     private const int SlowModeKeyDelay = 5;     // Delay between chars
     private const int SlowModePreDelay = 20;    // Delay before text
     private const int SlowModePostDelay = 15;   // Delay after backspaces
-    private const int FastModeDelay = 10;       // Delay between backspace and text
+    private const int FastModeDelay = 5;        // Reduced from 10ms (safe for Win32 apps)
 
     #endregion
 
