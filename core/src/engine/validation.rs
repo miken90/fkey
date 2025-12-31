@@ -386,19 +386,10 @@ pub fn is_foreign_word_pattern(
         }
     }
 
-    // Check 3: Common English prefix patterns (de + s → describe, design)
-    if modifier_key == keys::S
-        && syllable.initial.len() == 1
-        && syllable.vowel.len() == 1
-        && syllable.final_c.is_empty()
-    {
-        let initial = buffer_keys[syllable.initial[0]];
-        let vowel = buffer_keys[syllable.vowel[0]];
-
-        if initial == keys::D && vowel == keys::E {
-            return true;
-        }
-    }
+    // Check 3: REMOVED - Was too aggressive
+    // Previously blocked "de" + 's' treating it as English prefix (describe, design).
+    // But "dép" (Vietnamese for slippers) is valid Vietnamese.
+    // Now we allow "de" + 's' → "dé" and rely on auto-restore for English words.
 
     // Check 4: REMOVED - Was too aggressive
     // Previously blocked "tex" → "tẽ" treating it as English "-ex-" pattern.

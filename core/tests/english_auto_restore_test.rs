@@ -918,3 +918,48 @@ fn standalone_vowel_circumflex_with_tone() {
         ("aja ", "ậ "), // ậ - (contextual)
     ]);
 }
+
+// =============================================================================
+// PATTERN 10: D+E PATTERN (describe, design, desk...)
+// English words starting with "de" + 's' modifier are auto-restored.
+// Vietnamese word "dép" (slippers) works correctly.
+// =============================================================================
+
+#[test]
+fn pattern10_de_s_english_words() {
+    // English words with D+E pattern are auto-restored when space is typed
+    telex_auto_restore(&[
+        ("describe ", "describe "),
+        ("design ", "design "),
+        ("desk ", "desk "),
+        ("desktop ", "desktop "),
+        ("destroy ", "destroy "),
+        ("desperate ", "desperate "),
+        ("despite ", "despite "),
+        // NOTE: "dessert" becomes "desert" due to double 's' reverting the mark
+        ("destination ", "destination "),
+        ("detail ", "detail "),
+        ("detect ", "detect "),
+        ("develop ", "develop "),
+    ]);
+}
+
+#[test]
+fn pattern10_de_s_vietnamese_words() {
+    // Vietnamese words with D+E pattern should NOT be auto-restored
+    // "dép" (slippers) is valid Vietnamese
+    telex_auto_restore(&[
+        // Without space - Vietnamese transform stays
+        ("desp", "dép"), // dép - slippers (no space)
+        ("desm", "dém"), // dém (no space)
+        ("desn", "dén"), // dén (no space)
+        ("dest", "dét"), // dét (no space)
+        ("desc", "déc"), // déc (no space)
+        // With space - still Vietnamese (valid structure)
+        ("desp ", "dép "), // dép - slippers
+        ("desm ", "dém "), // dém - valid Vietnamese structure
+        ("desn ", "dén "), // dén - valid Vietnamese structure
+        ("dest ", "dét "), // dét - valid Vietnamese structure
+        ("desc ", "déc "), // déc - valid Vietnamese structure (though uncommon)
+    ]);
+}

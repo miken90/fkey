@@ -605,11 +605,13 @@ fn foreign_word_spectrum_no_mark() {
 }
 
 #[test]
-fn foreign_word_describe_no_mark() {
+fn foreign_word_describe_auto_restore() {
+    // D+E pattern: now uses auto-restore when space is typed
+    // "describe" is restored to original form via auto-restore
     let mut e = Engine::new();
-    // c+r pattern
-    let result = type_word(&mut e, "describe");
-    assert_eq!(result, "describe", "describe should stay unchanged");
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "describe ");
+    assert_eq!(result, "describe ", "describe should be auto-restored");
 }
 
 #[test]
