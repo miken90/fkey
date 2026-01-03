@@ -732,6 +732,24 @@ impl Engine {
             }
             self.auto_capitalize_used = false; // Reset on word boundary
 
+            // Issue #167: Check for word boundary shortcuts on punctuation and ENTER
+            // Example: "ko." → "không." or "ko<Enter>" → "không<Enter>"
+            // ENTER doesn't have a printable char, so check it separately
+            let trigger_char = if key == keys::RETURN || key == keys::ENTER {
+                Some('\n') // ENTER: use newline as trigger (won't be appended)
+            } else {
+                break_key_to_char(key, shift)
+            };
+            if let Some(ch) = trigger_char {
+                let shortcut_result = self.try_word_boundary_shortcut_with_char(ch);
+                if shortcut_result.action != 0 {
+                    self.clear();
+                    self.word_history.clear();
+                    self.spaces_after_commit = 0;
+                    return shortcut_result;
+                }
+            }
+
             let restore_result = self.try_auto_restore_on_break();
             self.clear();
             self.word_history.clear();
@@ -997,7 +1015,8 @@ impl Engine {
     }
 
     /// Try word boundary shortcuts (triggered by space, punctuation, etc.)
-    fn try_word_boundary_shortcut(&mut self) -> Result {
+    /// The `trigger_char` is appended to the output (space for space, punctuation for punctuation)
+    fn try_word_boundary_shortcut_with_char(&mut self, trigger_char: char) -> Result {
         // Issue #107: Allow shortcuts with special char prefix (like "#fne")
         // If shortcut_prefix is set, we still try to match even with empty buffer
         if self.buf.is_empty() && self.shortcut_prefix.is_empty() {
@@ -1020,9 +1039,17 @@ impl Engine {
         let input_method = self.current_input_method();
 
         // Check for word boundary shortcut match
+        // For SPACE: append to output (space is "consumed" via Result::forward later)
+        // For punctuation: pass None - don't append, platform layer types it normally
+        // (This matches auto-restore behavior which also doesn't append break char)
+        let key_char = if trigger_char == ' ' {
+            Some(' ')
+        } else {
+            None // Punctuation: don't append, let platform type it
+        };
         if let Some(m) =
             self.shortcuts
-                .try_match_for_method(&full_trigger, Some(' '), true, input_method)
+                .try_match_for_method(&full_trigger, key_char, true, input_method)
         {
             let output: Vec<char> = m.output.chars().collect();
             // backspace_count = trigger.len() which already includes prefix (e.g., "#fne" = 4)
@@ -1030,6 +1057,11 @@ impl Engine {
         }
 
         Result::none()
+    }
+
+    /// Try word boundary shortcuts (triggered by space)
+    fn try_word_boundary_shortcut(&mut self) -> Result {
+        self.try_word_boundary_shortcut_with_char(' ')
     }
 
     /// Try "w" as vowel "ư" in Telex mode
