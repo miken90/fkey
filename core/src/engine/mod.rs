@@ -103,6 +103,8 @@ enum Transform {
     WAsVowel,
     /// W shortcut was explicitly skipped (prevent re-transformation)
     WShortcutSkipped,
+    /// Bracket as vowel: ] → ư, [ → ơ (Issue #159)
+    BracketAsVowel,
 }
 
 /// Word history ring buffer capacity (stores last N committed words)
@@ -255,6 +257,8 @@ pub struct Engine {
     /// Skip w→ư shortcut in Telex mode (user preference)
     /// When true, typing 'w' at word start stays as 'w' instead of converting to 'ư'
     skip_w_shortcut: bool,
+    /// Enable bracket shortcuts: ] → ư, [ → ơ (Issue #159)
+    bracket_shortcut: bool,
     /// Enable ESC key to restore raw ASCII (undo Vietnamese transforms)
     /// When false, ESC key is passed through without restoration
     esc_restore_enabled: bool,
@@ -342,6 +346,7 @@ impl Engine {
             raw_input: Vec::with_capacity(64),
             has_non_letter_prefix: false,
             skip_w_shortcut: false,
+            bracket_shortcut: false,    // Default: OFF (Issue #159)
             esc_restore_enabled: false, // Default: OFF (user request)
             free_tone_enabled: false,
             modern_tone: true,           // Default: modern style (hoà, thuý)
@@ -380,6 +385,11 @@ impl Engine {
     /// Set whether to skip w→ư shortcut in Telex mode
     pub fn set_skip_w_shortcut(&mut self, skip: bool) {
         self.skip_w_shortcut = skip;
+    }
+
+    /// Set whether bracket shortcuts are enabled: ] → ư, [ → ơ (Issue #159)
+    pub fn set_bracket_shortcut(&mut self, enabled: bool) {
+        self.bracket_shortcut = enabled;
     }
 
     /// Set whether ESC key restores raw ASCII
@@ -671,6 +681,13 @@ impl Engine {
             self.word_history.clear();
             self.spaces_after_commit = 0;
             return result;
+        }
+
+        // Issue #159: In Telex mode, `]` → ư and `[` → ơ
+        if self.method == 0 && (key == keys::RBRACKET || key == keys::LBRACKET) {
+            if let Some(result) = self.try_bracket_as_vowel(key, caps) {
+                return result;
+            }
         }
 
         // Other break keys (punctuation, arrows, etc.)
@@ -4979,6 +4996,81 @@ impl Engine {
         }
 
         false
+    }
+
+    /// Try to convert bracket key to vowel: ] → ư, [ → ơ (Issue #159)
+    ///
+    /// Returns Some(Result) if bracket was converted, None otherwise.
+    /// Handles:
+    /// - ] at word start or after consonant → ư
+    /// - [ at word start or after consonant → ơ
+    /// - Double bracket reverts: ]] → ], [[ → [
+    /// - Valid Vietnamese vowel combinations: ươ (from ][)
+    fn try_bracket_as_vowel(&mut self, key: u16, caps: bool) -> Option<Result> {
+        // Check if bracket shortcut is enabled
+        if !self.bracket_shortcut {
+            return None;
+        }
+
+        // Check for revert: if last transform was BracketAsVowel with same bracket
+        if self.last_transform == Some(Transform::BracketAsVowel) && !self.buf.is_empty() {
+            if let Some(last_char) = self.buf.last() {
+                // Check if last char matches the bracket we're typing
+                let should_revert = match key {
+                    keys::RBRACKET => last_char.key == keys::U && last_char.tone == tone::HORN,
+                    keys::LBRACKET => last_char.key == keys::O && last_char.tone == tone::HORN,
+                    _ => false,
+                };
+
+                if should_revert {
+                    // Remove the vowel we added
+                    self.buf.pop();
+                    // Also remove from raw_input
+                    self.raw_input.pop();
+                    // Clear transform
+                    self.last_transform = None;
+
+                    // Return the original bracket character (consumed to prevent double output)
+                    let bracket_char = if key == keys::RBRACKET { ']' } else { '[' };
+                    return Some(Result::send_consumed(1, &[bracket_char]));
+                }
+            }
+        }
+
+        // Determine target vowel based on bracket key
+        let base_key = if key == keys::RBRACKET {
+            keys::U // ] → ư (U with horn)
+        } else {
+            keys::O // [ → ơ (O with horn)
+        };
+
+        // Add vowel to buffer (similar to W shortcut pattern)
+        self.buf.push(Char::new(base_key, caps));
+
+        // Set horn tone to make ư or ơ
+        if let Some(c) = self.buf.get_mut(self.buf.len() - 1) {
+            c.tone = tone::HORN;
+        }
+
+        // Validate: is this valid Vietnamese?
+        let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+        let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
+        if !is_valid_with_tones(&buffer_keys, &buffer_tones) {
+            // Invalid - remove the vowel we added
+            self.buf.pop();
+            return None;
+        }
+
+        // Track raw input for ESC restore
+        self.raw_input.push((key, caps, false));
+
+        // Mark transform
+        self.last_transform = Some(Transform::BracketAsVowel);
+        self.had_any_transform = true;
+
+        // Return result with key consumed (don't pass through bracket)
+        let vowel_char = chars::to_char(base_key, caps, tone::HORN, 0).unwrap();
+        Some(Result::send_consumed(0, &[vowel_char]))
     }
 
     /// Auto-restore invalid Vietnamese to raw English on space

@@ -153,6 +153,18 @@ pub extern "C" fn ime_skip_w_shortcut(skip: bool) {
     }
 }
 
+/// Set whether bracket shortcuts are enabled: ] → ư, [ → ơ (Issue #159)
+///
+/// When `enabled` is true (default), ] types ư and [ types ơ in Telex mode.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_bracket_shortcut(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_bracket_shortcut(enabled);
+    }
+}
+
 /// Set whether ESC key restores raw ASCII input.
 ///
 /// When `enabled` is true (default), pressing ESC restores original keystrokes.

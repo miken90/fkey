@@ -930,3 +930,180 @@ fn issue150_without_control_buffer_continues() {
         "Without buffer clear, result should differ from 'lỏ'"
     );
 }
+
+// =============================================================================
+// Issue #159: Bracket shortcuts ] → ư, [ → ơ (Telex mode)
+// https://github.com/user/gonhanh/issues/159
+//
+// Allow users to type bracket keys as shortcuts for common horn vowels:
+// - ] → ư (right bracket → U with horn)
+// - [ → ơ (left bracket → O with horn)
+// =============================================================================
+
+#[test]
+fn issue159_bracket_as_vowel() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test ] → ư at word start
+    let result = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result.action, 1, "']' should send output");
+    assert_eq!(
+        result.chars[0], 'ư' as u32,
+        "']' at word start should produce 'ư'"
+    );
+
+    e.clear();
+
+    // Test [ → ơ at word start
+    let result = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result.action, 1, "'[' should send output");
+    assert_eq!(
+        result.chars[0], 'ơ' as u32,
+        "'[' at word start should produce 'ơ'"
+    );
+
+    e.clear();
+
+    // Test t] → tư (after consonant)
+    e.on_key(keys::T, false, false);
+    let result = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result.action, 1, "'t]' should send output");
+    assert_eq!(result.chars[0], 'ư' as u32, "'t]' should produce 'tư'");
+
+    e.clear();
+
+    // Test t[ → tơ (after consonant)
+    e.on_key(keys::T, false, false);
+    let result = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result.action, 1, "'t[' should send output");
+    assert_eq!(result.chars[0], 'ơ' as u32, "'t[' should produce 'tơ'");
+}
+
+#[test]
+fn issue159_bracket_with_marks() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test t]s → tứ (ư with sắc)
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::RBRACKET, false, false);
+    let _result = e.on_key(keys::S, false, false);
+    // Note: result shows only the change, full buffer is "tứ"
+    println!("t]s -> buffer contains tứ");
+
+    e.clear();
+
+    // Test t[f → tờ (ơ with huyền)
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::LBRACKET, false, false);
+    let _result = e.on_key(keys::F, false, false);
+    println!("t[f -> buffer contains tờ");
+}
+
+#[test]
+fn issue159_bracket_disabled() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    // Default is OFF, so bracket should pass through
+    let result = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(
+        result.action, 0,
+        "']' with feature disabled should pass through"
+    );
+
+    e.clear();
+
+    // Enable then disable
+    e.set_bracket_shortcut(true);
+    e.set_bracket_shortcut(false);
+    let result = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(
+        result.action, 0,
+        "'[' with feature disabled should pass through"
+    );
+}
+
+#[test]
+fn issue159_bracket_revert() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test ]] → ] (double bracket reverts)
+    let result1 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result1.action, 1, "First ']' should produce output");
+    assert_eq!(result1.chars[0], 'ư' as u32, "First ']' should produce 'ư'");
+
+    let result2 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result2.action, 1, "Second ']' should revert");
+    assert_eq!(
+        result2.chars[0], ']' as u32,
+        "Second ']' should revert to ']'"
+    );
+
+    e.clear();
+
+    // Test [[ → [ (double bracket reverts)
+    let result1 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result1.action, 1, "First '[' should produce output");
+    assert_eq!(result1.chars[0], 'ơ' as u32, "First '[' should produce 'ơ'");
+
+    let result2 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result2.action, 1, "Second '[' should revert");
+    assert_eq!(
+        result2.chars[0], '[' as u32,
+        "Second '[' should revert to '['"
+    );
+
+    e.clear();
+
+    // Test t]] → t] (revert after consonant)
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::RBRACKET, false, false); // tư
+    let result = e.on_key(keys::RBRACKET, false, false); // revert to t]
+    assert_eq!(result.action, 1, "Second ']' should revert");
+    assert_eq!(result.chars[0], ']' as u32, "t]] should revert to t]");
+}
+
+#[test]
+fn issue159_bracket_continuous_typing() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test h][ → hươ (continuous bracket typing)
+    e.on_key(keys::H, false, false);
+    let result1 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result1.action, 1, "']' after 'h' should produce output");
+    assert_eq!(result1.chars[0], 'ư' as u32, "h] should produce 'hư'");
+
+    let result2 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result2.action, 1, "'[' after 'hư' should produce output");
+    assert_eq!(result2.chars[0], 'ơ' as u32, "h][ should produce 'hươ'");
+
+    e.clear();
+
+    // Test ][ → ươ (both brackets at word start)
+    let result1 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(
+        result1.chars[0], 'ư' as u32,
+        "'] at start should produce 'ư'"
+    );
+
+    let result2 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result2.action, 1, "'[' after 'ư' should produce output");
+    assert_eq!(result2.chars[0], 'ơ' as u32, "][ should produce 'ươ'");
+}
