@@ -584,6 +584,14 @@ fn delayed_circumflex_diphthong_pattern() {
         ("dausa", "dấu"),  // dấu - âu diphthong: sắc then vowel trigger
         ("dausfa", "dầu"), // dầu - âu diphthong: sắc → huyền then vowel trigger
         ("daysa", "dấy"),  // dấy - ây diphthong: sắc then vowel trigger
+        // Issue #183: Flexible order - mark AFTER the second vowel trigger
+        // Pattern: C + V₁ + V₂ + V₁ + mark → circumflex on V₁ + mark
+        ("dauas", "dấu"),  // dấu - âu diphthong: vowel trigger then sắc
+        ("xauas", "xấu"),  // xấu - âu diphthong: vowel trigger then sắc
+        ("xauaf", "xầu"),  // xầu - âu diphthong: vowel trigger then huyền
+        ("neues", "nếu"),  // nếu - êu diphthong: vowel trigger then sắc
+        ("neuef", "nều"),  // nều - êu diphthong: vowel trigger then huyền
+        ("toios", "tối"),  // tối - ôi diphthong: vowel trigger then sắc
     ]);
 }
 

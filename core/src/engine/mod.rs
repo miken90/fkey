@@ -1606,7 +1606,21 @@ impl Engine {
                                     && !is_english_qu_pattern
                                     && constants::VALID_TRIPHTHONGS
                                         .contains(&[vowels[0], vowels[1], vowels[2]]);
-                                if !is_valid_vn_triphthong {
+
+                                // Issue #183: Also allow V1-V2 diphthongs requiring circumflex on V1
+                                // e.g., "neue" → [e, u] = êu (nếu), "xaua" → [a, u] = âu (xấu)
+                                // When typing the second V1, it should trigger circumflex on first V1
+                                // BUT: Exclude English "qu" patterns (like "queue")
+                                let v1_circumflex_diphthongs: &[[u16; 2]] = &[
+                                    [keys::A, keys::U], // âu - "dấu", "xấu"
+                                    [keys::A, keys::Y], // ây - "dây"
+                                    [keys::E, keys::U], // êu - "nếu", "kêu"
+                                    [keys::O, keys::I], // ôi - "tối"
+                                ];
+                                let is_valid_v1_circumflex_diphthong = !is_english_qu_pattern
+                                    && v1_circumflex_diphthongs.contains(&[v1, v2]);
+
+                                if !is_valid_vn_triphthong && !is_valid_v1_circumflex_diphthong {
                                     return None;
                                 }
                             }
