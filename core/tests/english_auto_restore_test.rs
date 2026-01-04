@@ -1131,3 +1131,174 @@ fn pattern14_single_vowel_valid_vietnamese() {
                        // We keep current behavior for these short patterns
     ]);
 }
+
+// =============================================================================
+// PATTERN 15: DELAYED CIRCUMFLEX WITH TONE BEFORE VOWEL
+// Pattern: C + V1 + E + U + E + tone → C + iêu + tone (valid Vietnamese)
+// Tone modifier (r/s/f/x/j) comes BEFORE the second 'e' that triggers circumflex
+// Example: "hieuer" = h + i + e + u + e(hỏi) + r → hiểu
+// =============================================================================
+
+#[test]
+fn pattern15_delayed_circumflex_with_tone() {
+    // When typing Vietnamese words with delayed circumflex pattern,
+    // the tone modifier comes before the second vowel that triggers circumflex.
+    // Pattern: C + ie + u + e + tone → C + iêu + tone (with ê getting the tone)
+    telex_auto_restore(&[
+        // hiểu (to understand) - very common Vietnamese word
+        // h + i + e + u + e(circumflex) + r(hỏi) → hiểu
+        ("hieuer ", "hiểu "),
+        // viết (to write) - very common Vietnamese word
+        // v + i + e + t + e(circumflex) + s(sắc) → viết
+        ("vietes ", "viết "),
+        // Similar patterns with other tones
+        ("hieues ", "hiếu "), // hiếu (filial piety) - sắc
+        ("hieuef ", "hiều "), // hiều - huyền
+        ("hieuex ", "hiễu "), // hiễu - ngã
+        ("hieuej ", "hiệu "), // hiệu (effect/shop) - nặng
+    ]);
+}
+
+// =============================================================================
+// PATTERN 15b: IÊU TRIPHTHONG WITH DIFFERENT INITIALS
+// Common Vietnamese words with iêu triphthong pattern
+// =============================================================================
+
+#[test]
+fn pattern15b_ieu_triphthong_various_initials() {
+    telex_auto_restore(&[
+        // Different initials with iêu triphthong
+        ("lieues ", "liếu "),   // liếu (willow)
+        ("dieuer ", "diểu "),   // diểu
+        ("kieues ", "kiếu "),   // kiếu
+        ("nieues ", "niếu "),   // niếu
+        ("tieues ", "tiếu "),   // tiếu (laugh - Sino-Viet)
+        ("mieues ", "miếu "),   // miếu (temple)
+        ("bieues ", "biếu "),   // biếu (to give as gift)
+        ("chieues ", "chiếu "), // chiếu (mat/to shine)
+        ("nhieues ", "nhiếu "), // nhiếu
+        ("trieues ", "triếu "), // triều (dynasty) - note: triếu variant
+    ]);
+}
+
+// =============================================================================
+// PATTERN 15c: IÊ DIPHTHONG + CONSONANT FINALS
+// Vietnamese words: viết, tiết, miếng, điểm, etc.
+// =============================================================================
+
+#[test]
+fn pattern15c_ie_diphthong_with_finals() {
+    telex_auto_restore(&[
+        // iê + t final (delayed circumflex: e after t)
+        ("vietes ", "viết "),   // viết (to write)
+        ("tietes ", "tiết "),   // tiết (section/blood)
+        ("kietes ", "kiết "),   // kiết (dysentery)
+        ("nietes ", "niết "),   // niết (nirvana)
+        ("thietes ", "thiết "), // thiết (iron/essential)
+        // iê + c final (double e for circumflex since no delayed trigger after c)
+        ("vieecj ", "việc "), // việc (work/job)
+        ("tieecj ", "tiệc "), // tiệc (party/feast)
+        // iê + m final (double e for circumflex)
+        ("ddieemr ", "điểm "), // điểm (point) - standard dd
+        ("tieemf ", "tiềm "),  // tiềm (latent)
+        ("kieemr ", "kiểm "),  // kiểm (to check)
+        // iê + n final (double e for circumflex)
+        ("tieens ", "tiến "),  // tiến (to advance)
+        ("vieenj ", "viện "),  // viện (institute)
+        ("ddieenj ", "điện "), // điện - standard dd
+        // iê + p final (double e for circumflex)
+        ("tieeps ", "tiếp "),   // tiếp (to continue/receive)
+        ("nhieeps ", "nhiếp "), // nhiếp (photography)
+        // iê + ng final (double e for circumflex)
+        ("tieengs ", "tiếng "), // tiếng (sound/language) - double e
+        ("mieengs ", "miếng "), // miếng (piece) - double e
+    ]);
+}
+
+// =============================================================================
+// PATTERN 15d: UÊ DIPHTHONG PATTERNS
+// Vietnamese words with uê diphthong
+// =============================================================================
+
+#[test]
+fn pattern15d_ue_diphthong_patterns() {
+    telex_auto_restore(&[
+        // uê standalone/with tones (double e for circumflex)
+        ("tueef ", "tuề "), // tuề
+        ("hueef ", "huề "), // huề (even/draw)
+        ("xueef ", "xuề "), // xuề
+        // uê + consonant finals (double e for circumflex)
+        ("tueechs ", "tuếch "),   // tuếch (wide open)
+        ("thueechs ", "thuếch "), // thuếch
+        // uê + n final (double e for circumflex)
+        ("thueens ", "thuến "), // valid pattern
+        ("queens ", "quến "),   // quến (to attract)
+        ("quyeens ", "quyến "), // quyến (to attract) - quy pattern
+    ]);
+}
+
+// =============================================================================
+// PATTERN 15e: YÊU TRIPHTHONG (standalone Y initial)
+// Vietnamese words starting with Y + êu
+// =============================================================================
+
+#[test]
+fn pattern15e_yeu_triphthong() {
+    telex_auto_restore(&[
+        // yêu patterns - both double e and delayed circumflex are valid
+        // Double e method (standard)
+        ("yeeu ", "yêu "),  // yêu (to love)
+        ("yeeus ", "yếu "), // yếu (weak)
+        ("yeeuf ", "yều "), // yều
+        ("yeeur ", "yểu "), // yểu
+        // Delayed circumflex method (e-u-e pattern)
+        ("yeue ", "yêu "),  // yêu (to love)
+        ("yeues ", "yếu "), // yếu (weak)
+        ("yeuef ", "yều "), // yều
+        ("yeuer ", "yểu "), // yểu
+    ]);
+}
+
+// =============================================================================
+// PATTERN 15f: UÔ DIPHTHONG PATTERNS (V2_CIRCUMFLEX_REQUIRED)
+// Vietnamese words with uô diphthong
+// =============================================================================
+
+#[test]
+fn pattern15f_uo_diphthong_patterns() {
+    telex_auto_restore(&[
+        // uô + consonant finals (double o for circumflex)
+        ("cuoocs ", "cuốc "),   // cuốc (hoe)
+        ("chuoots ", "chuốt "), // chuốt (to sharpen)
+        ("muoons ", "muốn "),   // muốn (to want)
+        ("tuooir ", "tuổi "),   // tuổi (age)
+        ("buooir ", "buổi "),   // buổi (session/half-day)
+    ]);
+}
+
+// =============================================================================
+// PATTERN 15g: COMMON VIETNAMESE WORDS - COMPREHENSIVE TEST
+// Real-world Vietnamese words with delayed circumflex
+// =============================================================================
+
+#[test]
+fn pattern15g_common_vietnamese_words() {
+    telex_auto_restore(&[
+        // Education/learning - iêu triphthong (delayed circumflex works)
+        ("hieuer ", "hiểu "),  // hiểu (understand)
+        ("vietes ", "viết "),  // viết (write) - delayed circumflex after t
+        ("ddieemr ", "điểm "), // điểm (point/score) - double e
+        ("kieemr ", "kiểm "),  // kiểm (to check) - double e
+        // Work/business - double e for circumflex
+        ("vieecj ", "việc "), // việc (work)
+        ("tieecj ", "tiệc "), // tiệc (party)
+        ("tieeps ", "tiếp "), // tiếp (continue)
+        // Daily life - double e for circumflex
+        ("tieengs ", "tiếng "), // tiếng (sound)
+        ("mieengs ", "miếng "), // miếng (piece)
+        ("chieues ", "chiếu "), // chiếu (mat) - iêu triphthong
+        ("bieues ", "biếu "),   // biếu (gift) - iêu triphthong
+        // Technology - double e for circumflex
+        ("ddieenj ", "điện "), // điện (electricity)
+    ]);
+}

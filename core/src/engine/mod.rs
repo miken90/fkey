@@ -1576,7 +1576,9 @@ impl Engine {
                         // ONLY block when:
                         // 1. NO Vietnamese indicators present (mark/stroke)
                         // 2. There's a consonant initial (foreign word pattern)
+                        // 3. NOT a valid Vietnamese triphthong pattern
                         // This allows: "oio" → "ôi" (no initial, valid VN interjection)
+                        // This allows: "hieu" + e → "hiêu" (iêu is valid VN triphthong)
                         // But blocks: "queue" → "quêu" (has "qu" initial, foreign word)
                         let has_vn_indicator = self.buf.iter().any(|c| c.mark > 0 || c.stroke);
                         let has_initial =
@@ -1588,7 +1590,25 @@ impl Engine {
                             let v2 = last_two[1]; // last vowel
                                                   // V1-V2-V1 pattern: new key matches v1 but not v2
                             if key == v1 && key != v2 {
-                                return None;
+                                // Exception: Allow circumflex for valid Vietnamese triphthongs
+                                // e.g., [i, e, u] = iêu (hiểu), [y, e, u] = yêu, [u, e, u] = uêu (nguều)
+                                // These require circumflex on E (middle vowel)
+                                // The trigger 'e' is the same as v1, which triggers circumflex
+                                //
+                                // BUT: Exclude Q + U pattern (like "queue")
+                                // In Vietnamese, Q only appears as part of "qu" initial cluster
+                                // If initial is Q and first vowel is U, it's English (queue, quest)
+                                let initial_q = self.buf.get(0).is_some_and(|c| c.key == keys::Q);
+                                let first_vowel_u = vowels.first().is_some_and(|&v| v == keys::U);
+                                let is_english_qu_pattern = initial_q && first_vowel_u;
+
+                                let is_valid_vn_triphthong = vowels.len() == 3
+                                    && !is_english_qu_pattern
+                                    && constants::VALID_TRIPHTHONGS
+                                        .contains(&[vowels[0], vowels[1], vowels[2]]);
+                                if !is_valid_vn_triphthong {
+                                    return None;
+                                }
                             }
                         }
                     }
@@ -1752,11 +1772,18 @@ impl Engine {
                                     // Allow circumflex if any of these conditions are true:
                                     // 1. Has adjacent vowel forming VALID diphthong (au, oi, etc.)
                                     //    BUT NOT if final is non-extending (t,m,p) - diphthong+t/m/p rarely valid
+                                    //    EXCEPTION: V2_CIRCUMFLEX_REQUIRED diphthongs (iê, uê, yê, uô) ARE
+                                    //    valid with non-extending finals (viết, thiết, miếng, etc.)
                                     // 2. Has Vietnamese double initial (nh, th, ph, etc.)
                                     // 3. Same-vowel trigger with middle consonant that can extend (n,c)
                                     // 4. Initial has stroke (đ) - clearly Vietnamese
-                                    let diphthong_allows =
-                                        has_valid_adjacent_diphthong && !is_non_extending_final;
+                                    let is_v2_circumflex_diphthong = adjacent_before && {
+                                        let v1 = self.buf.get(i - 1).map(|c| c.key).unwrap_or(0);
+                                        constants::V2_CIRCUMFLEX_REQUIRED
+                                            .contains(&[v1, target_key])
+                                    };
+                                    let diphthong_allows = has_valid_adjacent_diphthong
+                                        && (!is_non_extending_final || is_v2_circumflex_diphthong);
                                     let allow_circumflex = diphthong_allows
                                         || has_vietnamese_double_initial
                                         || (is_same_vowel_trigger && middle_can_extend)
@@ -3432,6 +3459,7 @@ impl Engine {
         // Example: "queue" raw=[q,u,e,u,e] → consecutive vowels "eue" → buffer "quêu"
         // The third vowel triggers circumflex on first vowel and gets consumed
         // EXCEPTION: If buffer has stroke (đ), it's intentional Vietnamese
+        // EXCEPTION: If buffer has valid Vietnamese triphthong (iêu, yêu, uôi, etc.)
         if is_word_complete && !has_stroke && raw_input_valid_en {
             // Extract consecutive vowel sequence from end of raw_input
             let raw_vowels: Vec<u16> = self
@@ -3450,6 +3478,38 @@ impl Engine {
 
                 // V1-V2-V1 pattern: first and last are same vowel, middle is different
                 if v1 == v3 && v1 != v2 {
+                    // EXCEPTION: Check if buffer contains a valid Vietnamese triphthong
+                    // Valid triphthongs: iêu, yêu, uôi, oai, etc. (defined in constants)
+                    // If the first 3 raw vowels form a triphthong that matches buffer, it's valid VN
+                    // Example: "yeue" → raw_vowels=[Y,E,U,E] → first3=[Y,E,U] → yêu is valid VN
+                    // Example: "queue" → raw_vowels=[U,E,U,E] → first3=[U,E,U] → not a VN triphthong
+                    let first_three = [raw_vowels[0], raw_vowels[1], raw_vowels[2]];
+                    if constants::VALID_TRIPHTHONGS.contains(&first_three) {
+                        // Check if buffer actually has this triphthong with proper circumflex
+                        let buf_vowels: Vec<(u16, u8)> = self
+                            .buf
+                            .iter()
+                            .filter(|c| keys::is_vowel(c.key))
+                            .map(|c| (c.key, c.tone))
+                            .collect();
+                        if buf_vowels.len() == 3 {
+                            let (bv0, _) = buf_vowels[0];
+                            let (bv1, bv1_tone) = buf_vowels[1];
+                            let (bv2, _) = buf_vowels[2];
+                            // Check if buffer matches the triphthong pattern with circumflex on middle vowel
+                            // iêu/yêu: circumflex on E (middle)
+                            // uôi: circumflex on O (middle)
+                            if bv0 == first_three[0]
+                                && bv1 == first_three[1]
+                                && bv2 == first_three[2]
+                                && bv1_tone == tone::CIRCUMFLEX
+                            {
+                                // Valid Vietnamese triphthong - don't restore
+                                return None;
+                            }
+                        }
+                    }
+
                     // Check if buffer has circumflex on v1 type followed by v2
                     let buf_vowels: Vec<(u16, u8)> = self
                         .buf
