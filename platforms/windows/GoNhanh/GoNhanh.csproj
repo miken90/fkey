@@ -12,7 +12,7 @@
     <!-- App Info -->
     <AssemblyName>FKey</AssemblyName>
     <RootNamespace>GoNhanh</RootNamespace>
-    <Version>1.6.0</Version>
+    <Version>1.7.5</Version>
     <Company>Kha Phan</Company>
     <Product>FKey - Vietnamese Input Method</Product>
     <Description>FKey - Vietnamese input method engine for Windows</Description>
@@ -30,6 +30,9 @@
 
     <!-- OPTIMIZE: Disable ReadyToRun (saves 30-40MB) -->
     <PublishReadyToRun>false</PublishReadyToRun>
+
+    <!-- OPTIMIZE: Restrict satellite resource languages -->
+    <SatelliteResourceLanguages>vi-VN;en-US</SatelliteResourceLanguages>
 
     <!-- OPTIMIZE: Remove debug symbols -->
     <DebugType>none</DebugType>
@@ -51,6 +54,11 @@
   <ItemGroup>
     <Resource Include="Resources\Icons\*.ico" />
     <Resource Include="Resources\Icons\*.png" />
+  </ItemGroup>
+
+  <!-- NuGet Packages -->
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
   </ItemGroup>
 
 </Project>

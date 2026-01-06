@@ -60,9 +60,15 @@ public partial class App : System.Windows.Application
         _trayIcon.Initialize(_settings.CurrentMethod, _settings.IsEnabled);
 
         // Show onboarding if first run (like macOS)
+        // OPTIMIZATION: Async-load to avoid blocking tray icon startup
         if (_settings.IsFirstRun)
         {
-            ShowOnboarding();
+            _ = Task.Run(async () =>
+            {
+                // Let tray icon stabilize first
+                await Task.Delay(300);
+                Dispatcher.Invoke(() => ShowOnboarding());
+            });
         }
     }
 
@@ -131,6 +137,10 @@ public partial class App : System.Windows.Application
 
         ApplySettings();
         _trayIcon?.UpdateState(_settings.CurrentMethod, _settings.IsEnabled);
+
+        // OPTIMIZATION: Cleanup window resources after close
+        onboarding = null;
+        GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
     }
 
     private void ChangeInputMethod(InputMethod method)
@@ -191,6 +201,10 @@ public partial class App : System.Windows.Application
     {
         var advancedWindow = new AdvancedSettingsWindow(_settings, _shortcuts);
         advancedWindow.ShowDialog();
+
+        // OPTIMIZATION: Cleanup window resources after close
+        advancedWindow = null;
+        GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
     }
 
     private void ExitApplication()
