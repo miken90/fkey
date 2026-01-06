@@ -684,6 +684,7 @@ impl Engine {
         }
 
         // Issue #159: In Telex mode, `]` → ư and `[` → ơ
+        // caps affects revert: ]] → ], uppercase (Shift/CapsLock) → }
         if self.method == 0 && (key == keys::RBRACKET || key == keys::LBRACKET) {
             if let Some(result) = self.try_bracket_as_vowel(key, caps) {
                 return result;
@@ -5155,7 +5156,7 @@ impl Engine {
     /// Handles:
     /// - ] at word start or after consonant → ư
     /// - [ at word start or after consonant → ơ
-    /// - Double bracket reverts: ]] → ], [[ → [
+    /// - Double bracket reverts: ]] → ], [[ → [, uppercase revert → } or {
     /// - Valid Vietnamese vowel combinations: ươ (from ][)
     fn try_bracket_as_vowel(&mut self, key: u16, caps: bool) -> Option<Result> {
         // Check if bracket shortcut is enabled
@@ -5181,8 +5182,16 @@ impl Engine {
                     // Clear transform
                     self.last_transform = None;
 
-                    // Return the original bracket character (consumed to prevent double output)
-                    let bracket_char = if key == keys::RBRACKET { ']' } else { '[' };
+                    // Return the original bracket character
+                    // Use caps (Shift or CapsLock) to decide: uppercase → {/}, lowercase → [/]
+                    let bracket_char = match (key, caps) {
+                        (keys::RBRACKET, true) => '}',
+                        (keys::RBRACKET, false) => ']',
+                        (keys::LBRACKET, true) => '{',
+                        (keys::LBRACKET, false) => '[',
+                        (_, true) => '{',  // fallback (shouldn't happen)
+                        (_, false) => '[', // fallback (shouldn't happen)
+                    };
                     return Some(Result::send_consumed(1, &[bracket_char]));
                 }
             }
