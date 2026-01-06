@@ -151,6 +151,9 @@ const TELEX_DELAYED: &[(&str, &str)] = &[
     ("truwowng", "trương"),
     // Issue: twong shorthand for tương
     ("twong", "tương"),
+    // Standalone w-initial patterns
+    ("wng", "ưng"),   // w → ư + ng final
+    ("wong", "ương"), // w → ư, o → ơ (horn compound) + ng final
 ];
 
 // ============================================================
