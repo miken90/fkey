@@ -1,3 +1,7 @@
+# Environment
+.env
+.env.local
+
 # Rust
 target/
 Cargo.lock
@@ -56,3 +60,6 @@ repomix-output.*
 platforms/windows/publish/
 platforms/windows/GoNhanh/Releases/*.zip
 nul
+
+# bv (beads viewer) local config and caches
+.bv/

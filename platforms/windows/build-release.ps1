@@ -69,8 +69,8 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] Build successful" -ForegroundColor Green
 Write-Host ""
 
-# Step 4: Create ZIP package
-Write-Host "[4/4] Creating ZIP package..." -ForegroundColor Yellow
+# Step 4: Create 7z package (better compression)
+Write-Host "[4/4] Creating 7z package..." -ForegroundColor Yellow
 
 $ExePath = Join-Path $OutputDir "FKey.exe"
 if (-not (Test-Path $ExePath)) {
@@ -82,18 +82,33 @@ if (-not (Test-Path $ExePath)) {
 $FileSize = (Get-Item $ExePath).Length
 $FileSizeMB = [math]::Round($FileSize / 1MB, 2)
 
-Compress-Archive -Path $ExePath -DestinationPath $ZipPath -Force
+# Use 7z if available, fallback to zip
+$7zName = "FKey-v$Version-portable.7z"
+$7zPath = Join-Path $OutputDir $7zName
 
-if (-not (Test-Path $ZipPath)) {
-    Write-Host "[ERROR] ZIP creation failed" -ForegroundColor Red
+$7zExe = Get-Command "7z" -ErrorAction SilentlyContinue
+if ($7zExe) {
+    & 7z a -t7z -mx=9 $7zPath $ExePath
+    $PackagePath = $7zPath
+    $PackageType = "7z"
+} else {
+    # Fallback to ZIP if 7z not available
+    Write-Host "  7z not found, using ZIP compression..." -ForegroundColor Yellow
+    Compress-Archive -Path $ExePath -DestinationPath $ZipPath -Force
+    $PackagePath = $ZipPath
+    $PackageType = "zip"
+}
+
+if (-not (Test-Path $PackagePath)) {
+    Write-Host "[ERROR] Package creation failed" -ForegroundColor Red
     exit 1
 }
 
-# Get ZIP size
-$ZipSize = (Get-Item $ZipPath).Length
-$ZipSizeMB = [math]::Round($ZipSize / 1MB, 2)
+# Get package size
+$PackageSize = (Get-Item $PackagePath).Length
+$PackageSizeMB = [math]::Round($PackageSize / 1MB, 2)
 
-Write-Host "[OK] ZIP created" -ForegroundColor Green
+Write-Host "[OK] $PackageType package created" -ForegroundColor Green
 Write-Host ""
 
 # Summary
@@ -102,11 +117,11 @@ Write-Host " Build Summary" -ForegroundColor Cyan
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host "Version:       $Version" -ForegroundColor White
 Write-Host "Executable:    $FileSizeMB MB" -ForegroundColor White
-Write-Host "ZIP:           $ZipSizeMB MB" -ForegroundColor White
-Write-Host "Output:        $ZipPath" -ForegroundColor White
+Write-Host "Package ($PackageType):  $PackageSizeMB MB" -ForegroundColor White
+Write-Host "Output:        $PackagePath" -ForegroundColor White
 Write-Host ""
 Write-Host "[SUCCESS] Release build complete!" -ForegroundColor Green
 Write-Host ""
 
-# Return ZIP path for CI/CD pipelines
-return $ZipPath
+# Return package path for CI/CD pipelines
+return $PackagePath

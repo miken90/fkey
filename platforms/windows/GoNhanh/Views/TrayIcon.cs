@@ -219,7 +219,7 @@ public class TrayIcon : IDisposable
                 ? Color.FromArgb(37, 99, 235)  // Blue when enabled
                 : Color.FromArgb(156, 163, 175); // Gray when disabled
 
-            using var font = new Font("Segoe UI", 9, FontStyle.Bold);
+            using var font = new Font("Segoe UI", 9, System.Drawing.FontStyle.Bold);
             using var brush = new SolidBrush(textColor);
 
             var textSize = g.MeasureString(text, font);
@@ -259,8 +259,14 @@ public class TrayIcon : IDisposable
 
     private void ShowAbout()
     {
-        var about = new AboutWindow();
-        about.ShowDialog();
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            var about = new AboutWindow();
+            about.ShowDialog();
+
+            about = null;
+            GC.Collect(2, GCCollectionMode.Optimized, blocking: false);
+        });
     }
 
     private void OpenFeedback()
