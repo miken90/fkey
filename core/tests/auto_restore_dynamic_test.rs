@@ -251,13 +251,21 @@ fn w_vowel_produces_valid_vietnamese() {
 #[test]
 fn w_final_consonant_produces_valid_vietnamese() {
     telex_auto_restore(&[
-        ("wng ", "ưng "),  // ưng is valid Vietnamese (w→ư + ng final)
-        ("uwng ", "ưng "), // uwng also produces ưng (redundant u)
-        ("wn ", "ưn "),    // ưn is valid Vietnamese
-        ("wm ", "ưm "),    // ưm is valid Vietnamese
-        ("wc ", "ưc "),    // ưc is valid Vietnamese
-        ("wt ", "ưt "),    // ưt is valid Vietnamese
-        ("wp ", "ưp "),    // ưp is valid Vietnamese
+        // ư + single final
+        ("wng ", "ưng "),   // ưng is valid Vietnamese (w→ư + ng final)
+        ("uwng ", "ưng "),  // uwng also produces ưng (redundant u)
+        ("wn ", "ưn "),     // ưn is valid Vietnamese
+        ("wm ", "ưm "),     // ưm is valid Vietnamese
+        ("wc ", "ưc "),     // ưc is valid Vietnamese
+        ("wt ", "ưt "),     // ưt is valid Vietnamese
+        ("wp ", "ưp "),     // ưp is valid Vietnamese
+        // ươ + finals (w→ư, o→ơ)
+        ("wong ", "ương "), // ương
+        ("won ", "ươn "),   // ươn
+        ("wom ", "ươm "),   // ươm
+        ("woc ", "ươc "),   // ươc
+        ("wot ", "ươt "),   // ươt
+        ("wop ", "ươp "),   // ươp
     ]);
 }
 
@@ -741,6 +749,7 @@ const W_FINAL_WORDS: &[(&str, &str)] = &[
     ("stew ", "stew "),
     ("threw ", "threw "),
     ("view ", "view "),
+    ("queue ", "queue "), // qu + eue = invalid Vietnamese vowel pattern
     // -ow pattern: single valid consonant + ow → cơ (Vietnamese ơ vowel)
     // These form valid Vietnamese syllables (consonant + ơ)
     ("bow ", "bơ "), // bơ = butter
@@ -999,22 +1008,35 @@ fn double_mark_english_words() {
 }
 
 #[test]
-fn double_mark_4char_keeps_reverted() {
-    // 4-char words with double modifiers: user intended revert, keep result
+fn double_mark_4char_restores_english() {
+    // 4-char words ending with double 'ss' or 'ff': restore to English
+    // 's' and 'f' are NOT valid Vietnamese final consonants
+    // so "bass", "boss", "buff", "cuff", etc. → restore to English
     telex_auto_restore(&[
-        // Double s: 4-char → 3-char keeps reverted
-        ("bass ", "bas "),
-        ("boss ", "bos "),
-        ("loss ", "los "),
-        ("mass ", "mas "),
-        ("mess ", "mes "),
-        ("miss ", "mis "),
-        ("pass ", "pas "),
-        ("less ", "les "),
-        // Double f: 4-char → 3-char keeps reverted
-        ("buff ", "buf "),
-        ("cuff ", "cuf "),
-        ("puff ", "puf "),
+        // Double ss at end: restore to English (not Vietnamese)
+        ("bass ", "bass "),
+        ("boss ", "boss "),
+        ("loss ", "loss "),
+        ("mass ", "mass "),
+        ("mess ", "mess "),
+        ("miss ", "miss "),
+        ("pass ", "pass "),
+        ("less ", "less "),
+        // Double ff at end: also restore to English (common English pattern)
+        ("buff ", "buff "),
+        ("cuff ", "cuff "),
+        ("puff ", "puff "),
+    ]);
+}
+
+/// Double modifier in MIDDLE of word: user reverted, buffer is valid word
+/// When buffer ends with common suffix (-er, -or) and is valid, keep it
+#[test]
+fn double_mark_middle_keeps_valid_word() {
+    telex_auto_restore(&[
+        // "usser" → first 's' adds sắc to 'u', second 's' reverts
+        // Buffer = "user" (valid 4-char word ending in -er), keep it
+        ("usser ", "user "),
     ]);
 }
 

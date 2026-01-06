@@ -153,6 +153,18 @@ pub extern "C" fn ime_skip_w_shortcut(skip: bool) {
     }
 }
 
+/// Set whether bracket shortcuts are enabled: ] → ư, [ → ơ (Issue #159)
+///
+/// When `enabled` is true (default), ] types ư and [ types ơ in Telex mode.
+/// No-op if engine not initialized.
+#[no_mangle]
+pub extern "C" fn ime_bracket_shortcut(enabled: bool) {
+    let mut guard = lock_engine();
+    if let Some(ref mut e) = *guard {
+        e.set_bracket_shortcut(enabled);
+    }
+}
+
 /// Set whether ESC key restores raw ASCII input.
 ///
 /// When `enabled` is true (default), pressing ESC restores original keystrokes.
@@ -616,6 +628,60 @@ mod tests {
         }
         drop(guard);
 
+        ime_clear_shortcuts();
+        ime_clear();
+    }
+
+    /// Issue #161: Test that shortcuts containing numbers work correctly via FFI
+    #[test]
+    #[serial]
+    fn test_shortcut_ffi_with_numbers() {
+        ime_init();
+        ime_clear_shortcuts();
+        ime_method(0); // Telex
+
+        // Add shortcut with number via FFI
+        let trigger = CString::new("f1").unwrap();
+        let replacement = CString::new("formula one").unwrap();
+
+        unsafe {
+            ime_add_shortcut(trigger.as_ptr(), replacement.as_ptr());
+        }
+
+        // Verify shortcut was added
+        let guard = lock_engine();
+        if let Some(ref e) = *guard {
+            assert_eq!(e.shortcuts().len(), 1);
+            let shortcut = e.shortcuts().lookup("f1").unwrap().1;
+            assert_eq!(
+                shortcut.condition,
+                engine::shortcut::TriggerCondition::OnWordBoundary,
+                "Mixed letter+number trigger should be word boundary"
+            );
+        }
+        drop(guard);
+
+        // Type "f1" + space and verify shortcut triggers
+        let _ = ime_key(keys::F, false, false);
+        let _ = ime_key(keys::N1, false, false);
+        let r = ime_key(keys::SPACE, false, false);
+
+        assert!(!r.is_null());
+        let result = unsafe { &*r };
+        assert_eq!(
+            result.action,
+            engine::Action::Send as u8,
+            "Shortcut should trigger"
+        );
+        assert_eq!(result.backspace, 2, "Should backspace 2 chars (f1)");
+
+        // Verify output
+        let output: String = (0..result.count as usize)
+            .filter_map(|i| char::from_u32(result.chars[i]))
+            .collect();
+        assert_eq!(output, "formula one ", "Should output replacement + space");
+
+        unsafe { ime_free(r) };
         ime_clear_shortcuts();
         ime_clear();
     }
