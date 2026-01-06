@@ -155,13 +155,11 @@ impl WordHistory {
     }
 }
 
-/// Check if key is sentence-ending punctuation (triggers auto-capitalize)
-/// Triggers: . ! ? Enter
+/// Check if key is sentence-ending punctuation (. ! ?) but NOT Enter
+/// Issue #185: Only set pending_capitalize after punctuation + space
 #[inline]
-fn is_sentence_ending(key: u16, shift: bool) -> bool {
-    key == keys::RETURN
-        || key == keys::ENTER
-        || key == keys::DOT
+fn is_sentence_ending_punctuation(key: u16, shift: bool) -> bool {
+    key == keys::DOT
         || (shift && key == keys::N1) // !
         || (shift && key == keys::SLASH) // ?
 }
@@ -322,11 +320,15 @@ pub struct Engine {
     /// Auto-capitalize first letter after sentence-ending punctuation
     /// Triggers: . ! ? Enter → next letter becomes uppercase
     auto_capitalize: bool,
-    /// Pending capitalize state: set after sentence-ending punctuation
+    /// Pending capitalize state: set after sentence-ending punctuation + space
     pending_capitalize: bool,
     /// Tracks if auto-capitalize was just used on the current word
     /// Used to restore pending_capitalize when user deletes the capitalized letter
     auto_capitalize_used: bool,
+    /// Tracks if we just saw sentence-ending punctuation (. ! ?)
+    /// Only set pending_capitalize when space/Enter follows
+    /// Issue #185: don't capitalize immediately after punctuation (e.g., google.com)
+    saw_sentence_ending: bool,
 }
 
 impl Default for Engine {
@@ -366,6 +368,7 @@ impl Engine {
             auto_capitalize: false, // Default: OFF
             pending_capitalize: false,
             auto_capitalize_used: false,
+            saw_sentence_ending: false,
         }
     }
 
@@ -417,6 +420,7 @@ impl Engine {
         self.auto_capitalize = enabled;
         if !enabled {
             self.pending_capitalize = false;
+            self.saw_sentence_ending = false;
         }
     }
 
@@ -665,6 +669,14 @@ impl Engine {
                 self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
             }
             self.auto_capitalize_used = false; // Reset on word commit
+
+            // Issue #185: Set pending_capitalize on space AFTER sentence-ending punctuation
+            // This ensures "google.com" doesn't capitalize, but "ok. ban" does
+            if self.auto_capitalize && self.saw_sentence_ending {
+                self.pending_capitalize = true;
+                // Keep saw_sentence_ending for multiple spaces (e.g., "ok.  ban")
+            }
+
             self.clear();
             return restore_result;
         }
@@ -734,21 +746,32 @@ impl Engine {
                         return Result::send_consumed(backspace_count, &output);
                     }
 
-                    // Auto-capitalize: set pending if sentence-ending (! or ?)
-                    if self.auto_capitalize && is_sentence_ending(key, shift) {
+                    // Issue #185: Only set saw_sentence_ending for punctuation (not Enter)
+                    // pending_capitalize will be set when space follows
+                    if self.auto_capitalize && is_sentence_ending_punctuation(key, shift) {
+                        self.saw_sentence_ending = true;
+                    } else if self.auto_capitalize && (key == keys::RETURN || key == keys::ENTER) {
+                        // Enter = newline = immediate capitalize (no space needed)
                         self.pending_capitalize = true;
+                        self.saw_sentence_ending = false;
                     }
                     return Result::none(); // Let the char pass through, keep accumulating
                 }
             }
 
-            // Auto-capitalize: set pending if sentence-ending punctuation
-            if self.auto_capitalize && is_sentence_ending(key, shift) {
+            // Issue #185: Only set saw_sentence_ending for punctuation (not Enter)
+            // pending_capitalize will be set when space follows
+            if self.auto_capitalize && is_sentence_ending_punctuation(key, shift) {
+                self.saw_sentence_ending = true;
+            } else if self.auto_capitalize && (key == keys::RETURN || key == keys::ENTER) {
+                // Enter = newline = immediate capitalize (no space needed)
                 self.pending_capitalize = true;
+                self.saw_sentence_ending = false;
             } else if self.auto_capitalize && should_reset_pending_capitalize(key, shift) {
                 // Reset pending for word-breaking keys (comma, semicolon, etc.)
                 // But preserve pending for neutral keys (quotes, parentheses, brackets)
                 self.pending_capitalize = false;
+                self.saw_sentence_ending = false;
             }
             self.auto_capitalize_used = false; // Reset on word boundary
 
@@ -856,13 +879,20 @@ impl Engine {
         let was_auto_capitalized = self.pending_capitalize && keys::is_letter(key) && !caps;
         let effective_caps = if self.pending_capitalize && keys::is_letter(key) {
             self.pending_capitalize = false;
+            self.saw_sentence_ending = false; // Reset after capitalizing
             self.auto_capitalize_used = true; // Track that we used auto-capitalize
             true // Force uppercase
         } else {
             // Reset pending on number (e.g., "1.5" should not capitalize "5")
             if self.pending_capitalize && keys::is_number(key) {
                 self.pending_capitalize = false;
+                self.saw_sentence_ending = false;
                 self.auto_capitalize_used = false; // Number after punctuation, reset
+            }
+            // Issue #185: Reset saw_sentence_ending when letter is typed without space
+            // e.g., "google.com" - 'c' typed after '.' without space, don't capitalize
+            if self.saw_sentence_ending && keys::is_letter(key) {
+                self.saw_sentence_ending = false;
             }
             caps
         };
