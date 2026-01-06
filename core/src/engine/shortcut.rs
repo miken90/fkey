@@ -73,7 +73,7 @@ impl Shortcut {
 
     /// Create a new shortcut with word boundary trigger (applies to all input methods)
     /// Issue #86: Case-insensitive matching, smart case output (ko→không, KO→KHÔNG, Ko→Không)
-    /// Replacement is truncated to MAX_REPLACEMENT_LEN (63) codepoints if too long.
+    /// Replacement is truncated to MAX_REPLACEMENT_LEN (255) codepoints if too long.
     pub fn new(trigger: &str, replacement: &str) -> Self {
         Self {
             trigger: trigger.to_lowercase(), // Store lowercase for case-insensitive matching
@@ -87,7 +87,7 @@ impl Shortcut {
 
     /// Create an immediate trigger shortcut (applies to all input methods).
     /// Issue #86: Case-insensitive matching, smart case output
-    /// Replacement is truncated to MAX_REPLACEMENT_LEN (63) codepoints if too long.
+    /// Replacement is truncated to MAX_REPLACEMENT_LEN (255) codepoints if too long.
     pub fn immediate(trigger: &str, replacement: &str) -> Self {
         Self {
             trigger: trigger.to_lowercase(), // Store lowercase for case-insensitive matching
@@ -101,7 +101,7 @@ impl Shortcut {
 
     /// Create a Telex-specific shortcut with immediate trigger.
     /// Issue #86: Case-insensitive matching, smart case output
-    /// Replacement is truncated to MAX_REPLACEMENT_LEN (63) codepoints if too long.
+    /// Replacement is truncated to MAX_REPLACEMENT_LEN (255) codepoints if too long.
     pub fn telex(trigger: &str, replacement: &str) -> Self {
         Self {
             trigger: trigger.to_lowercase(), // Store lowercase for case-insensitive matching
@@ -115,7 +115,7 @@ impl Shortcut {
 
     /// Create a VNI-specific shortcut with immediate trigger.
     /// Issue #86: Case-insensitive matching, smart case output
-    /// Replacement is truncated to MAX_REPLACEMENT_LEN (63) codepoints if too long.
+    /// Replacement is truncated to MAX_REPLACEMENT_LEN (255) codepoints if too long.
     pub fn vni(trigger: &str, replacement: &str) -> Self {
         Self {
             trigger: trigger.to_lowercase(), // Store lowercase for case-insensitive matching
@@ -683,12 +683,15 @@ mod tests {
 
     #[test]
     fn test_replacement_validation_truncation() {
-        // Create a very long replacement (100 characters with Vietnamese)
-        let long_text = "Đây là một đoạn văn bản rất dài để kiểm tra việc cắt ngắn. Nó có nhiều ký tự tiếng Việt có dấu như ồ, ế, ẫ, ơ, ư.";
+        // Create a very long replacement (>255 characters with Vietnamese)
+        // MAX_REPLACEMENT_LEN is 255, so we need more than that
+        let long_text = "Đây là một đoạn văn bản rất dài để kiểm tra việc cắt ngắn. Nó có nhiều ký tự tiếng Việt có dấu như ồ, ế, ẫ, ơ, ư. Tiếp tục thêm nhiều nội dung để vượt quá giới hạn 255 ký tự. Đây là một câu rất dài với nhiều từ tiếng Việt phức tạp để đảm bảo rằng chúng ta vượt quá giới hạn cho phép của hệ thống.";
         let char_count = long_text.chars().count();
         assert!(
             char_count > MAX_REPLACEMENT_LEN,
-            "Test text should exceed limit"
+            "Test text should exceed limit (got {} chars, need > {})",
+            char_count,
+            MAX_REPLACEMENT_LEN
         );
 
         let shortcut = Shortcut::new("long", long_text);
@@ -707,6 +710,60 @@ mod tests {
         let shortcut = Shortcut::new("viet", vietnamese);
         assert_eq!(shortcut.replacement.chars().count(), 22);
         assert_eq!(shortcut.replacement, vietnamese);
+    }
+
+    // =========================================================================
+    // Issue #178: Shortcuts > 63 chars should work
+    // https://github.com/user/gonhanh/issues/178
+    // =========================================================================
+
+    #[test]
+    fn issue178_long_shortcut_100_chars() {
+        // Test that shortcuts with 100+ chars work (previously limited to 63)
+        let long_replacement = "Đây là một đoạn văn bản dài hơn 63 ký tự để kiểm tra rằng gõ tắt giờ hỗ trợ nội dung dài hơn trước.";
+        let char_count = long_replacement.chars().count();
+        assert!(
+            char_count > 63,
+            "Test text should exceed old limit of 63 (got {})",
+            char_count
+        );
+
+        let table = table_with_shortcut("long", long_replacement);
+        let result = table.try_match("long", Some(' '), true);
+        assert!(result.is_some(), "Shortcut should match");
+
+        let m = result.unwrap();
+        // Full replacement + trailing space
+        assert_eq!(
+            m.output.chars().count(),
+            char_count + 1,
+            "Output should contain full replacement + space"
+        );
+        assert!(
+            m.output.starts_with(long_replacement),
+            "Output should start with full replacement"
+        );
+    }
+
+    #[test]
+    fn issue178_long_shortcut_200_chars() {
+        // Test even longer shortcut (200 chars)
+        let long_replacement = "Thành phố Hồ Chí Minh là thành phố lớn nhất Việt Nam về dân số và kinh tế. Đây là một trong những trung tâm kinh tế, chính trị, văn hóa và giáo dục quan trọng nhất của cả nước. Thành phố này còn được biết đến với nhiều tên gọi khác.";
+        let char_count = long_replacement.chars().count();
+        assert!(
+            char_count > 100,
+            "Test text should be > 100 chars (got {})",
+            char_count
+        );
+
+        let shortcut = Shortcut::new("hcm2", long_replacement);
+        assert_eq!(
+            shortcut.replacement.chars().count(),
+            char_count,
+            "Replacement should not be truncated for {} chars",
+            char_count
+        );
+        assert_eq!(shortcut.replacement, long_replacement);
     }
 
     // =========================================================================

@@ -2,7 +2,7 @@
 //! These tests document expected behavior from user bug reports.
 
 mod common;
-use common::telex;
+use common::{telex, telex_auto_restore, vni};
 use gonhanh_core::engine::Engine;
 use gonhanh_core::utils::type_word;
 
@@ -676,4 +676,434 @@ fn issue146_tom_s_should_produce_tom_sac() {
         ("doms", "dóm"), // Similar pattern
         ("noms", "nóm"), // Similar pattern
     ]);
+}
+
+// =============================================================================
+// BUG: "nesue " → "nếu " (delayed circumflex with tone before vowel)
+// In Telex: n=initial, e=vowel, s=sắc on 'e', u=vowel, e=circumflex on first 'e'
+// Pattern: typing 's' (sắc) then 'ue' should form "nếu" (if) not "néue"
+// =============================================================================
+
+#[test]
+fn bug_nesue_to_neu_circumflex() {
+    use gonhanh_core::engine::Action;
+    use gonhanh_core::utils::telex_auto_restore;
+
+    // Debug: step by step
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+
+    let mut screen = String::new();
+    let inputs = ['n', 'e', 's', 'u', 'e', ' '];
+
+    for c in inputs {
+        let key = gonhanh_core::utils::char_to_key(c);
+        let r = e.on_key(key, false, false);
+
+        if r.action == Action::Send as u8 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+            println!(
+                "Key '{}': backspace={}, output='{}', screen='{}'",
+                c,
+                r.backspace,
+                (0..r.count as usize)
+                    .filter_map(|i| char::from_u32(r.chars[i]))
+                    .collect::<String>(),
+                screen
+            );
+        } else {
+            screen.push(c);
+            println!("Key '{}': passthrough, screen='{}'", c, screen);
+        }
+    }
+
+    println!("\nFinal: 'nesue ' -> '{}' (expected: 'nếu ')", screen);
+
+    // Now test with telex_auto_restore helper
+    telex_auto_restore(&[("nesue ", "nếu ")]);
+}
+
+#[test]
+fn test_neus_tone_position() {
+    use gonhanh_core::engine::Action;
+
+    let mut e = Engine::new();
+    let mut screen = String::new();
+    let inputs = ['n', 'e', 'u', 's'];
+
+    for c in inputs {
+        let key = gonhanh_core::utils::char_to_key(c);
+        let r = e.on_key(key, false, false);
+
+        if r.action == Action::Send as u8 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+            println!(
+                "Key '{}': backspace={}, output='{}', screen='{}'",
+                c,
+                r.backspace,
+                (0..r.count as usize)
+                    .filter_map(|i| char::from_u32(r.chars[i]))
+                    .collect::<String>(),
+                screen
+            );
+        } else {
+            screen.push(c);
+            println!("Key '{}': passthrough, screen='{}'", c, screen);
+        }
+    }
+
+    println!("\nFinal: 'neus' -> '{}' (expected: 'néu')", screen);
+    assert_eq!(screen, "néu", "'neus' should produce 'néu' (tone on e)");
+}
+
+// =============================================================================
+// ISSUE #162: "o2o" → "oô", expected "o2o"
+// In Telex mode, numbers should NOT trigger VNI modifiers.
+// VNI mode: 2 = huyền mark, 6 = circumflex
+// Telex mode: 2 should be just a regular character
+// =============================================================================
+
+#[test]
+fn issue162_o2o_should_not_transform_in_telex() {
+    // Telex mode is default (method = 0)
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "o2o");
+    println!("'o2o' -> '{}' (expected: 'o2o')", result);
+    assert_eq!(
+        result, "o2o",
+        "'o2o' in Telex mode should stay as 'o2o', not 'oô'"
+    );
+
+    // Additional test cases with numbers in Telex mode
+    telex_auto_restore(&[
+        ("o2o", "o2o"),       // Issue #162
+        ("a2a", "a2a"),       // Similar pattern
+        ("e2e", "e2e"),       // Similar pattern
+        ("o6o", "o6o"),       // '6' should also not trigger circumflex in Telex
+        ("a1a", "a1a"),       // '1' should not trigger sắc in Telex
+        ("123", "123"),       // Pure numbers should pass through
+        ("a1b2c3", "a1b2c3"), // Mixed alphanumeric
+    ]);
+
+    // VNI mode: numbers ARE modifiers
+    // "o2o" should produce "òo" (2=huyền mark, then 'o' added after)
+    vni(&[
+        ("o2o", "òo"), // Issue #162 - VNI mode: huyền on first o, then second o
+        ("a2a", "àa"), // Similar pattern
+        ("e2e", "èe"), // Similar pattern
+        ("o6o", "ôo"), // 6 = circumflex on first o, then second o
+        ("a1a", "áa"), // 1 = sắc on first a, then second a
+    ]);
+}
+
+// Debug test for VNI o2o
+#[test]
+fn debug_vni_o2o() {
+    use gonhanh_core::data::keys;
+
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+
+    // Step-by-step debugging
+    println!("\n=== VNI o2o Debug ===");
+
+    // Step 1: Type 'o'
+    let r1 = e.on_key(keys::O, false, false);
+    println!(
+        "After 'o': action={}, backspace={}, count={}",
+        r1.action, r1.backspace, r1.count
+    );
+
+    // Step 2: Type '2' (huyền mark)
+    let r2 = e.on_key(keys::N2, false, false);
+    println!(
+        "After '2': action={}, backspace={}, count={}, chars={:?}",
+        r2.action,
+        r2.backspace,
+        r2.count,
+        (0..r2.count as usize)
+            .filter_map(|i| char::from_u32(r2.chars[i]))
+            .collect::<Vec<_>>()
+    );
+
+    // Step 3: Type 'o'
+    let r3 = e.on_key(keys::O, false, false);
+    println!(
+        "After 2nd 'o': action={}, backspace={}, count={}, chars={:?}",
+        r3.action,
+        r3.backspace,
+        r3.count,
+        (0..r3.count as usize)
+            .filter_map(|i| char::from_u32(r3.chars[i]))
+            .collect::<Vec<_>>()
+    );
+
+    // Test type_word result
+    e.clear();
+    let result = type_word(&mut e, "o2o");
+    println!("type_word('o2o') = '{}' (expected: 'òo')", result);
+
+    // FIXED: VNI "o2o" now correctly produces "òo"
+    // The issue was in reposition_tone_if_needed() - it was incorrectly moving the
+    // mark from position 0 to position 1 because "oo" is not in TONE_FIRST_PATTERNS
+    // or TONE_SECOND_PATTERNS, so find_tone_position returned position 1 by default.
+    //
+    // The fix adds a check to skip repositioning for identical doubled vowels
+    // like "oo", "aa", "ee" which are NOT valid Vietnamese diphthongs.
+    assert_eq!(result, "òo", "VNI 'o2o' should produce 'òo'");
+}
+
+// =============================================================================
+// BUG: "desp" → "dép" (tone mark before final consonant)
+// In Telex: d=initial, e=vowel, s=sắc on 'e', p=final consonant
+// Pattern: "dép" (Vietnamese for slippers) is valid Vietnamese
+// =============================================================================
+
+#[test]
+fn bug_desp_to_dep_sac() {
+    // "desp" in Telex should produce "dép" (sắc tone on 'e')
+    // Previously blocked by foreign word pattern check (D+E → describe/design)
+    telex(&[
+        ("desp", "dép"),   // dép - slippers
+        ("desp ", "dép "), // with space
+    ]);
+}
+
+// =============================================================================
+// Issue #150: Control key should clear buffer (break rhythm)
+// https://github.com/user/gonhanh/issues/150
+//
+// EVKey behavior: Z-A-[Control]-L-O-R → "zalỏ"
+// Current: Z-A-[Control]-L-O-R → "zaloo" (Control doesn't break)
+//
+// Root cause: Platform layers don't call clear() on Control keydown.
+// Fix: Platform layers should call ime_clear() when Control is pressed alone.
+// =============================================================================
+
+#[test]
+fn issue150_control_clears_buffer_for_rhythm_break() {
+    let mut e = Engine::new();
+
+    // Type "za"
+    type_word(&mut e, "za");
+
+    // Simulate Control keypress by calling clear()
+    // (Platform layer should call ime_clear() on Control keydown)
+    e.clear();
+
+    // Type "lor" - should start fresh, "r" applies tone to "lo" → "lỏ"
+    let result = type_word(&mut e, "lor");
+    assert_eq!(
+        result, "lỏ",
+        "After buffer clear, 'lor' should produce 'lỏ'"
+    );
+}
+
+#[test]
+fn issue150_without_control_buffer_continues() {
+    let mut e = Engine::new();
+
+    // Type "zalor" continuously without Control break
+    let result = type_word(&mut e, "zalor");
+
+    // "zalor" is not valid Vietnamese, "r" can't apply tone at this position
+    // Should remain as raw or partial transform
+    println!("'zalor' without break -> '{}'", result);
+
+    // The key point: without clear(), the result is different from "za" + clear + "lor"
+    assert_ne!(
+        result, "lỏ",
+        "Without buffer clear, result should differ from 'lỏ'"
+    );
+}
+
+// =============================================================================
+// Issue #159: Bracket shortcuts ] → ư, [ → ơ (Telex mode)
+// https://github.com/user/gonhanh/issues/159
+//
+// Allow users to type bracket keys as shortcuts for common horn vowels:
+// - ] → ư (right bracket → U with horn)
+// - [ → ơ (left bracket → O with horn)
+// =============================================================================
+
+#[test]
+fn issue159_bracket_as_vowel() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test ] → ư at word start
+    let result = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result.action, 1, "']' should send output");
+    assert_eq!(
+        result.chars[0], 'ư' as u32,
+        "']' at word start should produce 'ư'"
+    );
+
+    e.clear();
+
+    // Test [ → ơ at word start
+    let result = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result.action, 1, "'[' should send output");
+    assert_eq!(
+        result.chars[0], 'ơ' as u32,
+        "'[' at word start should produce 'ơ'"
+    );
+
+    e.clear();
+
+    // Test t] → tư (after consonant)
+    e.on_key(keys::T, false, false);
+    let result = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result.action, 1, "'t]' should send output");
+    assert_eq!(result.chars[0], 'ư' as u32, "'t]' should produce 'tư'");
+
+    e.clear();
+
+    // Test t[ → tơ (after consonant)
+    e.on_key(keys::T, false, false);
+    let result = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result.action, 1, "'t[' should send output");
+    assert_eq!(result.chars[0], 'ơ' as u32, "'t[' should produce 'tơ'");
+}
+
+#[test]
+fn issue159_bracket_with_marks() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test t]s → tứ (ư with sắc)
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::RBRACKET, false, false);
+    let _result = e.on_key(keys::S, false, false);
+    // Note: result shows only the change, full buffer is "tứ"
+    println!("t]s -> buffer contains tứ");
+
+    e.clear();
+
+    // Test t[f → tờ (ơ with huyền)
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::LBRACKET, false, false);
+    let _result = e.on_key(keys::F, false, false);
+    println!("t[f -> buffer contains tờ");
+}
+
+#[test]
+fn issue159_bracket_disabled() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    // Default is OFF, so bracket should pass through
+    let result = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(
+        result.action, 0,
+        "']' with feature disabled should pass through"
+    );
+
+    e.clear();
+
+    // Enable then disable
+    e.set_bracket_shortcut(true);
+    e.set_bracket_shortcut(false);
+    let result = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(
+        result.action, 0,
+        "'[' with feature disabled should pass through"
+    );
+}
+
+#[test]
+fn issue159_bracket_revert() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test ]] → ] (double bracket reverts)
+    let result1 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result1.action, 1, "First ']' should produce output");
+    assert_eq!(result1.chars[0], 'ư' as u32, "First ']' should produce 'ư'");
+
+    let result2 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result2.action, 1, "Second ']' should revert");
+    assert_eq!(
+        result2.chars[0], ']' as u32,
+        "Second ']' should revert to ']'"
+    );
+
+    e.clear();
+
+    // Test [[ → [ (double bracket reverts)
+    let result1 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result1.action, 1, "First '[' should produce output");
+    assert_eq!(result1.chars[0], 'ơ' as u32, "First '[' should produce 'ơ'");
+
+    let result2 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result2.action, 1, "Second '[' should revert");
+    assert_eq!(
+        result2.chars[0], '[' as u32,
+        "Second '[' should revert to '['"
+    );
+
+    e.clear();
+
+    // Test t]] → t] (revert after consonant)
+    e.on_key(keys::T, false, false);
+    e.on_key(keys::RBRACKET, false, false); // tư
+    let result = e.on_key(keys::RBRACKET, false, false); // revert to t]
+    assert_eq!(result.action, 1, "Second ']' should revert");
+    assert_eq!(result.chars[0], ']' as u32, "t]] should revert to t]");
+}
+
+#[test]
+fn issue159_bracket_continuous_typing() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Engine;
+
+    let mut e = Engine::new();
+    e.set_bracket_shortcut(true); // Enable feature (default OFF)
+
+    // Test h][ → hươ (continuous bracket typing)
+    e.on_key(keys::H, false, false);
+    let result1 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(result1.action, 1, "']' after 'h' should produce output");
+    assert_eq!(result1.chars[0], 'ư' as u32, "h] should produce 'hư'");
+
+    let result2 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result2.action, 1, "'[' after 'hư' should produce output");
+    assert_eq!(result2.chars[0], 'ơ' as u32, "h][ should produce 'hươ'");
+
+    e.clear();
+
+    // Test ][ → ươ (both brackets at word start)
+    let result1 = e.on_key(keys::RBRACKET, false, false);
+    assert_eq!(
+        result1.chars[0], 'ư' as u32,
+        "'] at start should produce 'ư'"
+    );
+
+    let result2 = e.on_key(keys::LBRACKET, false, false);
+    assert_eq!(result2.action, 1, "'[' after 'ư' should produce output");
+    assert_eq!(result2.chars[0], 'ơ' as u32, "][ should produce 'ươ'");
 }

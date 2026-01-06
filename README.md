@@ -14,44 +14,66 @@
 </p>
 
 <p align="center">
-  <img src="assets/screenshot.png" alt="FKey Screenshot" width="100%">
+  <img src="assets/screenshot.png" alt="Gõ Nhanh Light Mode" width="100%">
 </p>
 
 ---
 
 ## 📥 Tải về & Cài đặt
 
+### 🍺 Homebrew (macOS - Khuyến nghị)
+
+```bash
+brew install --cask gonhanh
+```
+
+> **Cập nhật:** App tự động kiểm tra phiên bản mới mỗi 24h. Hoặc dùng `brew upgrade --cask gonhanh`.
+
 ### 📦 Tải thủ công
 
-| Nền tảng | Trạng thái | Tải xuống |
-|:--------:|:----------:|:---------:|
-| **Windows** | ✅ Sẵn sàng | [📥 Tải FKey.zip](https://github.com/miken90/gonhanh.org/releases/latest) |
+| Nền tảng | Trạng thái | Tải xuống | Hướng dẫn |
+|:--------:|:----------:|:---------:|:----------|
+| **macOS** | ✅ Sẵn sàng | [📥 Tải GoNhanh.dmg](https://github.com/khaphanspace/gonhanh.org/releases/latest/download/GoNhanh.dmg) | [Xem hướng dẫn](docs/install-macos.md) |
+| **Linux** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-linux.md) |
+| **Windows** | 🧪 Beta | — | [Xem hướng dẫn](docs/install-windows.md) |
 
-> **Lưu ý:** File FKey.zip ~70MB (self-contained, không cần cài .NET Runtime)
+<details>
+<summary><strong>⚠️ macOS: App không mở được?</strong></summary>
 
-### Cài đặt nhanh
+```bash
+# Chạy lệnh này trong Terminal sau khi kéo app vào Applications
+xattr -cr /Applications/GoNhanh.app
+```
 
-1. Tải và giải nén `FKey.zip`
-2. Chạy `FKey.exe`
-3. App sẽ chạy trong system tray (khay hệ thống)
+Sau đó: **System Settings → Privacy & Security → Accessibility → Bật GoNhanh**
+
+</details>
 
 ## ✨ Tính năng
 
 ### 🔥 Highlight
 
-- 🔍 **Hỗ trợ mọi app** - Chrome, VS Code, Notion, Terminal, Discord, Slack...
-- 🔤 **Auto-restore tiếng Anh** — Gõ `text` `expect` `user` `push` `sort` → tự khôi phục khi nhấn space
-- ⎋ **Gõ ESC tự khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`
-- 🔠 **Tự viết hoa đầu câu** — Gõ `ok.` Space `b` → `B` hoa
-- ⚡ **Siêu nhanh** — <1ms latency · ~10MB RAM
+- 🔍 **Fix lỗi Chrome/Spotlight/Arc/Claude Code/JetBrains** - Tự động sửa dính chữ trong address bar, thanh tìm kiếm, Arc history
+- 🔤 **Auto-restore tiếng Anh** — Gõ `text` `expect` `user` `push` `sort` → tự khôi phục khi nhấn space. [Xem chi tiết ↓](#-auto-restore-tiếng-anh)
+- ⎋ **Gõ ESC tự khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`. Không cần tắt bộ gõ khi gõ tiếng Anh!
+- 🧠 **Chuyển chế độ thông minh** — Tự nhớ ON/OFF cho từng app. Code trên VS Code (tắt) → Chat trên Slack (bật) → tự chuyển
+- 🔄 **Tự động theo input source** — Dùng tiếng Nhật, Hàn, Trung... → Gõ Nhanh tự tắt. Chuyển về tiếng Anh → tự bật lại
+- ⚡ **Siêu nhanh** — <1ms latency · ~5MB RAM. Hỗ trợ đa nền tảng trên cùng một engine
+
+
+<p align="center">
+  <video src="https://github.com/user-attachments/assets/957ec6c6-d6df-4ca9-9161-0a1bb6cf98ce" width="100%"></video>
+</p>
 
 ### 📋 Đầy đủ
 
 - ⌨️ **Telex & VNI** — Chọn kiểu gõ quen thuộc
-- 🎯 **Đặt dấu chuẩn** — Tự động theo quy tắc mới: `hoà`, `khoẻ`, `thuỷ`
+- 🎯 **Đặt dấu chuẩn** — Tự động theo [quy tắc mới](https://vi.wikipedia.org/wiki/Quy_t%E1%BA%AFc_%C4%91%E1%BA%B7t_d%E1%BA%A5u_thanh_c%E1%BB%A7a_ch%E1%BB%AF_Qu%E1%BB%91c_ng%E1%BB%AF): `hoà`, `khoẻ`, `thuỷ`
+- 🔠 **Tự viết hoa đầu câu** — Gõ `ok.` Space `b` → `B` hoa. Hỗ trợ `.` `!` `?` và Enter
 - ✂️ **Gõ tắt** — `vn` → `Việt Nam`, `ko` → `không`
-- 🚀 **Auto-start** — Tự khởi động cùng Windows
-- 🔧 **Phím tắt tùy chỉnh** — Đổi Ctrl+Space thành phím bạn muốn
+- 🔌 **Mọi app** — VS Code, Zed, Chrome, Notion, Terminal, Ghostty...
+- 🌗 **Dark/Light** — Theo hệ thống
+- 💻 **Đa nền tảng** — macOS, Linux, Windows (beta)
 
 ### 🛡️ Cam kết "Ba Không"
 
@@ -67,15 +89,61 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 - `s` → sắc, `f` → huyền, `r` → hỏi, `x` → ngã, `j` → nặng
 - `w` → dấu móc (ư, ơ)
 
-**FKey tự động khôi phục** khi nhấn **Space** nếu phát hiện pattern tiếng Anh.
+**Gõ Nhanh tự động khôi phục** khi nhấn **Space** nếu phát hiện pattern tiếng Anh.
 
 ### ✅ Các pattern được nhận diện
 
 | Pattern | Ví dụ | Giải thích |
 |:--------|:------|:-----------|
-| **Modifier + phụ âm** | `text` `next` `test` `expect` | x/s theo sau bởi phụ âm |
-| **W đầu + phụ âm** | `window` `water` `write` | W không phải phụ âm đầu tiếng Việt |
-| **F đầu** | `file` `fix` `function` | F không tồn tại trong tiếng Việt |
+| **Modifier + phụ âm** | `text` `next` `test` `expect` `express` | x/s theo sau bởi phụ âm (t, p, c...) |
+| **EI + modifier** | `their` `weird` | Cặp nguyên âm "ei" + r/s/f... |
+| **P + AI + modifier** | `pair` | P đầu (hiếm trong tiếng Việt) + ai |
+| **Nguyên âm + modifier + nguyên âm** | `use` `user` | Không có phụ âm đầu |
+| **W đầu + phụ âm** | `window` `water` `write` `what` | W không phải phụ âm đầu tiếng Việt |
+| **W + nguyên + W** | `wow` | Pattern "wow" đặc trưng tiếng Anh |
+| **F đầu** | `file` `fix` `function` `firebase` | F không tồn tại trong tiếng Việt |
+
+### 📝 So sánh: macOS Telex vs Gõ Nhanh
+
+| Gõ | macOS Telex | Gõ Nhanh |
+|:---|:------------|:---------|
+| `text ` | `têt ` ❌ | `text ` ✅ |
+| `expect ` | `ễpct ` ❌ | `expect ` ✅ |
+| `perfect ` | `pềct ` ❌ | `perfect ` ✅ |
+| `window ` | `ưindow ` ❌ | `window ` ✅ |
+| `with ` | `ưith ` ❌ | `with ` ✅ |
+| `tesla ` | `téla ` ❌ | `tesla ` ✅ |
+| `luxury ` | `lủuy ` ❌ | `luxury ` ✅ |
+| `case ` | `cáe ` ❌ | `case ` ✅ |
+| `wow ` | `ươ ` ❌ | `wow ` ✅ |
+| `file ` | `file ` ✅ | `file ` ✅ |
+| `fix ` | `fix ` ✅ | `fix ` ✅ |
+
+### ⚠️ Giới hạn
+
+Một số từ tiếng Anh tạo ra cấu trúc **hợp lệ tiếng Việt** nên không thể tự nhận diện:
+
+| Từ Anh | Kết quả Telex | Lý do |
+|:-------|:--------------|:------|
+| `mix` | `mĩ` | M + ĩ hợp lệ |
+| `box` | `bõ` | B + õ hợp lệ |
+| `six` | `sĩ` | S + ĩ hợp lệ |
+
+**Giải pháp:**
+- Nhấn **ESC** sau khi gõ để khôi phục
+- Tắt bộ gõ tạm thời (⌘+Space hoặc click menu bar)
+
+---
+
+## ❤️‍🔥 Động lực
+
+Tôi (**Kha Phan**) bắt đầu dự án này vì các bộ gõ hiện tại thường xuyên gặp lỗi khi tôi làm việc với **Claude Code**.
+
+Từ nhu cầu giải quyết vấn đề cá nhân, Gõ Nhanh được phát triển thành một sản phẩm hoàn thiện dành tặng cộng đồng. Đây cũng là sự tiếp nối và kế thừa từ **UniKey**, **OpenKey** và **EVKey**.
+
+Hy vọng Gõ Nhanh góp phần truyền cảm hứng cho cộng đồng mã nguồn mở tại Việt Nam.
+
+Nếu các bạn thấy phần mềm hữu ích có thể [ủng hộ tôi tại đây](https://github.com/sponsors/khaphanspace).
 
 ---
 
@@ -86,59 +154,65 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 | Layer | Công nghệ |
 |-------|-----------|
 | **Core Engine** | Rust 2021 (pure `std`, zero runtime deps) |
+| **macOS** | SwiftUI + CGEventTap + C FFI |
 | **Windows** | WPF/.NET 8 + SetWindowsHookEx + P/Invoke |
-| **Testing** | rstest + serial_test (700+ tests) |
-| **CI/CD** | GitHub Actions + auto-versioning |
+| **Linux** | Fcitx5 + C++ + C FFI |
+| **Testing** | rstest + serial_test (600+ tests) |
+| **CI/CD** | GitHub Actions + auto-versioning + AI-generated release notes |
+| **Dev Tools** | [Claude Code](https://claude.ai/code) with [ClaudeKit](https://claudekit.cc/) |
+
+### Cách hoạt động
+
+Engine dựa trên **ngữ âm học tiếng Việt** thay vì bảng tra cứu:
+
+```
+Âm tiết = [Phụ âm đầu] + [Âm đệm] + Nguyên âm chính + [Âm cuối] + Thanh điệu
+          (b,c,d,g...)   (o,u)      (a,ă,â,e,ê...)    (c,m,n,p,t)  (sắc,huyền...)
+```
+
+Chi tiết: [docs/core-engine-algorithm.md](docs/core-engine-algorithm.md) | [docs/vietnamese-language-system.md](docs/vietnamese-language-system.md)
 
 ### Build & Test
 
-**Windows**:
-```powershell
-# Build Rust core
-.\scripts\build-core-windows.ps1
+```bash
+# Setup (chạy 1 lần)
+./scripts/setup.sh
 
-# Build Windows app
-.\scripts\build-windows.sh
-
-# Run tests
-cd core
-cargo test
+# Development
+make test      # Chạy tests
+make format    # Format + lint
+make build     # Build full app
+make install   # Copy vào /Applications
 ```
 
-**Setup Development**:
-```powershell
-# Install dependencies
-.\scripts\setup-windows.ps1
-```
+### Nguyên tắc thiết kế
 
-### Known Issues
+| Nguyên tắc | Chi tiết |
+|------------|----------|
+| **Anti-over-engineering** | Không abstraction layer thừa. Inline code khi chỉ dùng 1 chỗ |
+| **Performance-first** | Target: <1ms latency, <10MB RAM. Không allocation trong hot path |
+| **Zero dependency** | Rust core chỉ dùng `std`. Không crates ngoài |
+| **Test-driven** | 600+ tests với coverage 100%. Bao gồm edge cases tiếng Việt và auto-restore tiếng Anh |
+| **Validation-first** | Reject invalid input sớm. Validate trước khi transform |
+| **Platform-agnostic core** | Core = pure Rust, no OS-specific code. UI layer riêng cho mỗi platform |
 
-- ✅ **Fast typing race condition** (FIXED - v1.6.0+)
-  - Vấn đề cũ: Gõ quá nhanh gây sai thứ tự ký tự ("hiện" → "hinệ")
-  - Đã fix: Async queue architecture (Phase 4 complete)
-- ✅ **Character loss in Wave terminal** (FIXED - v1.7.4)
-  - Vấn đề cũ: Ký tự bị mất khi gõ trong Wave terminal (Claude Code)
-  - Đã fix: Thêm Wave vào SlowApps list cho text injection chính xác
+### Tài liệu kỹ thuật
+
+| Tài liệu | Mô tả |
+|----------|-------|
+| [Kiến trúc hệ thống](docs/system-architecture.md) | FFI, luồng dữ liệu, app compatibility |
+| [Validation Algorithm](docs/validation-algorithm.md) | 5 quy tắc kiểm tra âm tiết |
+| [Hệ thống chữ viết tiếng Việt & Phương pháp gõ](docs/vietnamese-language-system.md) | Cơ sở lý thuyết |
+| [Hướng dẫn phát triển](docs/development.md) | Build, test, contribute |
 
 ---
 
-## 🙏 Lời cảm ơn
+## ⭐ Star History
 
-FKey được fork từ dự án **[Gõ Nhanh](https://github.com/khaphanspace/gonhanh.org)** của **Kha Phan**.
-
-Xin chân thành cảm ơn Kha Phan và các contributors của Gõ Nhanh đã tạo ra nền tảng tuyệt vời này. FKey kế thừa và tiếp nối sứ mệnh mang đến bộ gõ tiếng Việt chất lượng cao cho cộng đồng.
-
-Dự án này cũng là sự tiếp nối từ **UniKey**, **OpenKey** và **EVKey**.
-
-## 📦 Repository
-
-- **Original**: [khaphanspace/gonhanh.org](https://github.com/khaphanspace/gonhanh.org)
-- **FKey Fork**: [miken90/gonhanh.org](https://github.com/miken90/gonhanh.org)
+[![Star History Chart](https://api.star-history.com/svg?repos=khaphanspace/gonhanh.org&type=Timeline&legend=bottom-right)](https://www.star-history.com/#khaphanspace/gonhanh.org&type=Timeline&legend=bottom-right)
 
 ---
 
 ## 📄 License
 
-FKey được phân phối theo giấy phép [BSD-3-Clause](LICENSE).
-
-Bản quyền gốc © 2025 Gõ Nhanh Contributors.
+Copyright © 2025 Gõ Nhanh Contributors. [BSD-3-Clause](LICENSE).
