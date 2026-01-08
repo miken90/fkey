@@ -2312,7 +2312,21 @@ impl Engine {
                         && has_valid_vietnamese_initial
                         && !has_vietnamese_double_initial
                     {
-                        // IMPORTANT: Check foreign word pattern BEFORE modifying buffer
+                        // Skip delayed circumflex if raw_input is an English word
+                        // This prevents "pasta" → "pất", "costa" → "côt", etc.
+                        // The raw_input check works because English words like "pasta"
+                        // are in our dictionary, while Vietnamese typing patterns are not.
+                        let raw_str: String = self
+                            .raw_input
+                            .iter()
+                            .filter_map(|&(k, caps, _)| utils::key_to_char(k, caps))
+                            .collect::<String>()
+                            .to_lowercase();
+                        if english_dict::is_english_word(&raw_str) {
+                            // Raw input is English - don't apply delayed circumflex
+                            // Let the letter be added normally, auto-restore will handle it
+                        } else {
+                            // IMPORTANT: Check foreign word pattern BEFORE modifying buffer
                         // to avoid leaving buffer in inconsistent state if we need to return None.
                         // Example: "cete" + 'r' → "cêt" (delayed circumflex) + T+R check → foreign
                         // Without this check, buffer would be left as "cêt" even though we return None.
@@ -2349,6 +2363,7 @@ impl Engine {
                             }
                             // Remove second vowel (it was just a trigger)
                             self.buf.remove(pos2);
+                        }
                         }
                     }
                 }
@@ -2655,6 +2670,15 @@ impl Engine {
     ///
     /// Returns Some((old_pos, new_pos)) if tone was moved, None otherwise.
     fn reposition_tone_if_needed(&mut self) -> Option<(usize, usize)> {
+        // Check if raw_input is an English word (used later with diphthong check)
+        let raw_str: String = self
+            .raw_input
+            .iter()
+            .filter_map(|&(k, caps, _)| utils::key_to_char(k, caps))
+            .collect::<String>()
+            .to_lowercase();
+        let is_english_word = english_dict::is_english_word(&raw_str);
+
         // Find vowel with tone mark (sắc/huyền/hỏi/ngã/nặng)
         let tone_info: Option<(usize, u8)> = self
             .buf
@@ -2669,9 +2693,22 @@ impl Engine {
                 return None;
             }
 
+            // Skip tone repositioning if raw_input is an English word AND vowels don't form
+            // a valid Vietnamese diphthong pattern.
+            // This prevents "costa" → "cotá" (O→A tone move with consonants between)
+            // while allowing "usee" → "uế" (valid UE diphthong pattern).
+            if is_english_word && !self.vowels_form_valid_diphthong(&vowels) {
+                return None;
+            }
+
             // Check for syllable boundary: if there's a consonant between the toned vowel
             // and any later vowel, the toned vowel is in a closed syllable - don't reposition.
             // Example: "bủn" + "o" → 'n' closes "bủn", so 'o' starts new syllable.
+            //
+            // EXCEPTION: If vowels form a valid Vietnamese diphthong pattern, allow repositioning.
+            // This handles interleaved typing like "kisna" where tone on 'i' should move to 'a'
+            // because "ia" is a valid diphthong with tone on first vowel, but the user typed
+            // the consonant 'n' before 'a'.
             let has_consonant_after_tone = (old_pos + 1..self.buf.len()).any(|i| {
                 self.buf
                     .get(i)
@@ -2683,8 +2720,12 @@ impl Engine {
                     .any(|v| v.pos > old_pos && self.has_consonant_between(old_pos, v.pos));
 
             if has_vowel_after_consonant {
-                // Syllable boundary detected - tone is in previous syllable, don't move it
-                return None;
+                // Check if vowels form a valid diphthong pattern
+                // If yes, this is NOT a syllable boundary - user just typed out of order
+                if !self.vowels_form_valid_diphthong(&vowels) {
+                    // Syllable boundary detected - tone is in previous syllable, don't move it
+                    return None;
+                }
             }
 
             // Issue #162 fix: Don't reposition if vowels are identical (doubled vowels like "oo", "aa", "ee").
@@ -2722,6 +2763,204 @@ impl Engine {
                 .get(i)
                 .is_some_and(|c| !keys::is_vowel(c.key) && c.key != keys::W)
         })
+    }
+
+    /// Check if vowels form a valid Vietnamese diphthong pattern
+    ///
+    /// This allows tone repositioning even when consonants are between vowels
+    /// (typed out of order). Valid diphthongs: ia, ua, oa, ai, ao, oi, etc.
+    fn vowels_form_valid_diphthong(&self, vowels: &[Vowel]) -> bool {
+        use crate::data::vowel::{TONE_FIRST_PATTERNS, TONE_SECOND_PATTERNS};
+
+        if vowels.len() < 2 {
+            return false;
+        }
+
+        // Check if first two vowels form a valid diphthong pattern
+        let pair = [vowels[0].key, vowels[1].key];
+
+        // Check against all known diphthong patterns
+        TONE_FIRST_PATTERNS
+            .iter()
+            .any(|p| p[0] == pair[0] && p[1] == pair[1])
+            || TONE_SECOND_PATTERNS
+                .iter()
+                .any(|p| p[0] == pair[0] && p[1] == pair[1])
+    }
+
+    /// Reorder buffer when a vowel completes a diphthong with earlier vowel,
+    /// and there are consonants between that should be final consonants.
+    ///
+    /// Example: "kisna" → buffer is k-í-n-a, but Vietnamese order is k-í-a-n
+    /// because "ia" is a diphthong and 'n' is the final consonant.
+    ///
+    /// Returns Some(reorder_start_pos) if reordering happened, None otherwise.
+    fn reorder_diphthong_with_final(&mut self) -> Option<usize> {
+        use crate::data::constants::VALID_FINALS_1;
+
+        let len = self.buf.len();
+        if len < 3 {
+            return None; // Need at least: vowel + consonant + vowel
+        }
+
+        // Only reorder if buffer has Vietnamese transforms (tone marks or diacritics)
+        // This prevents reordering for English words like "final" → "fianl"
+        let has_vn_transforms = self.buf.iter().any(|c| c.mark > 0 || c.tone > 0);
+        if !has_vn_transforms {
+            return None;
+        }
+
+        // Skip reordering if raw_input is an English word
+        // This prevents corrupting English words like "vista" → "víat"
+        // The auto-restore will handle restoring "vísta" to "vista" since it's invalid VN
+        // But if we reorder, "víat" looks like valid VN structure and won't restore
+        let raw_str: String = self
+            .raw_input
+            .iter()
+            .filter_map(|&(key, caps, _)| utils::key_to_char(key, caps))
+            .collect::<String>()
+            .to_lowercase();
+        if english_dict::is_english_word(&raw_str) {
+            return None;
+        }
+
+        // The new vowel is the last character in buffer
+        let new_vowel_pos = len - 1;
+        let new_vowel_key = self.buf.get(new_vowel_pos)?.key;
+
+        // Find the previous vowel (before any consonants)
+        let mut prev_vowel_pos = None;
+        let mut consonants_between = Vec::new();
+
+        for i in (0..new_vowel_pos).rev() {
+            let c = self.buf.get(i)?;
+            if keys::is_vowel(c.key) {
+                prev_vowel_pos = Some(i);
+                break;
+            } else if c.key != keys::W {
+                // Collect consonants between vowels
+                consonants_between.push(i);
+            }
+        }
+
+        let prev_vowel_pos = prev_vowel_pos?;
+        if consonants_between.is_empty() {
+            return None; // No consonants between - no reordering needed
+        }
+
+        // Check if there are other vowels before prev_vowel_pos
+        // If yes, don't reorder - the consonant might belong to an earlier vowel cluster
+        // Example: "coupo" - don't reorder because "ou" vowel cluster exists before 'p'
+        let has_earlier_vowels =
+            (0..prev_vowel_pos).any(|i| self.buf.get(i).is_some_and(|c| keys::is_vowel(c.key)));
+        if has_earlier_vowels {
+            return None;
+        }
+
+        // Check if the two vowels form a valid diphthong
+        let prev_vowel = self.buf.get(prev_vowel_pos)?;
+        let prev_vowel_key = prev_vowel.key;
+
+        // If previous vowel has a vowel modifier (circumflex/breve/horn), it can't form
+        // a diphthong with the new vowel. Example: ô+a is NOT valid, only o+a is valid.
+        // Circumflex/breve/horn marks make a vowel "complete" and non-combinable.
+        // Note: `tone` field = vowel modifier (^, ư, ơ, ă), `mark` field = accent (sắc, huyền, etc.)
+        if prev_vowel.tone > 0 {
+            return None;
+        }
+
+        let pair = [prev_vowel_key, new_vowel_key];
+
+        // Only reorder for specific diphthongs that are commonly typed "out of order"
+        // (tone modifier between vowels). Other diphthongs like OE, OA, EO are typically
+        // typed in natural order and shouldn't trigger reordering.
+        //
+        // Patterns that support interleaved typing (V + tone + C + V → V + V + C):
+        // - IA: "misa" → "mía", "kisna" → "kían"
+        // - UA: "musa" → "mùa", "kusna" → "kùan"
+        //
+        // This prevents false positives like "copses" → "coeps" (OE pattern)
+        let is_reorderable_diphthong = matches!(pair, [keys::I, keys::A] | [keys::U, keys::A]);
+
+        if !is_reorderable_diphthong {
+            return None;
+        }
+
+        // Check raw_input pattern to distinguish valid interleaved typing from foreign words
+        //
+        // Valid: "misa" = m + i + s + a → only tone mod (S) between I and A
+        // Valid: "kisna" = k + i + s + n + a → tone mod (S) + final consonant (N) between I and A
+        //        In buffer: [K, Í, N, A] - the N between I and A will become the final
+        // Invalid: "gusta" = g + u + s + t + a → tone mod (S) + T between U and A
+        //          BUT in buffer: [G, Ú, T, A] - T is also between U and A, same as kisna!
+        //
+        // The difference: "kisna" is meant to be Vietnamese, "gusta" is foreign.
+        // We can't distinguish purely from structure, so use heuristics:
+        // 1. Check if the pattern is common Vietnamese interleaved typing
+        // 2. For IA/UA patterns with single consonant between, allow reordering
+        //    (auto-restore will fix English words on space)
+        //
+        // This allows "kisna" → "kían" while relying on auto-restore to fix "gusta" → "gusta"
+
+        // Check if consonants could be valid final consonants
+        // For simplicity, only handle single consonant final (most common case)
+        if consonants_between.len() > 2 {
+            return None; // Too many consonants - probably not a reorder case
+        }
+
+        // Check if consonants form valid final (ng, nh, ch, or single consonant)
+        let consonant_keys: Vec<u16> = consonants_between
+            .iter()
+            .rev()
+            .filter_map(|&i| self.buf.get(i).map(|c| c.key))
+            .collect();
+
+        let is_valid_final = match consonant_keys.len() {
+            1 => VALID_FINALS_1.contains(&consonant_keys[0]),
+            2 => {
+                // Check for valid 2-char finals: ng, nh, ch
+                matches!(
+                    (consonant_keys[0], consonant_keys[1]),
+                    (keys::N, keys::G) | (keys::N, keys::H) | (keys::C, keys::H)
+                )
+            }
+            _ => false,
+        };
+
+        if !is_valid_final {
+            return None;
+        }
+
+        // Reorder: move new vowel to right after previous vowel
+        // Buffer: [... prev_vowel ... consonants ... new_vowel]
+        // Target: [... prev_vowel new_vowel ... consonants ...]
+        //
+        // Since new_vowel is already at end, we need to:
+        // 1. Save the new vowel
+        // 2. Move consonants one position forward (toward end)
+        // 3. Insert new vowel right after prev_vowel
+
+        let new_vowel = *self.buf.get(new_vowel_pos)?;
+
+        // Shift consonants one position forward
+        // consonants_between is in reverse order (highest pos first)
+        for &pos in &consonants_between {
+            if let Some(c) = self.buf.get(pos) {
+                let c_copy = *c;
+                if let Some(next) = self.buf.get_mut(pos + 1) {
+                    *next = c_copy;
+                }
+            }
+        }
+
+        // Place new vowel right after prev_vowel
+        let insert_pos = prev_vowel_pos + 1;
+        if let Some(slot) = self.buf.get_mut(insert_pos) {
+            *slot = new_vowel;
+        }
+
+        // Return position to rebuild from
+        Some(insert_pos)
     }
 
     /// Common revert logic: clear modifier, add key to buffer, rebuild output
@@ -2957,18 +3196,32 @@ impl Engine {
                 });
 
             if should_add_circumflex {
-                // Add circumflex to the vowel (keeping existing mark)
-                if let Some(c) = self.buf.get_mut(vowel_idx) {
-                    c.tone = tone::CIRCUMFLEX;
-                    self.had_any_transform = true;
+                // Skip circumflex if raw_input is an English word
+                // This prevents "pasta" → "pất", "costa" → "côt", etc.
+                // raw_input includes the current key (pushed before process() is called)
+                let raw_str: String = self
+                    .raw_input
+                    .iter()
+                    .filter_map(|&(k, caps, _)| utils::key_to_char(k, caps))
+                    .collect::<String>()
+                    .to_lowercase();
+                if english_dict::is_english_word(&raw_str) {
+                    // Raw input is English - skip circumflex, add vowel normally
+                    // The auto-restore will handle restoring the English word
+                } else {
+                    // Add circumflex to the vowel (keeping existing mark)
+                    if let Some(c) = self.buf.get_mut(vowel_idx) {
+                        c.tone = tone::CIRCUMFLEX;
+                        self.had_any_transform = true;
+                    }
+
+                    // Note: raw_input already has the key (pushed at on_key_ext before process)
+
+                    // Rebuild from vowel position (second vowel is NOT added to buffer - it's modifier)
+                    // Screen has: "xép" (3 chars), buffer stays: "xếp" (3 chars, vowel updated)
+                    // Need to delete "ép" (2 chars) and output "ếp" (2 chars)
+                    return self.rebuild_from(vowel_idx);
                 }
-
-                // Note: raw_input already has the key (pushed at on_key_ext before process)
-
-                // Rebuild from vowel position (second vowel is NOT added to buffer - it's modifier)
-                // Screen has: "xép" (3 chars), buffer stays: "xếp" (3 chars, vowel updated)
-                // Need to delete "ép" (2 chars) and output "ếp" (2 chars)
-                return self.rebuild_from(vowel_idx);
             }
         }
 
@@ -3060,6 +3313,21 @@ impl Engine {
                 // No tone to reposition - just output ơ
                 let vowel_char = chars::to_char(keys::O, caps, tone::HORN, 0).unwrap();
                 return Result::send(0, &[vowel_char]);
+            }
+
+            // Reorder buffer when a vowel completes a diphthong with earlier vowel
+            // and there are consonants between that should be final consonants.
+            // Example: "kisna" → buffer is k-í-n, adding 'a' should produce k-í-a-n (kían)
+            // because "ia" is a diphthong and 'n' is a valid final consonant.
+            if keys::is_vowel(key) {
+                if let Some(reorder_pos) = self.reorder_diphthong_with_final() {
+                    // After reordering, also reposition tone if needed
+                    // Example: "musno" → buffer reordered to m-ú-o-n, but tone should be on 'o'
+                    // because "uo" diphthong has tone on second vowel.
+                    let tone_reposition = self.reposition_tone_if_needed();
+                    let rebuild_pos = tone_reposition.map(|(old, _)| old).unwrap_or(reorder_pos);
+                    return self.rebuild_from_after_insert(rebuild_pos);
+                }
             }
 
             // Auto-correct tone position when new character changes the correct placement
@@ -5425,6 +5693,7 @@ impl Engine {
                         let is_vietnamese_pattern = match prev_vowel {
                             k if k == keys::U => {
                                 // ua: của, mủa; uo: được; uy: thuỷ, quỷ; ui: tụi, mủi, cúi, núi
+                                // ue: handled separately below (like OE) to check English dict
                                 next_key == keys::A
                                     || next_key == keys::O
                                     || next_key == keys::Y
@@ -5448,7 +5717,10 @@ impl Engine {
                                 // eu: nếu, kêu (êu diphthong with tone on ê)
                                 next_key == keys::O || next_key == keys::U
                             }
-                            k if k == keys::I => next_key == keys::U, // iu: chịu, nịu, lịu
+                            k if k == keys::I => {
+                                // iu: chịu, nịu, lịu; ia: mía, kia, chia, tía
+                                next_key == keys::U || next_key == keys::A
+                            }
                             _ => false,
                         };
                         if !is_vietnamese_pattern {
@@ -5488,6 +5760,54 @@ impl Engine {
                                 }
 
                                 // For single initial + OE: only restore if raw is English word
+                                let raw_str: String = self
+                                    .raw_input
+                                    .iter()
+                                    .filter_map(|&(k, c, s)| utils::key_to_char_ext(k, c, s))
+                                    .collect();
+                                if !english_dict::is_english_word(&raw_str) {
+                                    // Not a common English word, keep Vietnamese
+                                    continue;
+                                }
+                            }
+
+                            // Special case: U + modifier + E (similar to OE handling)
+                            // Vietnamese-first for specific patterns, English otherwise
+                            // "huse" → "hué" (H + UE is valid Vietnamese pattern)
+                            // "cure", "pure", "sure" → English (common English words)
+                            // "xuse", "zuse" → Vietnamese (raw not in EN dict)
+                            if prev_vowel == keys::U && next_key == keys::E {
+                                // Check for Vietnamese digraph initials (QU is special for UE)
+                                let has_vn_digraph = if self.raw_input.len() >= 2 {
+                                    let (c1, _, _) = self.raw_input[0];
+                                    let (c2, _, _) = self.raw_input[1];
+                                    // QU + E pattern: quế, qué (valid Vietnamese)
+                                    let is_qu = c1 == keys::Q && c2 == keys::U;
+                                    // Digraphs ending with H: CH, KH, GH, TH, PH, NH
+                                    let ends_with_h = c2 == keys::H
+                                        && matches!(
+                                            c1,
+                                            keys::C
+                                                | keys::K
+                                                | keys::G
+                                                | keys::T
+                                                | keys::P
+                                                | keys::N
+                                        );
+                                    // Other digraphs: NG, TR
+                                    let is_ng = c1 == keys::N && c2 == keys::G;
+                                    let is_tr = c1 == keys::T && c2 == keys::R;
+                                    is_qu || ends_with_h || is_ng || is_tr
+                                } else {
+                                    false
+                                };
+
+                                if has_vn_digraph {
+                                    // Vietnamese digraph + UE → keep Vietnamese
+                                    continue;
+                                }
+
+                                // For single initial + UE: only restore if raw is English word
                                 let raw_str: String = self
                                     .raw_input
                                     .iter()
@@ -6149,6 +6469,75 @@ mod tests {
             assert_eq!(
                 result, *expected,
                 "[Stroke caps] '{}' → '{}', expected '{}'",
+                input, result, expected
+            );
+        }
+    }
+
+    /// Comprehensive tests for Vietnamese diphthong patterns with interleaved tone marks.
+    /// Pattern: C + V1 + tone + V2 (e.g., "misa" = m + i + s + a → mía)
+    /// These patterns should NOT trigger auto-restore because they are valid Vietnamese.
+    const TELEX_INTERLEAVED_DIPHTHONG: &[(&str, &str)] = &[
+        // IA diphthong: mía, kia, chia, tía
+        ("misa ", "mía "), // m + i + s(sắc) + a → mía
+        ("kisa ", "kía "), // k + i + s + a → kía
+        ("lisa ", "lía "), // l + i + s + a → lía
+        ("tifa ", "tìa "), // t + i + f(huyền) + a → tìa
+        ("nira ", "nỉa "), // n + i + r(hỏi) + a → nỉa
+        // UA diphthong: múa, lúa, cúa
+        ("musa ", "múa "), // m + u + s + a → múa
+        ("lusa ", "lúa "), // l + u + s + a → lúa
+        ("cufa ", "cùa "), // c + u + f + a → cùa
+        // UE diphthong: huế, tuệ, quế (valid Vietnamese, tone on E)
+        ("huse ", "hué "), // h + u + s + e → hué (tone moves to E)
+        ("tuse ", "tué "), // t + u + s + e → tué (tone on E)
+        // OA diphthong: hoá, toá (tone on A, second vowel)
+        ("hosa ", "hoá "), // h + o + s + a → hoá (tone on A)
+        ("tosa ", "toá "), // t + o + s + a → toá (tone on A)
+        ("lora ", "loả "), // l + o + r + a → loả (tone on A)
+        // AI diphthong: mái, lái, tái
+        ("masi ", "mái "), // m + a + s + i → mái
+        ("lasi ", "lái "), // l + a + s + i → lái
+        ("tafi ", "tài "), // t + a + f + i → tài
+        // AO diphthong: cáo, náo, báo
+        ("caso ", "cáo "), // c + a + s + o → cáo
+        ("naso ", "náo "), // n + a + s + o → náo
+        ("bafo ", "bào "), // b + a + f + o → bào
+        // AU diphthong: máu, láu, càu
+        ("masu ", "máu "), // m + a + s + u → máu
+        ("lasu ", "láu "), // l + a + s + u → láu
+        ("cafu ", "càu "), // c + a + f + u → càu (huyền, not circumflex)
+        // AY diphthong: máy, cáy, lấy
+        ("masy ", "máy "), // m + a + s + y → máy
+        ("casy ", "cáy "), // c + a + s + y → cáy
+        ("lafy ", "lày "), // l + a + f + y → lày
+        // OI diphthong: bói, hói, đói
+        ("bosi ", "bói "), // b + o + s + i → bói
+        ("hofi ", "hòi "), // h + o + f + i → hòi
+        ("lori ", "lỏi "), // l + o + r + i → lỏi
+        // UI diphthong: núi, cúi, tủi
+        ("nusi ", "núi "), // n + u + s + i → núi
+        ("cufi ", "cùi "), // c + u + f + i → cùi
+        ("turi ", "tủi "), // t + u + r + i → tủi
+        // IU diphthong: chịu, nịu, lịu
+        ("chiju ", "chịu "), // ch + i + j(nặng) + u → chịu
+        ("niju ", "nịu "),   // n + i + j + u → nịu
+        ("lisu ", "líu "),   // l + i + s + u → líu
+        // EO diphthong: méo, kẹo, bèo
+        ("meso ", "méo "), // m + e + s + o → méo
+        ("kejo ", "kẹo "), // k + e + j + o → kẹo
+        ("befo ", "bèo "), // b + e + f + o → bèo
+    ];
+
+    #[test]
+    fn test_interleaved_diphthong_auto_restore() {
+        for (input, expected) in TELEX_INTERLEAVED_DIPHTHONG {
+            let mut e = Engine::new();
+            e.set_english_auto_restore(true);
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[Interleaved diphthong] '{}' → '{}', expected '{}'",
                 input, result, expected
             );
         }

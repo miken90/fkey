@@ -181,7 +181,7 @@ boats	boát
 dawn	dăn
 para	pẩ
 thereof	thềo
-susan	suán
+susan	súan
 burst	bút
 bow	bơ
 guest	guét
@@ -274,6 +274,7 @@ chips	chíp
 aus	áu
 curse	cué
 wa	ưa
+burma	buảm
 lawn	lăn
 chooses	chốe
 cox	cõ
@@ -286,6 +287,8 @@ bee	bê
 poorer	pổe
 boot	bôt
 diana	diân
+lisa	lía
+infrared	ianred
 maya	mây
 toes	toé
 var	vả
@@ -374,6 +377,7 @@ ox	õ
 goose	gốe
 pier	piẻ
 buys	buý
+visa	vía
 bosom	bốm
 cos	có
 nuns	nún
@@ -461,7 +465,6 @@ laos	láo
 dessert	desert
 raj	rạ
 poisson	poison
-pasta	pất
 oats	oát
 thorn	thỏn
 chef	chè
@@ -493,6 +496,7 @@ reuse	rếu
 ras	rá
 lama	lâm
 tee	tê
+muse	mué
 pesos	péo
 beset	bết
 moor	mổ
@@ -504,6 +508,7 @@ asa	ấ
 diese	diế
 liar	lỉa
 deduce	đêuc
+cures	cué
 boer	boẻ
 noses	noé
 wc	ưc
@@ -588,6 +593,7 @@ curses	cué
 defends	đến
 lerner	lernr
 taps	táp
+purest	puét
 boar	boả
 kits	kít
 def	dè
@@ -596,6 +602,7 @@ townships	townshis
 chests	chets
 lawns	lắn
 loser	loẻ
+distaste	diatste
 beers	bế
 pies	pié
 testes	tests
@@ -617,6 +624,7 @@ trois	trói
 bur	bủ
 voor	vổ
 lorenz	loen
+pisa	pía
 haas	hấ
 barns	bán
 airs	ái
@@ -626,6 +634,7 @@ ars	á
 kern	kẻn
 seer	sể
 dod	đo
+museo	muéo
 twists	twiss
 berne	bển
 mes	mé
@@ -636,6 +645,7 @@ sono	sôn
 bets	bét
 woo	uô
 dw	dư
+buren	buẻn
 chow	chơ
 xerox	xẽo
 quran	quản
@@ -651,7 +661,6 @@ sores	soé
 deems	dếm
 yrs	ý
 misc	míc
-powerlessness	powerlessnss
 oars	oá
 soot	sôt
 dost	dót
@@ -665,11 +674,13 @@ huron	huỏn
 rowan	rơan
 harms	hám
 ers	é
+visas	vía
 mara	mẩ
 nas	ná
 pero	pẻo
 serfs	sé
 moons	mốn
+muses	mué
 dix	dĩ
 refs	ré
 bor	bỏ
@@ -682,6 +693,7 @@ assn	asn
 tex	tẽ
 pere	pể
 posits	poits
+hiram	hỉam
 wp	ưp
 vos	vó
 sens	sén
@@ -690,6 +702,7 @@ bins	bín
 cowan	cơan
 corral	coral
 hee	hê
+distasteful	diatsteful
 soar	soả
 gist	gít
 boers	boé
@@ -756,6 +769,7 @@ rana	rân
 chops	chóp
 suis	súi
 usc	úc
+turnaround	tuanround
 baja	bậ
 postsynaptic	potsynaptic
 isp	íp
@@ -763,8 +777,10 @@ soaps	soáp
 gust	gút
 lara	lẩ
 longs	lóng
+mustafa	muầt
 hoof	hồ
 mens	mén
+ture	tuẻ
 gw	gư
 beets	bết
 oas	oá
@@ -787,9 +803,11 @@ ari	ải
 nara	nẩ
 oss	os
 osi	ói
+mira	mỉa
 pee	pê
 busch	búch
 horst	hót
+ruse	rué
 mays	máy
 trieste	triết
 wk	ưk
@@ -822,9 +840,11 @@ tenses	tens
 lamar	lẩm
 bari	bải
 dude	đue
+dirac	dỉac
 chakra	chẩk
 curfew	cừe
 sacs	sác
+purer	puẻ
 cara	cẩ
 vero	vẻo
 ajax	ẫ
@@ -852,6 +872,7 @@ morn	mỏn
 surat	suảt
 lux	lũ
 vir	vỉ
+surest	suét
 mons	món
 ias	ía
 ros	ró
@@ -874,6 +895,7 @@ kris	krí
 hoses	hoé
 postsecondary	potsecondary
 samaj	sậm
+rosario	rôải
 ast	át
 loco	lôc
 lans	lán
@@ -886,6 +908,7 @@ mana	mân
 truest	truét
 booms	bốm
 bans	bán
+dispassionate	dispssionate
 diesem	diếm
 swaps	sưáp
 bursa	búa
@@ -916,6 +939,7 @@ hoofs	hố
 mow	mơ
 porn	pỏn
 asi	ái
+disarm	dỉam
 dais	dái
 ono	ôn
 tarsus	táu
@@ -942,6 +966,7 @@ liars	lía
 arya	ẩy
 bangs	báng
 verne	vển
+irma	ỉam
 nieces	niếc
 hw	hư
 quirk	quỉk
@@ -962,6 +987,7 @@ eos	éo
 dore	doẻ
 busts	buts
 loren	loẻn
+lures	lué
 deren	dển
 dwyer	dưyẻ
 hos	hó
@@ -1077,6 +1103,7 @@ hus	hú
 meso	méo
 aca	âc
 thar	thả
+mujer	muẻ
 wwii	wii
 nyerere	nyeree
 terns	tén
@@ -1098,6 +1125,7 @@ tits	tít
 puja	pụa
 nics	níc
 sura	sủa
+ipsa	íap
 sofas	soá
 xerxes	xế
 varna	vẩn
@@ -1105,6 +1133,7 @@ maris	mái
 mets	mét
 ooze	oe
 sawn	săn
+sujet	suẹt
 usp	úp
 nama	nâm
 dur	dủ
@@ -1134,6 +1163,7 @@ mayr	mảy
 chee	chê
 terme	tểm
 yee	yê
+lira	lỉa
 gans	gán
 hora	hoả
 hoary	hoảy
@@ -1171,6 +1201,7 @@ mois	mói
 gaya	gây
 uw	ư
 iww	iw
+surer	suẻ
 bestselling	betselling
 maru	mảu
 ris	rí
@@ -1233,6 +1264,7 @@ bij	bị
 gur	gủ
 ospf	òp
 rer	rẻ
+mujeres	muế
 trams	trám
 ocs	óc
 varus	váu
@@ -1322,6 +1354,8 @@ surfer	suẻ
 deuce	dêuc
 gats	gát
 purists	puits
+chirac	chỉac
+kinshasa	kianhsa
 rips	ríp
 cose	coé
 meerut	mểut
@@ -1350,6 +1384,7 @@ echr	ẻch
 darfur	dảu
 seeps	sếp
 duets	duét
+dispassionately	dispssionately
 carre	care
 boars	boá
 carnarvon	carnrvon
@@ -1397,9 +1432,11 @@ sosa	soá
 ux	ũ
 cwa	cưa
 pura	pủa
+kira	kỉa
 rasp	ráp
 bes	bé
 dex	dẽ
+tures	tué
 mura	mủa
 longo	lông
 poststructuralism	potstructuralism
@@ -1432,6 +1469,7 @@ lix	lĩ
 quays	quáy
 kips	kíp
 nary	nảy
+sira	sỉa
 tener	tển
 songwriters	songwritrs
 nuri	nủi
@@ -1442,6 +1480,7 @@ dene	dên
 saran	sẩn
 haan	hân
 xor	xỏ
+luxe	luẽ
 soong	sông
 duras	dúa
 aos	áo
@@ -1473,6 +1512,7 @@ oren	oẻn
 menger	mểng
 corns	cón
 bers	bé
+durer	duẻ
 sana	sân
 bosons	bosos
 sarai	sẩi
@@ -1519,6 +1559,7 @@ noor	nổ
 memes	mếm
 gow	gơ
 eez	e
+kisan	kían
 ded	đe
 khasi	khái
 orf	ò
@@ -1547,6 +1588,7 @@ busses	buses
 queste	quết
 maf	mà
 quern	quẻn
+kruse	krué
 ararat	araat
 ots	ót
 seme	sêm
@@ -1605,6 +1647,7 @@ oris	ói
 ifr	ỉ
 haa	hâ
 ura	ủa
+ista	íat
 quasar	quẩ
 ddl	đl
 diener	diển
@@ -1635,6 +1678,7 @@ lef	lè
 lus	lú
 tarr	tar
 boor	bổ
+misma	míam
 corot	cổt
 doj	dọ
 ojos	ố
@@ -1698,6 +1742,7 @@ loran	loản
 asap	ấp
 listserv	litserv
 coos	cố
+chuse	chué
 gins	gín
 sweatshops	sweatshos
 usu	úu
@@ -1713,6 +1758,7 @@ cursors	cuó
 ranga	râng
 mowat	mơat
 tisza	tia
+pisan	pían
 ose	oé
 muons	muón
 tarsi	tái
@@ -1727,6 +1773,7 @@ dword	đưở
 haran	hẩn
 wwi	wi
 twp	tưp
+hira	hỉa
 omo	ôm
 musics	muics
 dax	dã
@@ -1738,6 +1785,7 @@ amf	àm
 hepes	hếp
 comr	cỏm
 wch	ưch
+sujets	suét
 emr	ẻm
 khans	khán
 leche	lêch
@@ -1754,8 +1802,10 @@ powwow	powow
 cocos	cốc
 caja	cậ
 rojo	rộ
+ninja	nịan
 coot	côt
 postsurgical	potsurgical
+hijaz	hia
 dees	dế
 rast	rát
 mif	mì
@@ -1825,6 +1875,7 @@ mors	mó
 exner	ển
 oozes	oé
 toots	tốt
+vira	vỉa
 goons	gốn
 berners	bernrs
 hoots	hốt
@@ -1832,6 +1883,7 @@ wfp	ừp
 seest	sết
 parra	para
 giorno	giổn
+nira	nỉa
 suf	sù
 ursa	úa
 perspex	pễp
@@ -1868,7 +1920,8 @@ oes	oé
 oot	ôt
 auras	ấu
 barnhart	barnhrt
-pastas	pasts
+dure	duẻ
+pastas	ppasts
 chary	chảy
 afa	ầ
 rijn	rịn
@@ -1910,6 +1963,8 @@ chooser	chổe
 maja	mậ
 corre	core
 tows	tớ
+duse	dué
+sirach	sỉach
 choson	chốn
 roams	roám
 ero	ẻo
@@ -1934,6 +1989,7 @@ arn	ản
 menge	mêng
 poon	pôn
 teste	tết
+nisan	nían
 ues	ué
 tims	tím
 aif	ài
@@ -1992,6 +2048,7 @@ gyms	gým
 tost	tót
 herm	hẻm
 hwnd	hưnd
+ruses	rué
 gaf	gà
 rescher	rểch
 suas	súa
@@ -2079,17 +2136,20 @@ pdd	pđ
 giese	giế
 awk	ăk
 chara	chẩ
+misa	mía
 bursar	bủa
 heeft	hềt
 ariz	ai
 hest	hét
 hooch	hôch
+risa	ría
 therm	thẻm
 apf	àp
 varnas	vấn
 saxo	são
 nuys	nuý
 soja	soạ
+pira	pỉa
 naya	nây
 eer	ể
 aspx	ãp
@@ -2106,6 +2166,7 @@ khama	khâm
 maat	mât
 chiefest	chiết
 orazio	ôai
+lista	líat
 ajc	ạc
 mamas	mấm
 tems	tém
@@ -2122,6 +2183,7 @@ uris	úi
 oon	ôn
 imr	ỉm
 lais	lái
+buret	buẻt
 metes	mết
 amj	ạm
 usps	ups
@@ -2187,6 +2249,7 @@ cari	cải
 borst	bót
 daraus	dấu
 usus	úu
+usca	uác
 etf	èt
 aspasia	áaspasia
 duree	dủee
@@ -2250,16 +2313,19 @@ sori	sỏi
 gara	gẩ
 pene	pên
 kerns	kén
+nisa	nía
 nwp	nưp
 maro	mảo
 acas	ấc
 booz	bo
 versts	vets
 morais	moái
+inra	ỉan
 raa	râ
 marwar	mẩ
 awn	ăn
 gujrat	guảt
+kiran	kỉan
 worf	ườ
 nits	nít
 eure	ểu
@@ -2302,10 +2368,12 @@ mees	mế
 uscs	ucs
 haart	hẩt
 afsc	ác
+musca	muác
 buri	bủi
 paysans	paysas
 demes	dếm
 miers	mié
+mure	muẻ
 bori	bỏi
 harrold	harold
 esos	éo
@@ -2313,6 +2381,7 @@ costo	cốt
 turan	tuản
 usk	úk
 saif	sài
+siraj	sịa
 baro	bảo
 tyree	tỷee
 hasp	háp
@@ -2329,7 +2398,6 @@ dacs	dác
 caus	cáu
 eero	ểo
 dufay	duày
-tepees	tếp
 sef	sè
 gawk	găk
 poro	pổ
@@ -2390,6 +2458,7 @@ baji	bại
 lairs	lái
 lary	lảy
 lwr	lử
+mischa	míach
 cassa	casa
 rias	ría
 tums	túm
@@ -2424,9 +2493,11 @@ kyr	kỷ
 canr	cản
 thier	thiẻ
 leszek	lêk
+dusen	duén
 benj	bẹn
 dojo	dộ
 aras	ấ
+usna	uán
 marsyas	mấy
 asan	ấn
 naja	nậ
@@ -2462,10 +2533,12 @@ dern	dẻn
 quist	quít
 roon	rôn
 oems	oém
+hija	hịa
 otr	ỏt
 phasors	pháo
 aor	ảo
 parnas	pấn
+tiran	tỉan
 risse	rise
 nier	niẻ
 chana	chân
@@ -2479,6 +2552,7 @@ oer	oẻ
 langa	lâng
 enfer	ển
 hongo	hông
+busta	buát
 dox	dõ
 dosi	dói
 pusat	puát
@@ -2486,10 +2560,12 @@ nachr	nảch
 dudek	đuek
 nees	nế
 usaaf	uầ
+sirna	sỉan
 kier	kiẻ
 kamaraj	kkamaraj
 unf	ùn
 demers	dếm
+dispassion	dispssion
 maur	mảu
 parmar	parmr
 basa	bấ
@@ -2507,6 +2583,7 @@ asps	aps
 daru	dảu
 vins	vín
 aji	ại
+biran	bỉan
 aua	âu
 paro	pảo
 coots	cốt
@@ -2580,6 +2657,7 @@ muri	mủi
 bost	bót
 heuer	hểu
 barnardo	barnrdo
+ijma	ịam
 pooch	pôch
 moret	moẻt
 choosers	chốe

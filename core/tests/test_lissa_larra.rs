@@ -132,8 +132,8 @@ fn test_lissa_larra() {
 
 #[test]
 fn test_lissa_debug() {
+    use gonhanh_core::data::english_dict;
     use gonhanh_core::data::keys;
-    use gonhanh_core::data::{english_dict, telex_doubles};
     use gonhanh_core::engine::validation;
 
     // Check dictionary status
