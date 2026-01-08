@@ -877,24 +877,38 @@ fn tech_terms_comprehensive() {
 // Users should use ESC or raw mode for these
 // ============================================================
 
-/// These words form structurally valid Vietnamese and are NOT auto-restored.
-/// This test documents the expected behavior.
+/// Vietnamese-first: valid Vietnamese buffer stays Vietnamese.
+/// User can type double modifier to escape to English (tesst → test).
 #[test]
-fn valid_vietnamese_structure_not_restored() {
+fn vietnamese_first_valid_buffer() {
     telex_auto_restore(&[
-        // -est pattern produces valid Vietnamese with é + t final
-        ("test ", "tét "), // tét is valid Vietnamese
-        ("best ", "bét "), // bét is valid Vietnamese
-        ("rest ", "rét "), // rét (cold) is a real word
-        ("nest ", "nét "), // nét (stroke/feature) is a real word
-        // -ost pattern produces valid Vietnamese with ó + t final
-        ("cost ", "cót "), // cót is valid Vietnamese structure
-        ("host ", "hót "), // hót (to sing/chirp) is a real word
-        ("lost ", "lót "), // lót (to line/pad) is a real word
-        ("most ", "mót "), // mót (to glean) is a real word
-        ("post ", "pót "), // pót is valid Vietnamese structure
-                           // Short words with x producing valid Vietnamese
-                           // mix → mĩ, box → bõ, six → sĩ (valid Vietnamese)
+        // Single modifier: Vietnamese-first (buffer is valid Vietnamese)
+        ("test ", "tét "), // tét is valid Vietnamese → keep
+        ("best ", "bét "), // bét is valid Vietnamese → keep
+        ("rest ", "rét "), // rét (cold) is valid Vietnamese → keep
+        ("nest ", "nét "), // nét (stroke) is valid Vietnamese → keep
+        ("cost ", "cót "), // cót is valid Vietnamese → keep
+        ("host ", "hót "), // hót (sing) is valid Vietnamese → keep
+        ("lost ", "lót "), // lót (line) is valid Vietnamese → keep
+        ("most ", "mót "), // mót is valid Vietnamese → keep
+        ("post ", "pót "), // pót is valid Vietnamese → keep
+        ("docs ", "dóc "), // dóc is valid Vietnamese → keep
+    ]);
+}
+
+#[test]
+fn double_modifier_restores_english() {
+    telex_auto_restore(&[
+        // Double modifier: reverts tone → English restore
+        ("tesst ", "test "), // double s reverts → test in whitelist → restored
+        ("besst ", "best "), // double s reverts → best in whitelist → restored
+        ("resst ", "rest "), // double s reverts → rest in whitelist → restored
+        ("nesst ", "nest "), // double s reverts → nest in whitelist → restored
+        ("cosst ", "cost "), // double s reverts → cost in whitelist → restored
+        ("hosst ", "host "), // double s reverts → host in whitelist → restored
+        ("losst ", "lost "), // double s reverts → lost in whitelist → restored
+        ("mosst ", "most "), // double s reverts → most in whitelist → restored
+        ("posst ", "post "), // double s reverts → post in whitelist → restored
     ]);
 }
 
@@ -1037,5 +1051,44 @@ fn double_mark_middle_keeps_valid_word() {
         // "usser" → first 's' adds sắc to 'u', second 's' reverts
         // Buffer = "user" (valid 4-char word ending in -er), keep it
         ("usser ", "user "),
+    ]);
+}
+
+// ============================================================
+// TEST: Tone override patterns should stay Vietnamese
+// ============================================================
+
+#[test]
+fn tone_override_stays_vietnamese() {
+    telex_auto_restore(&[
+        // Tone override: j (nặng) → other tones
+        ("chajfo ", "chào "), // j→f: nặng → huyền
+        ("chajso ", "cháo "), // j→s: nặng → sắc
+        ("chajro ", "chảo "), // j→r: nặng → hỏi
+        ("chajxo ", "chão "), // j→x: nặng → ngã
+        // Tone override: f (huyền) → other tones
+        ("chafso ", "cháo "), // f→s: huyền → sắc
+        ("chafro ", "chảo "), // f→r: huyền → hỏi
+        ("chafxo ", "chão "), // f→x: huyền → ngã
+        ("chafjo ", "chạo "), // f→j: huyền → nặng
+        // Tone override: s (sắc) → other tones
+        ("chasfo ", "chào "), // s→f: sắc → huyền
+        ("chasro ", "chảo "), // s→r: sắc → hỏi
+        ("chasxo ", "chão "), // s→x: sắc → ngã
+        ("chasjo ", "chạo "), // s→j: sắc → nặng
+        // Tone override: r (hỏi) → other tones
+        ("charfo ", "chào "), // r→f: hỏi → huyền
+        ("charso ", "cháo "), // r→s: hỏi → sắc
+        ("charxo ", "chão "), // r→x: hỏi → ngã
+        ("charjo ", "chạo "), // r→j: hỏi → nặng
+        // Tone override: x (ngã) → other tones
+        ("chaxfo ", "chào "), // x→f: ngã → huyền
+        ("chaxso ", "cháo "), // x→s: ngã → sắc
+        ("chaxro ", "chảo "), // x→r: ngã → hỏi
+        ("chaxjo ", "chạo "), // x→j: ngã → nặng
+        // Delayed circumflex with tone (from previous fix)
+        ("vajan ", "vận "), // a→j→a→n pattern
+        ("hajan ", "hận "),
+        ("cajan ", "cận "),
     ]);
 }
