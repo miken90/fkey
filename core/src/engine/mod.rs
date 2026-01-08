@@ -3488,8 +3488,15 @@ impl Engine {
                     // W at end + in dict → restore foreign words (moscow, warsaw, saw)
                     return self.build_raw_chars_exact();
                 } else if buffer_invalid_vn && raw_in_english_dict {
-                    // Invalid VN + in English dict → restore
-                    return self.build_raw_chars_exact();
+                    // Check if collapsed buffer is also a valid English word
+                    // If buffer is a known English word, keep it (e.g., "lissa" → "lisa")
+                    // If buffer is NOT a known word, restore original (e.g., "larissa" → "larissa")
+                    let buffer_str = self.get_buffer_string().to_lowercase();
+                    if !english_dict::is_english_word(&buffer_str) {
+                        // Buffer not in dict → restore to original English
+                        return self.build_raw_chars_exact();
+                    }
+                    // Buffer IS in dict → keep buffer (collapsed form is valid word)
                 }
                 // Otherwise keep buffer (valid VN or not in dict)
             }

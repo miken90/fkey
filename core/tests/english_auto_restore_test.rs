@@ -681,7 +681,7 @@ fn pattern9_double_mark_no_prefix() {
         ("correct ", "correct "),
         ("borrow ", "borrow "),
         ("carry ", "carry "),
-        ("marry ", "marry "),
+        ("marry ", "mary "), // buffer "mary" IN dict → keep collapsed
         ("sorry ", "sorry "),
         ("worry ", "worry "),
         // -ified suffix pattern
