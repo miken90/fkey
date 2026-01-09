@@ -947,6 +947,7 @@ tas	tá
 taro	tảo
 sor	sỏ
 ys	ý
+doer	doẻ
 ims	ím
 desde	đế
 hara	hẩ
@@ -1998,6 +1999,7 @@ coro	cổ
 lotos	lốt
 ddp	đp
 deme	dêm
+goer	goẻ
 bary	bảy
 hirschsprung	hichsprung
 oso	ố
@@ -2150,6 +2152,7 @@ saxo	são
 nuys	nuý
 soja	soạ
 pira	pỉa
+coef	coè
 naya	nây
 eer	ể
 aspx	ãp
