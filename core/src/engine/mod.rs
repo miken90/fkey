@@ -5329,6 +5329,13 @@ impl Engine {
                                 return false;
                             }
 
+                            // C+W+U pattern is Vietnamese "ưu" (lưu, mưu, cưu, etc.)
+                            // Pattern: consonant + W + U → valid Vietnamese diphthong
+                            // Examples: lwu → lưu, mwu → mưu, cwu → cưu
+                            if third == keys::U && self.raw_input.len() == 3 {
+                                return false;
+                            }
+
                             // Check if there's ANY tone modifier (j/s/f/r/x) in the rest of the word
                             let tone_modifiers = [keys::S, keys::F, keys::R, keys::X, keys::J];
                             let has_tone_modifier = self.raw_input[2..]
@@ -5483,14 +5490,16 @@ impl Engine {
                             }
                         }
                     }
-                    // OE before modifier at end (no final consonant) is English "-oes" pattern
+                    // OE before S modifier at end is English "-oes" pattern
                     // Examples: "goes", "does", "toes", "woes", "foes", "hoes"
                     // Vietnamese "oe" diphthong (hoè, xoè) typically has different tone placement
                     // or final consonant, not bare "oe + sắc at end"
+                    // IMPORTANT: Only check for S (sắc) modifier, NOT F/R/X/J
+                    // This allows "moef" → "moè", "boef" → "boè" (Vietnamese huyền)
                     // EXCEPTION: "oes" without initial consonant is Vietnamese exclamation "oé"
                     // EXCEPTION: Vietnamese-specific initials (kh, gh, ngh, tr, ph, etc.) + oe + modifier
                     //            Example: "khoer" → "khoẻ" (healthy), "nhoer" → "nhoẻ"
-                    if v1 == keys::O && v2 == keys::E && total_vowels == 2 {
+                    if v1 == keys::O && v2 == keys::E && total_vowels == 2 && key == keys::S {
                         // Check for Vietnamese-specific initials (both digraphs and single consonants)
                         // Vietnamese OE words from dictionary: hòe, loè, tóe, xòe, khoẻ, ngoé...
                         let is_vietnamese_oe_initial = if self.raw_input.len() >= 2 {
