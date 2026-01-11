@@ -1,69 +1,51 @@
 name: Update Contributors
 
 on:
-  # Code Contributors - commits count from /repos/.../contributors API
   push:
     branches: [main]
-
-  # Issue Reporters - from /repos/.../issues API
   issues:
     types: [opened]
-
-  # Commenters (Thảo luận section) - from 2 APIs:
-  # 1. /repos/.../issues/comments (issue + PR general comments)
   issue_comment:
     types: [created]
-  # 2. /repos/.../pulls/comments (PR review comments)
   pull_request_review_comment:
     types: [created]
-
-  # Sponsors - from GraphQL sponsorshipsAsMaintainer
   sponsorship:
     types: [created, edited, tier_changed, cancelled, pending_tier_change]
-
-  # Backup & manual
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
-# Prevent concurrent runs - cancel in-progress if new one starts
 concurrency:
   group: update-contributors
   cancel-in-progress: true
 
 jobs:
   update-contributors:
+    # Skip if triggered by bot (prevent loop)
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     permissions:
       contents: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Generate contributors list
+      - name: Generate contributors
         env:
           GITHUB_TOKEN: ${{ secrets.CONTRIBUTORS_TOKEN }}
         run: node scripts/generate-contributors.js
 
-      - name: Check for changes
-        id: git-check
+      - name: Commit if changed
         run: |
           git add CONTRIBUTORS.md
-          git diff --cached --exit-code CONTRIBUTORS.md || echo "changed=true" >> $GITHUB_OUTPUT
-
-      - name: Commit and push
-        if: steps.git-check.outputs.changed == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit -m "docs: update contributors list [skip ci]"
-          git push
+          if ! git diff --cached --quiet CONTRIBUTORS.md; then
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git commit -m "docs: update contributors [skip ci]"
+            git push
+          fi
