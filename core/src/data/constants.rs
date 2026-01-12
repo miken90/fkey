@@ -248,15 +248,13 @@ pub const COMMON_CIRCUMFLEX_NO_FINAL: &[u16] = &[
     keys::L, // lê - pear
     keys::D, // đê - dike (with stroke)
     keys::K, // kê - to list/declare
-             // Note: sê, tê, pê, gê are NOT common Vietnamese → restore to English
+             // Note: sê, tê, pê, gê removed - keep as Vietnamese (Vietnamese-first principle)
 ];
 
 /// Initials that are UNCOMMON with circumflex vowel + no final
-/// Words like "sê", "tê", "pê", "gê" should restore to English
+/// VIETNAMESE PRIORITY: Keep this list minimal to maximize Vietnamese pass rate
+/// Words like "tê" (numb), "bô" (uncle), etc. ARE valid Vietnamese
+/// Only F is truly invalid as Vietnamese initial
 pub const UNCOMMON_CIRCUMFLEX_NO_FINAL: &[u16] = &[
-    keys::S, // sê - not a word
-    keys::T, // tê - "numb" exists but rare standalone
-    keys::P, // pê - not a word
-    keys::G, // gê - not a word
     keys::F, // fê - F is invalid initial anyway
 ];

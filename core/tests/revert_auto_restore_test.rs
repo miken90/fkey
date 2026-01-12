@@ -18,11 +18,12 @@ use common::{telex, telex_auto_restore};
 // =============================================================================
 
 #[test]
-fn revert_then_more_chars_keeps_post_revert_result() {
+fn revert_then_more_chars_keeps_buffer() {
     // When user types double modifier (revert) THEN more characters,
-    // the post-revert result is kept because the modifier key was consumed.
+    // if buffer is in whitelist, keep buffer instead of raw.
+    // Example: "tesst" → buffer "test" is in whitelist → keep "test"
     telex_auto_restore(&[
-        // Double s followed by more chars → keeps post-revert "test"
+        // Double s followed by more chars → buffer "test" in whitelist → keep "test"
         ("tesst ", "test "),
     ]);
 }
@@ -34,16 +35,14 @@ fn revert_then_more_chars_keeps_post_revert_result() {
 #[test]
 fn revert_at_end_short_words() {
     // Short words (3 chars raw) with double modifiers
-    // EXCEPTIONS: "off", "iff", "ass" keep reverted form
-    // Other -ss/-ff words restore to English
+    // Only restore if raw is in dict, otherwise keep buffer
     telex_auto_restore(&[
-        // Double ss: "ass" is exception, keeps reverted "as"
-        ("ass ", "as "), // EXCEPTION: a-s-s → as
-        // Double ff: exceptions keep reverted, others restore
-        ("off ", "of "),  // EXCEPTION: o-f-f → of (common English word)
-        ("iff ", "if "),  // EXCEPTION: i-f-f → if (common English word)
-        ("eff ", "eff "), // e-f-f → eff (restore to English)
-        ("aff ", "aff "), // a-f-f → aff (restore to English)
+        // Double ss/ff: keep buffer (not in dict)
+        ("ass ", "as "), // a-s-s → as (not in dict)
+        ("off ", "of "), // o-f-f → of (not in dict)
+        ("iff ", "if "), // i-f-f → if (not in dict)
+        ("eff ", "ef "), // e-f-f → ef (not in dict)
+        ("aff ", "af "), // a-f-f → af (not in dict)
         // Other modifiers (rr, xx, jj) keep reverted form
         ("err ", "er "), // e-r-r → er
         ("ajj ", "aj "), // a-j-j → aj
@@ -52,29 +51,26 @@ fn revert_at_end_short_words() {
 }
 
 #[test]
-fn revert_at_end_restores_or_keeps_4char() {
+fn revert_at_end_keeps_buffer_4char() {
     // 4-char raw with double modifiers:
-    // - 'ss' and 'ff' → restore to English (s/f not valid VN finals)
-    // - 'rr', 'xx', 'jj' → keep reverted form
+    // - Words IN whitelist → restore to raw (boss, buff, cuff, loss, moss, puff)
+    // - Words NOT in whitelist → keep buffer (soss → sos, varr → var, etc.)
     telex_auto_restore(&[
-        // Double ss: restore to English (s not valid VN final)
-        ("SOSS ", "SOSS "), // S-O-S-S → SOSS
-        ("BOSS ", "BOSS "), // B-O-S-S → BOSS
-        ("LOSS ", "LOSS "), // L-O-S-S → LOSS
-        ("MOSS ", "MOSS "), // M-O-S-S → MOSS
-        ("boss ", "boss "), // lowercase also works
-        // Double ff: restore to English (f not valid VN final)
-        ("buff ", "buff "), // b-u-f-f → buff
-        ("cuff ", "cuff "), // c-u-f-f → cuff
-        ("puff ", "puff "), // p-u-f-f → puff
-        // Double r: keep reverted (programming keywords)
-        ("varr ", "var "), // v-a-r-r → var (JS keyword)
-        ("VARR ", "VAR "), // V-A-R-R → VAR
-        ("norr ", "nor "), // n-o-r-r → nor
-        // Double x: keep reverted
-        ("boxx ", "box "), // b-o-x-x → box
-        // Double j: keep reverted
-        ("hajj ", "haj "), // h-a-j-j → haj
+        // IN whitelist → restore to raw
+        ("BOSS ", "BOSS "),
+        ("LOSS ", "LOSS "),
+        ("MOSS ", "MOSS "),
+        ("boss ", "boss "),
+        ("buff ", "buff "),
+        ("cuff ", "cuff "),
+        ("puff ", "puff "),
+        // NOT in whitelist → keep buffer (clean, no marks)
+        ("SOSS ", "SOS "), // soss not in whitelist → keep buffer SOS
+        ("varr ", "var "),
+        ("VARR ", "VAR "),
+        ("norr ", "nor "),
+        ("boxx ", "box "),
+        ("hajj ", "haj "),
     ]);
 }
 
@@ -125,11 +121,9 @@ fn revert_at_end_restores_long_english_words() {
 
 #[test]
 fn double_vowel_with_mark() {
-    telex_auto_restore(&[
-        // "maas" → "ma" + 'a' (circumflex) + 's' (sắc) = "mấ"
-        // In Telex, double 'a' = circumflex, then 's' = sắc mark on top
-        ("maas ", "mấ "),
-    ]);
+    // "maas" = m-a-a-s: 'aa' applies â mark → "mâ", then 's' applies sắc → "mấ"
+    // Note: the second 'a' triggers circumflex and final 's' triggers sắc tone
+    telex_auto_restore(&[("maas ", "mấ ")]);
 }
 
 // =============================================================================
@@ -229,5 +223,74 @@ fn delayed_stroke_with_vowel_between() {
         ("dadu ", "đau "),
         // didnrh → đỉnh (peak) - delayed stroke with vowel between
         ("didnrh ", "đỉnh "),
+    ]);
+}
+
+#[test]
+fn debug_deeper_issue() {
+    // This test checks the "deeper" → "ddeeper" bug
+    // Words with double 'ee' pattern:
+    // - Invalid Vietnamese buffer → restore to English (deeper, keeper, between)
+    // - Valid Vietnamese buffer → keep Vietnamese (teen → tên)
+    telex_auto_restore(&[
+        ("deeper ", "deeper "),   // Invalid VN → restore
+        ("keeper ", "keeper "),   // Invalid VN → restore
+        ("teen ", "tên "),        // Valid VN "tên" → keep Vietnamese
+        ("between ", "between "), // Invalid VN → restore
+    ]);
+}
+
+// =============================================================================
+// STROKE (đ) + DICTIONARY CHECK
+// =============================================================================
+// When buffer has stroke (đ from dd), use English dictionary to decide:
+// - đ + in English dict → restore to English (daddy, add, odd)
+// - đ + NOT in English dict → keep Vietnamese (đc, đt, đi)
+
+#[test]
+fn stroke_vietnamese_abbreviations() {
+    // Vietnamese abbreviations with đ should stay Vietnamese
+    // These are NOT in English dictionary
+    telex_auto_restore(&[
+        ("ddc ", "đc "),   // đc - được (common abbreviation)
+        ("ddcs ", "đcs "), // đcs - đảng cộng sản
+        ("ddt ", "đt "),   // đt - điện thoại (phone)
+    ]);
+}
+
+#[test]
+fn stroke_valid_vietnamese_words() {
+    // Valid Vietnamese words with đ should stay Vietnamese
+    telex_auto_restore(&[
+        ("dde ", "đe "), // đe - to threaten
+        ("ddi ", "đi "), // đi - to go
+        ("ddo ", "đo "), // đo - to measure
+        ("ddu ", "đu "), // đu - to swing
+        ("dda ", "đa "), // đa - many/much
+    ]);
+}
+
+#[test]
+fn stroke_english_words_restore() {
+    // English words with dd should restore to English
+    // These ARE in English dictionary
+    telex_auto_restore(&[
+        ("daddy ", "daddy "),   // daddy - father
+        ("add ", "add "),       // add - addition
+        ("odd ", "odd "),       // odd - strange
+        ("ladder ", "ladder "), // ladder - stairs
+    ]);
+}
+
+#[test]
+fn common_vietnamese_words_with_tone() {
+    // Common Vietnamese words with tone marks should stay Vietnamese
+    // These should NOT be in telex_doubles whitelist
+    telex_auto_restore(&[
+        ("chir ", "chỉ "), // chỉ - only/just (hỏi tone)
+        ("chis ", "chí "), // chí - will/spirit (sắc tone)
+        ("chij ", "chị "), // chị - older sister (nặng tone)
+        ("thir ", "thỉ "), // thỉ - rare (hỏi tone)
+        ("nhir ", "nhỉ "), // nhỉ - right? (hỏi tone)
     ]);
 }
