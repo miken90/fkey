@@ -31,9 +31,18 @@ gonhanh.org/
 │   │       ├── keys.rs           # Keycode to transformation mappings
 │   │       ├── chars.rs          # Character data (UTF-32 constants)
 │   │       ├── vowel.rs          # Vowel table (72 entries: 12 bases × 6 marks)
-│   │       └── constants.rs      # Constants (consonants, valid clusters)
+│   │       ├── constants.rs      # Constants (consonants, valid clusters)
+│   │       ├── english_dict.rs   # English dictionary for auto-restore (NEW v1.0.103)
+│   │       ├── english_dict_merged.txt # 17k English words (NEW v1.0.103)
+│   │       └── telex_doubles.rs  # 10k English words with telex patterns (NEW v1.0.103)
 │   │
-│   ├── tests/                    # Integration + unit tests (700+ tests)
+│   ├── tests/                    # Integration + unit tests (800+ tests)
+│   │   ├── data/                 # Test data files (NEW v1.0.103)
+│   │   │   ├── english_100k.txt          # 100k English words
+│   │   │   ├── english_100k_failures.txt # Expected failures (~2.6k)
+│   │   │   ├── vietnamese_22k.txt        # 22k Vietnamese words
+│   │   │   └── vietnamese_telex_pairs.txt # 27k telex pairs
+│   │   └── *.rs                  # 21 test files
 │   └── Cargo.toml               # Rust dependencies (zero production deps)
 │
 ├── platforms/
@@ -82,7 +91,7 @@ gonhanh.org/
 ### Engine Modules (core/src/engine/)
 
 #### `engine/mod.rs` - Main Processing Pipeline
-**Lines**: ~500 | **Complexity**: High | **Source**: `core/src/engine/mod.rs`
+**Lines**: ~6600 | **Complexity**: High | **Source**: `core/src/engine/mod.rs`
 
 Central `Engine` struct orchestrating 7-stage keystroke processing:
 1. **Stroke detection** (đ/Đ) - Single key transformation
@@ -205,6 +214,16 @@ Pre-computed UTF-32 codepoints for all Vietnamese characters, used for FFI outpu
 
 Valid initial consonants, final consonants, consonant clusters, vowel groups.
 
+#### `data/english_dict.rs` - English Dictionary (NEW v1.0.103)
+**Source**: `core/src/data/english_dict.rs`
+
+O(1) HashSet lookup for 17k+ English words. Used by auto-restore to detect English words and prevent Vietnamese transformation.
+
+#### `data/telex_doubles.rs` - Telex Doubles Whitelist (NEW v1.0.103)
+**Source**: `core/src/data/telex_doubles.rs`
+
+Binary search O(log n) lookup for 10k+ English words containing Telex patterns (aa, oo, ee, etc.). Examples: "coffee", "teeth", "book".
+
 ### FFI Layer (core/src/lib.rs)
 
 **Lines**: ~300 | **Complexity**: High (unsafe) | **Source**: `core/src/lib.rs`
@@ -313,15 +332,34 @@ Custom WPF UserControl with keycap-style UI and system shortcut conflict detecti
 
 ### Test Files (core/tests/)
 
-| File | Purpose | Test Count | Source |
-|------|---------|-----------|--------|
-| `unit_test.rs` | Module unit tests | ~30 | `core/tests/unit_test.rs` |
-| `typing_test.rs` | Full keystroke sequences | ~60 | `core/tests/typing_test.rs` |
-| `engine_test.rs` | Engine initialization + state | ~20 | `core/tests/engine_test.rs` |
-| `integration_test.rs` | End-to-end keystroke→output | ~35 | `core/tests/integration_test.rs` |
-| `paragraph_test.rs` | Multi-word paragraphs | ~15 | `core/tests/paragraph_test.rs` |
+| File | Purpose | Source |
+|------|---------|--------|
+| `unit_test.rs` | Module unit tests | `core/tests/unit_test.rs` |
+| `typing_test.rs` | Full keystroke sequences | `core/tests/typing_test.rs` |
+| `engine_test.rs` | Engine initialization + state | `core/tests/engine_test.rs` |
+| `paragraph_test.rs` | Multi-word paragraphs | `core/tests/paragraph_test.rs` |
+| `bug_reports_test.rs` | Bug regression tests | `core/tests/bug_reports_test.rs` |
+| `english_100k_test.rs` | 100k English word coverage (NEW) | `core/tests/english_100k_test.rs` |
+| `vietnamese_22k_test.rs` | 22k Vietnamese word coverage (NEW) | `core/tests/vietnamese_22k_test.rs` |
+| `vietnamese_dict_test.rs` | Dictionary validation (NEW) | `core/tests/vietnamese_dict_test.rs` |
+| `typing_order_consistency_test.rs` | Typing order tests (NEW) | `core/tests/typing_order_consistency_test.rs` |
+| `typing_order_permutation_test.rs` | Permutation tests (NEW) | `core/tests/typing_order_permutation_test.rs` |
+| `test_lissa_larra.rs` | Edge case patterns (NEW) | `core/tests/test_lissa_larra.rs` |
+| `revert_auto_restore_test.rs` | Auto-restore revert tests | `core/tests/revert_auto_restore_test.rs` |
+| `english_auto_restore_test.rs` | English auto-restore tests | `core/tests/english_auto_restore_test.rs` |
+| `auto_restore_dynamic_test.rs` | Dynamic auto-restore tests | `core/tests/auto_restore_dynamic_test.rs` |
+| `auto_capitalize_test.rs` | Auto-capitalize tests | `core/tests/auto_capitalize_test.rs` |
 
-**Total**: 160+ test cases, 2100+ lines of test code
+**Total**: 800+ test cases, 21 test files
+
+### Test Data (core/tests/data/) - NEW v1.0.103
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `english_100k.txt` | 100,000 | Common English words for coverage testing |
+| `english_100k_failures.txt` | 2,641 | Known false positives (Vietnamese-like English) |
+| `vietnamese_22k.txt` | 22,426 | Vietnamese vocabulary for validation |
+| `vietnamese_telex_pairs.txt` | 27,034 | Raw input → expected output pairs |
 
 **Test Utilities** (core/tests/common/mod.rs):
 - `ImeHelper` struct for convenient test setup
@@ -392,12 +430,14 @@ RustBridge.cs (Windows)
 
 | Module | LOC | Responsibility | Stability | Complexity |
 |--------|-----|-----------------|-----------|------------|
-| engine/mod.rs | 500 | Orchestration | High | High |
+| engine/mod.rs | 6600 | Orchestration | High | High |
 | engine/transform.rs | 600 | Diacritics | High | Very High |
 | engine/shortcut.rs | 500 | User abbreviations | Medium | Medium |
 | engine/validation.rs | 350 | Phonology rules | High | High |
 | engine/buffer.rs | 300 | Circular buffer | High | Medium |
 | engine/syllable.rs | 400 | Parsing | High | Medium-High |
+| data/english_dict.rs | 60 | English dictionary | High | Low |
+| data/telex_doubles.rs | 10k | Telex pattern whitelist | High | Low |
 | input/telex.rs | 200 | Input method | High | Medium |
 | input/vni.rs | 200 | Input method | High | Medium |
 | data/vowel.rs | 300 | Lookup table | Very High | Low |
@@ -428,10 +468,21 @@ RustBridge.cs (Windows)
 
 ---
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-12
 **Total Files**: 80+ files (Windows-only build)
 **Platform**: Windows 10/11 (.NET 8, WPF)
+**Core Version**: v1.0.103 (synced from upstream)
 **Coverage**: 100% of directories documented
+
+**v1.0.103 Updates (from upstream)**:
+- ✅ Comprehensive auto-restore with 100% Vietnamese, 97.6% English coverage
+- ✅ English dictionary (17k+ words) for smart auto-restore
+- ✅ Telex doubles whitelist (10k+ words) for patterns like "coffee", "teeth"
+- ✅ Fix: auto-restore for multi-modifier patterns (nurses, horses)
+- ✅ Fix: mark removal works after backspace (#197, #201)
+- ✅ Fix: ESC restore uses exact raw input (#206)
+- ✅ Fix: bracket shortcut revert with Shift/CapsLock
+- ✅ 800+ test cases with 100k English + 22k Vietnamese word coverage
 
 **Resolved Issues**:
 - ✅ Race condition with fast typing (Phase 4 complete - async queue + key passthrough)
