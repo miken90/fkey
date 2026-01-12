@@ -201,44 +201,31 @@ async function fetchCommenters() {
 }
 
 /**
- * Generate avatar HTML
+ * Generate user table with avatars and names
+ * @param {Array} users - Array of user objects
+ * @param {Object} opts - Options: size, perRow, showSub, badge
  */
-function avatarHtml(user, size = 50) {
-  return `<a href="${user.url}"><img src="${user.avatar}" width="${size}" title="${user.login}"/></a>`;
-}
-
-/**
- * Generate table row for code contributors
- */
-function contributorTableHtml(contributors, perRow = 7) {
-  if (contributors.length === 0) return '<p><em>Chưa có</em></p>';
+function userTableHtml(users, { size = 50, perRow = 7, showSub = null, badge = '' } = {}) {
+  if (users.length === 0) return '<p><em>Chưa có</em></p>';
 
   let html = '<table>\n';
-  for (let i = 0; i < contributors.length; i += perRow) {
-    const row = contributors.slice(i, i + perRow);
+  for (let i = 0; i < users.length; i += perRow) {
+    const row = users.slice(i, i + perRow);
     html += '  <tr>\n';
     for (const u of row) {
+      const subtitle = showSub && u[showSub] ? `<br/><sub>${u[showSub]} commits</sub>` : '';
+      const badgeHtml = badge ? ` ${badge}` : '';
       html += `    <td align="center">
       <a href="${u.url}">
-        <img src="${u.avatar}" width="80" style="border-radius:50%"/><br/>
-        <b>${u.login}</b>
-      </a>
-      <br/>
-      <sub>${u.contributions} commits</sub>
+        <img src="${u.avatar}" width="${size}" style="border-radius:50%"/><br/>
+        <b>${u.login}</b>${badgeHtml}
+      </a>${subtitle}
     </td>\n`;
     }
     html += '  </tr>\n';
   }
   html += '</table>';
   return html;
-}
-
-/**
- * Generate avatar grid
- */
-function avatarGridHtml(users, size = 50) {
-  if (users.length === 0) return '<p><em>Chưa có</em></p>';
-  return users.map((u) => avatarHtml(u, size)).join('\n');
 }
 
 /**
@@ -274,15 +261,13 @@ Mỗi đóng góp, dù lớn hay nhỏ, đều giúp người Việt gõ tiếng
 
 ## 💖 Sponsors
 
-Những người đã tin tưởng và hỗ trợ tài chính cho dự án.
+Những người đã tin tưởng và ủng hộ dự án.
 
 ${
   sponsors.diamond.length > 0
     ? `### 💎 Diamond
 
-<p align="center">
-${avatarGridHtml(sponsors.diamond, 120)}
-</p>
+${userTableHtml(sponsors.diamond, { size: 120, perRow: 5, badge: '💎' })}
 `
     : ''
 }
@@ -290,9 +275,7 @@ ${
   sponsors.gold.length > 0
     ? `### 🥇 Gold
 
-<p align="center">
-${avatarGridHtml(sponsors.gold, 100)}
-</p>
+${userTableHtml(sponsors.gold, { size: 100, perRow: 6, badge: '🥇' })}
 `
     : ''
 }
@@ -300,9 +283,7 @@ ${
   sponsors.silver.length > 0
     ? `### 🥈 Silver
 
-<p align="center">
-${avatarGridHtml(sponsors.silver, 80)}
-</p>
+${userTableHtml(sponsors.silver, { size: 80, perRow: 7, badge: '🥈' })}
 `
     : ''
 }
@@ -310,9 +291,7 @@ ${
   sponsors.backers.length > 0
     ? `### 💜 Backers
 
-<p align="center">
-${avatarGridHtml(sponsors.backers, 50)}
-</p>
+${userTableHtml(sponsors.backers, { size: 50, perRow: 8, badge: '💜' })}
 `
     : ''
 }
@@ -337,7 +316,7 @@ ${
 
 Những người đã đóng góp code, biến ý tưởng thành hiện thực.
 
-${contributorTableHtml(contributors)}
+${userTableHtml(contributors, { size: 80, perRow: 7, showSub: 'contributions' })}
 
 ---
 
@@ -345,9 +324,7 @@ ${contributorTableHtml(contributors)}
 
 Những người đã phát hiện lỗi và đề xuất tính năng mới.
 
-<p align="center">
-${avatarGridHtml(filteredIssueCreators)}
-</p>
+${userTableHtml(filteredIssueCreators, { size: 50, perRow: 8 })}
 
 ---
 
@@ -355,9 +332,7 @@ ${avatarGridHtml(filteredIssueCreators)}
 
 Những người đã tham gia thảo luận, giúp định hình sản phẩm.
 
-<p align="center">
-${avatarGridHtml(filteredCommenters)}
-</p>
+${userTableHtml(filteredCommenters, { size: 50, perRow: 8 })}
 
 ---
 
