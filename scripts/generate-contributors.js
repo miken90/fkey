@@ -324,7 +324,7 @@ ${userTableHtml(contributors, { size: 80, perRow: 7, showSub: 'contributions' })
 
 Những người đã phát hiện lỗi và đề xuất tính năng mới.
 
-${userTableHtml(filteredIssueCreators, { size: 50, perRow: 8 })}
+${userTableHtml(filteredIssueCreators.sort((a, b) => b.count - a.count), { size: 50, perRow: 6 })}
 
 ---
 
@@ -332,7 +332,7 @@ ${userTableHtml(filteredIssueCreators, { size: 50, perRow: 8 })}
 
 Những người đã tham gia thảo luận, giúp định hình sản phẩm.
 
-${userTableHtml(filteredCommenters, { size: 50, perRow: 8 })}
+${userTableHtml(filteredCommenters.sort((a, b) => b.count - a.count), { size: 50, perRow: 6 })}
 
 ---
 
