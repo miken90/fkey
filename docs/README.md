@@ -112,7 +112,7 @@ system-architecture.md
 - Keystroke latency: <1ms (actual: ~0.2-0.5ms)
 - Memory usage: ~5MB resident set
 - CPU: <2% during typing
-- Test coverage: 160+ integration tests
+- Test coverage: 800+ tests, 100% Vietnamese, 97.6% English auto-restore
 
 ## Standards at a Glance
 
@@ -172,12 +172,12 @@ Always include documentation updates in the same PR as code changes.
 
 ## Statistics
 
-- **Rust Code**: ~3,500 lines (core engine, platform-agnostic)
+- **Rust Code**: ~10,000 lines (core engine, platform-agnostic)
 - **Swift Code**: ~1,700 lines (macOS UI + bridge)
 - **C# Code**: ~1,400 lines (Windows UI + bridge)
-- **Tests**: 160+ integration tests, 2100+ lines
+- **Tests**: 800+ test cases, 21 test files, 150k+ lines of test data
 - **Documentation**: 2,200+ lines (this folder + CLAUDE.md)
-- **Coverage**: 100% of modules documented
+- **Coverage**: 100% Vietnamese, 97.6% English auto-restore (v1.0.103)
 - **Platforms**: macOS (production), Windows (production), Linux (placeholder)
 
 ### Build Statistics
@@ -187,7 +187,8 @@ Always include documentation updates in the same PR as code changes.
 
 ---
 
-**Last Updated**: 2025-12-10
+**Last Updated**: 2026-01-12
 **Status**: Production-ready for team development
+**Core Version**: v1.0.103 (synced from upstream)
 **Platforms**: macOS (v1.0.21+), Windows (production), Linux (planned)
 **Repository**: https://github.com/khaphanspace/gonhanh.org

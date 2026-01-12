@@ -701,7 +701,109 @@ Final: "Claus" (không bị biến đổi) ✓
 
 ---
 
+## 14. AUTO-RESTORE MECHANISM (NEW v1.0.103)
+
+### 14.1 Overview
+
+Auto-restore tự động khôi phục từ tiếng Anh khi phát hiện buffer không phải tiếng Việt hợp lệ.
+
+```
+AUTO-RESTORE FLOW:
+│
+├── User types: "coffee" → "côffee" (Telex oo → ô)
+├── On space/boundary:
+│   ├── Check: is_vietnamese_valid("côffee")? → NO
+│   ├── Check: is_english_word("coffee")? → YES (in dict)
+│   └── Restore: "côffee" → "coffee"
+│
+└── Coverage: 100% Vietnamese, 97.6% English (v1.0.103)
+```
+
+### 14.2 English Dictionary Detection
+
+```rust
+// core/src/data/english_dict.rs
+pub fn is_english_word(word: &str) -> bool {
+    DICT.contains(word.to_lowercase().as_str())
+}
+
+// 17k+ words từ english_dict_merged.txt
+// O(1) HashSet lookup
+```
+
+### 14.3 Telex Doubles Whitelist
+
+```rust
+// core/src/data/telex_doubles.rs
+pub static WORDS: [&str; 10022] = [
+    "coffee", "teeth", "book", "deeper", "harassment", ...
+];
+
+// Binary search O(log n) cho 10k+ từ có pattern aa, oo, ee
+// Ví dụ: "deeper" contains "ee" (Telex pattern)
+```
+
+### 14.4 Auto-Restore Examples
+
+```
+VÍ DỤ AUTO-RESTORE:
+
+"coffee" (có "oo" → Telex):
+├── User types: c-o-f-f-e-e
+├── Telex transform: "oo" → "ô" → "côffee"
+├── On space: is_english_word("coffee")? → YES
+└── Restore: "côffee" → "coffee" ✓
+
+"deeper" (có "ee" → Telex):
+├── User types: d-e-e-p-e-r
+├── Telex transform: "ee" → "ê" → "dêeper"
+├── On space: is_english_word("deeper")? → YES
+└── Restore: "dêeper" → "deeper" ✓
+
+"nurses" (multi-modifier):
+├── User types: n-u-r-s-e-s
+├── Telex transforms: r→mark, s→mark, e→vowel, s→mark
+├── Buffer was incorrectly "nues" (bug fixed in v1.0.103)
+├── Now: telex_double_raw = "nurses"
+└── Restore correctly: "nurses" ✓
+
+"việt" (Vietnamese, no restore):
+├── User types: v-i-e-j-t
+├── Telex transform: "ej" → "ệ" → "việt"
+├── is_vietnamese_valid("việt")? → YES
+└── Keep as-is: "việt" ✓
+```
+
+### 14.5 Key Fixes in v1.0.103
+
+```
+BUG FIXES:
+
+1. Multi-modifier patterns (nurses, horses):
+   - Old: Buffer="nues" (wrong, modifiers consumed)
+   - Fix: Use telex_double_raw to track original input
+   - New: Correctly restores "nurses"
+
+2. Mark removal after backspace (#197, #201):
+   - Old: "sẻ" + 'r' absorbed (no output)
+   - Fix: Check if vowel at END → REVERT instead of ABSORB
+   - New: "sẻ" + 'r' → "ser" ✓
+
+3. ESC restore exact raw input (#206):
+   - Old: ESC didn't work after mark revert
+   - Fix: Use telex_double_raw for restoration
+   - New: "off" → "of" → ESC → "off" ✓
+```
+
+---
+
 ## Changelog
+
+- **2026-01-12**: Cập nhật v1.0.103 từ upstream
+  - Thêm section 14: Auto-Restore Mechanism
+  - Thêm English dictionary detection
+  - Thêm Telex doubles whitelist
+  - Document các bug fixes quan trọng
 
 - **2025-12-10**: Viết lại hoàn toàn
   - Loại bỏ V1/V2 terminology
@@ -712,4 +814,4 @@ Final: "Claus" (không bị biến đổi) ✓
 
 ---
 
-*Tài liệu thuật toán GoNhanh Core Engine*
+*Tài liệu thuật toán GoNhanh Core Engine - v1.0.103*
