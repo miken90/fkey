@@ -125,77 +125,119 @@ async function fetchContributors() {
 }
 
 /**
- * Fetch issue creators
+ * Fetch all pages from a paginated GitHub API endpoint
  */
-async function fetchIssueCreators() {
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=all&per_page=100`,
-      { headers }
-    );
+async function fetchAllPages(url) {
+  const results = [];
+  let nextUrl = url;
+
+  while (nextUrl) {
+    const res = await fetch(nextUrl, { headers });
     const data = await res.json();
-
-    const users = new Map();
-    for (const issue of data) {
-      if (!issue.user || EXCLUDED_USERS.has(issue.user.login)) continue;
-      if (issue.pull_request) continue; // Skip PRs
-
-      const login = issue.user.login;
-      if (!users.has(login)) {
-        users.set(login, {
-          login,
-          avatar: issue.user.avatar_url,
-          url: issue.user.html_url,
-          count: 0,
-        });
-      }
-      users.get(login).count++;
+    if (Array.isArray(data)) {
+      results.push(...data);
     }
 
-    return Array.from(users.values()).sort((a, b) => b.count - a.count);
-  } catch (err) {
-    console.error('Error fetching issue creators:', err.message);
-    return [];
+    // Parse Link header for next page
+    const linkHeader = res.headers.get('Link');
+    nextUrl = null;
+    if (linkHeader) {
+      const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      if (match) nextUrl = match[1];
+    }
   }
+
+  return results;
 }
 
 /**
- * Fetch commenters (issues + PRs)
+ * Fetch community contributors - count all interactions as 1 each:
+ * - Opening an issue = 1
+ * - Commenting on issue/PR = 1
+ * - Discussion post/comment = 1
  */
-async function fetchCommenters() {
+async function fetchCommunityContributors() {
   try {
-    const [issueComments, prComments] = await Promise.all([
-      fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments?per_page=100`,
-        { headers }
-      ).then((r) => r.json()),
-      fetch(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls/comments?per_page=100`,
-        { headers }
-      ).then((r) => r.json()),
+    const baseUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
+    const [issues, issueComments, prComments] = await Promise.all([
+      fetchAllPages(`${baseUrl}/issues?state=all&per_page=100`),
+      fetchAllPages(`${baseUrl}/issues/comments?per_page=100`),
+      fetchAllPages(`${baseUrl}/pulls/comments?per_page=100`),
     ]);
 
+    // Fetch discussions via GraphQL
+    let discussions = [];
+    try {
+      const query = `
+        query {
+          repository(owner: "${REPO_OWNER}", name: "${REPO_NAME}") {
+            discussions(first: 100) {
+              nodes {
+                author { login avatarUrl url }
+                comments(first: 100) {
+                  nodes {
+                    author { login avatarUrl url }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+      const res = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json();
+      discussions = data?.data?.repository?.discussions?.nodes || [];
+    } catch (e) {
+      console.log('Discussions not available or error:', e.message);
+    }
+
     const users = new Map();
-    const allComments = [...(issueComments || []), ...(prComments || [])];
 
-    for (const comment of allComments) {
-      if (!comment.user || EXCLUDED_USERS.has(comment.user.login)) continue;
-
-      const login = comment.user.login;
+    // Helper to add/increment user
+    const addUser = (user) => {
+      if (!user || EXCLUDED_USERS.has(user.login)) return;
+      const login = user.login;
       if (!users.has(login)) {
         users.set(login, {
           login,
-          avatar: comment.user.avatar_url,
-          url: comment.user.html_url,
+          avatar: user.avatarUrl || user.avatar_url,
+          url: user.url || user.html_url,
           count: 0,
         });
       }
       users.get(login).count++;
+    };
+
+    // Count issue opens (skip PRs)
+    for (const issue of issues) {
+      if (!issue.pull_request) addUser(issue.user);
+    }
+
+    // Count issue comments
+    for (const comment of issueComments) {
+      addUser(comment.user);
+    }
+
+    // Count PR comments
+    for (const comment of prComments) {
+      addUser(comment.user);
+    }
+
+    // Count discussion posts and comments
+    for (const discussion of discussions) {
+      addUser(discussion.author);
+      for (const comment of discussion.comments?.nodes || []) {
+        addUser(comment.author);
+      }
     }
 
     return Array.from(users.values()).sort((a, b) => b.count - a.count);
   } catch (err) {
-    console.error('Error fetching commenters:', err.message);
+    console.error('Error fetching community contributors:', err.message);
     return [];
   }
 }
@@ -231,18 +273,11 @@ function userTableHtml(users, { size = 50, perRow = 7, showSub = null, badge = '
 /**
  * Generate full markdown
  */
-function generateMarkdown(sponsors, contributors, issueCreators, commenters) {
-  // Deduplicate: remove contributors from issue creators and commenters
+function generateMarkdown(sponsors, contributors, community) {
+  // Deduplicate: remove code contributors from community list
   const contributorLogins = new Set(contributors.map((c) => c.login));
-  const filteredIssueCreators = issueCreators.filter(
+  const filteredCommunity = community.filter(
     (u) => !contributorLogins.has(u.login)
-  );
-  const allKnownLogins = new Set([
-    ...contributorLogins,
-    ...filteredIssueCreators.map((u) => u.login),
-  ]);
-  const filteredCommenters = commenters.filter(
-    (u) => !allKnownLogins.has(u.login)
   );
 
   const now = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -320,19 +355,11 @@ ${userTableHtml(contributors, { size: 80, perRow: 7, showSub: 'contributions' })
 
 ---
 
-## 🐛 Issue Reporters
+## 💬 Cộng đồng
 
-Những người đã phát hiện lỗi và đề xuất tính năng mới.
+Những người đã báo lỗi, góp ý, và thảo luận giúp định hình sản phẩm.
 
-${userTableHtml(filteredIssueCreators.sort((a, b) => b.count - a.count), { size: 50, perRow: 6 })}
-
----
-
-## 💬 Thảo luận & Góp ý
-
-Những người đã tham gia thảo luận, giúp định hình sản phẩm.
-
-${userTableHtml(filteredCommenters.sort((a, b) => b.count - a.count), { size: 50, perRow: 6 })}
+${userTableHtml(filteredCommunity, { size: 50, perRow: 6 })}
 
 ---
 
@@ -358,22 +385,24 @@ ${userTableHtml(filteredCommenters.sort((a, b) => b.count - a.count), { size: 50
 async function main() {
   console.log('Fetching data from GitHub...');
 
-  const [sponsors, contributors, issueCreators, commenters] = await Promise.all(
-    [fetchSponsors(), fetchContributors(), fetchIssueCreators(), fetchCommenters()]
-  );
+  const [sponsors, contributors, community] = await Promise.all([
+    fetchSponsors(),
+    fetchContributors(),
+    fetchCommunityContributors(),
+  ]);
+
+  const sponsorCount =
+    sponsors.diamond.length +
+    sponsors.gold.length +
+    sponsors.silver.length +
+    sponsors.backers.length;
 
   console.log(`Found:`);
-  console.log(`  - ${sponsors.diamond.length + sponsors.gold.length + sponsors.silver.length + sponsors.backers.length} sponsors`);
+  console.log(`  - ${sponsorCount} sponsors`);
   console.log(`  - ${contributors.length} code contributors`);
-  console.log(`  - ${issueCreators.length} issue reporters`);
-  console.log(`  - ${commenters.length} commenters`);
+  console.log(`  - ${community.length} community contributors`);
 
-  const markdown = generateMarkdown(
-    sponsors,
-    contributors,
-    issueCreators,
-    commenters
-  );
+  const markdown = generateMarkdown(sponsors, contributors, community);
 
   const fs = require('fs');
   const path = require('path');
