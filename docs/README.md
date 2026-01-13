@@ -170,6 +170,20 @@ Always include documentation updates in the same PR as code changes.
 - **Discussions**: https://github.com/khaphanspace/gonhanh.org/discussions
 - **License**: GPL-3.0-or-later
 
+## Recent Fixes (v1.0.103)
+
+**Core Engine Improvements:**
+- VNI uppercase mark revert preservation (`E22` → `E2`, uppercase preserved)
+- Standard double-revert behavior matching UniKey/ibus-unikey (`ass` → `as`)
+- Multi-modifier auto-restore for patterns like `nurses`, `horses`, `cursor`
+- Mark removal works correctly after backspace (#197, #201)
+- ESC restore uses exact raw input for reverted transforms (#206)
+- `telex_double_raw` tracking for accurate ESC restore
+
+**Windows Platform (v1.7.4):**
+- Wave terminal added to SlowApps list (fixes character loss in Claude Code environment)
+- Async queue architecture Phase 4 complete with key passthrough
+
 ## Statistics
 
 - **Rust Code**: ~10,000 lines (core engine, platform-agnostic)
@@ -187,8 +201,8 @@ Always include documentation updates in the same PR as code changes.
 
 ---
 
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-01-13
 **Status**: Production-ready for team development
 **Core Version**: v1.0.103 (synced from upstream)
-**Platforms**: macOS (v1.0.21+), Windows (production), Linux (planned)
+**Platforms**: macOS (v1.0.21+), Windows (v1.7.4 production), Linux (planned)
 **Repository**: https://github.com/khaphanspace/gonhanh.org

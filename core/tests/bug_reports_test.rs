@@ -1329,3 +1329,159 @@ fn issue159_bracket_continuous_typing() {
     assert_eq!(result2.action, 1, "'[' after 'ư' should produce output");
     assert_eq!(result2.chars[0], 'ơ' as u32, "][ should produce 'ươ'");
 }
+
+// =============================================================================
+// BUG: VNI mark revert with subsequent letters
+// Input: "E22E" (VNI mode)
+// Expected: "E2E" (mark applied, reverted, then E typed)
+// Bug: Was outputting "E22E" because reverting number was double-counted
+// =============================================================================
+
+#[test]
+fn vni_mark_revert_subsequent_letters() {
+    // Test VNI mark revert followed by letter
+    // E + 2 → È (huyền applied)
+    // È + 2 → E2 (revert)
+    // E2 + E → E2E (add letter)
+    vni(&[("E22E", "E2E")]);
+    vni(&[("a22b", "a2b")]);
+    vni(&[("o11x", "o1x")]);
+}
+
+#[test]
+fn vni_tone_revert_subsequent_letters() {
+    // Test VNI tone revert followed by letter
+    // a + 6 → â (circumflex applied)
+    // â + 6 → a6 (revert)
+    // a6 + b → a6b (add letter)
+    vni(&[("a66b", "a6b")]);
+    vni(&[("e66x", "e6x")]);
+    vni(&[("o77y", "o7y")]);
+}
+
+#[test]
+fn telex_mark_revert_subsequent_letters() {
+    // Test Telex mark revert followed by letter
+    // a + s → á (sắc applied)
+    // á + s → as (revert)
+    // as + t → ast (add letter)
+    telex(&[("asst", "ast")]);
+    telex(&[("efft", "eft")]);
+    telex(&[("arrb", "arb")]);
+}
+
+#[test]
+fn telex_tone_revert_subsequent_letters() {
+    // Test Telex tone revert followed by letter
+    // a + a → â (circumflex applied)
+    // â + a → aa (revert) -- NO! This adds another 'a' to buffer
+    // For circumflex revert with subsequent: eex → ex (e+e=ê, ê+x=êx, but "eex" → "ex"?)
+    // Actually "eex" might not trigger revert since x is not 'e'
+    // Let's test with actual revert: "aaat" where third 'a' reverts circumflex
+    telex(&[("aaat", "aat")]);
+    telex(&[("eeet", "eet")]);
+    telex(&[("ooot", "oot")]);
+}
+
+#[test]
+fn debug_vni_e22e() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Action;
+
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+    e.set_english_auto_restore(true);
+
+    let mut screen = String::new();
+    let inputs = [
+        ('E', keys::E, false, true),   // E (caps)
+        ('2', keys::N2, false, false), // 2 (huyền mark)
+        ('2', keys::N2, false, false), // 2 (revert)
+        ('E', keys::E, false, true),   // E (caps)
+        (' ', keys::SPACE, false, false), // space (triggers auto-restore)
+    ];
+
+    for (c, key, shift, caps) in inputs {
+        let r = e.on_key_ext(key, caps, false, shift);
+        
+        println!(
+            "Key '{}' (key={}): action={}, backspace={}, count={}, flags={}",
+            c, key, r.action, r.backspace, r.count, r.flags
+        );
+
+        if r.action == Action::Send as u8 {
+            println!("  Output chars: {:?}", 
+                (0..r.count as usize)
+                    .filter_map(|i| char::from_u32(r.chars[i]))
+                    .collect::<Vec<_>>()
+            );
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+        } else {
+            screen.push(c);
+        }
+        println!("  Screen after: '{}'", screen);
+    }
+
+    println!("\nFinal: 'E22E ' -> '{}' (expected: 'E2E ')", screen);
+    assert_eq!(screen, "E2E ", "VNI 'E22E ' should produce 'E2E '");
+}
+
+// Debug: Test VNI E22E without auto-restore to see buffer content
+#[test]
+fn debug_vni_e22e_no_restore() {
+    use gonhanh_core::data::keys;
+    use gonhanh_core::engine::Action;
+
+    let mut e = Engine::new();
+    e.set_method(1); // VNI
+    // NO auto-restore - just see what buffer produces
+
+    let mut screen = String::new();
+    let inputs = [
+        ('E', keys::E, false, true),   // E (caps)
+        ('2', keys::N2, false, false), // 2 (huyền mark)
+        ('2', keys::N2, false, false), // 2 (revert)
+        ('E', keys::E, false, true),   // E (caps)
+    ];
+
+    for (c, key, shift, caps) in inputs {
+        let r = e.on_key_ext(key, caps, false, shift);
+        
+        // Get buffer content for debugging
+        let buffer_content = e.get_buffer_string();
+        
+        println!(
+            "Key '{}' (key={}): action={}, backspace={}, count={}, chars={:?}, buffer='{}'",
+            c, key, r.action, r.backspace, r.count,
+            (0..r.count as usize)
+                .filter_map(|i| char::from_u32(r.chars[i]))
+                .collect::<Vec<_>>(),
+            buffer_content
+        );
+
+        if r.action == Action::Send as u8 {
+            for _ in 0..r.backspace {
+                screen.pop();
+            }
+            for i in 0..r.count as usize {
+                if let Some(ch) = char::from_u32(r.chars[i]) {
+                    screen.push(ch);
+                }
+            }
+        } else {
+            screen.push(c);
+        }
+        println!("  Screen after: '{}'", screen);
+    }
+
+    println!("\nFinal (no space): 'E22E' -> '{}' (expected: 'E2E')", screen);
+    // Without space, should show buffer content = "E2E"
+    assert_eq!(screen, "E2E", "VNI 'E22E' (no space) should produce 'E2E'");
+}

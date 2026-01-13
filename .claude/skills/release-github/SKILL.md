@@ -46,9 +46,11 @@ Example:
 ## Prerequisites
 
 - `gh` CLI installed and authenticated (`gh auth login`)
+- Rust toolchain (`cargo`)
 - .NET 8 SDK (`dotnet`)
 - PowerShell 5.1+
 - Write access to repository
+- Optional: 7-Zip (`7z`) for better compression
 
 ## Parameters
 
@@ -65,21 +67,23 @@ Example:
 
 ## Output
 
-- Local: `platforms/windows/GoNhanh/bin/Release/net8.0-windows/win-x64/publish/GoNhanh-v{version}-portable.zip`
+- Local: `platforms/windows/GoNhanh/bin/Release/net8.0-windows/win-x64/publish/FKey-v{version}-portable.7z` (or `.zip` if 7z not available)
 - GitHub: `https://github.com/{owner}/{repo}/releases/tag/v{version}`
 
 ## Build Process
 
 Uses `platforms/windows/build-release.ps1`:
-1. Stop GoNhanh.exe processes
-2. Clean `bin/Release` directory
-3. Build with `dotnet publish`:
+1. Stop FKey.exe processes
+2. Build Rust core DLL (`cargo build --release`)
+3. Copy `gonhanh_core.dll` to `GoNhanh/Native/`
+4. Clean `bin/Release` directory
+5. Build with `dotnet publish`:
    - Configuration: Release
    - Runtime: win-x64
    - Self-contained: Yes
    - Single file: Yes
    - Version: {version}
-4. Create ZIP with `GoNhanh.exe`
+6. Create 7z package (or ZIP if 7z unavailable)
 
 ## Release Notes Format
 

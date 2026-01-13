@@ -126,7 +126,7 @@ Central `Engine` struct orchestrating 7-stage keystroke processing:
 #### `engine/buffer.rs` - Circular Typing Buffer
 **Lines**: ~300 | **Complexity**: Medium | **Source**: `core/src/engine/buffer.rs`
 
-Fixed 64-character circular buffer for multi-keystroke context. Tracks tone mark, vowel mark, and stroke for each character. Implements tone/mark repositioning (e.g., "hoaf" → "hoà").
+Fixed 256-character circular buffer (MAX=256) for multi-keystroke context. Tracks tone mark, vowel mark, and stroke for each character. Implements tone/mark repositioning (e.g., "hoaf" → "hoà").
 
 **Key Methods**:
 - `append_char(&mut self, ch: char, tone: ToneType, mark: VowelMark)`
@@ -241,15 +241,15 @@ ime_clear()                                                 // Reset buffer
 ime_free(result)                                            // Deallocate Result
 ```
 
-**Result Struct** (matches Swift exactly):
+**Result Struct** (matches platform bridges exactly):
 ```rust
 #[repr(C)]
 pub struct Result {
-    pub chars: [u32; 32],    // UTF-32 output (128 bytes)
+    pub chars: [u32; 256],   // UTF-32 output (MAX=256)
     pub action: u8,          // 0=None, 1=Send, 2=Restore
     pub backspace: u8,       // Characters to delete
-    pub count: u8,           // Valid output chars
-    pub _pad: u8,            // Alignment padding
+    pub count: u8,           // Number of valid chars
+    pub flags: u8,           // Flags: bit 0 = key_consumed
 }
 ```
 
@@ -303,8 +303,8 @@ Auto-detects foreground app to determine Fast/Slow text injection mode.
 
 **Slow Apps** (require delays, 20ms + 15ms + 5ms per char):
 - Electron apps: Claude, Notion, Slack, Discord, VS Code, Cursor
-- Terminals: **Wave**, Windows Terminal, cmd, PowerShell
-- Browsers: Chrome, Edge, Firefox
+- Terminals: Wave (`wave`, `waveterm`), Windows Terminal, wezterm, alacritty, hyper, mintty, cmd, PowerShell
+- Browsers: Chrome, Edge, Firefox, Brave, Opera, Vivaldi, Arc
 - IDEs: Obsidian, Figma
 
 **Fast Apps** (default, 2ms batch delay):
@@ -468,25 +468,27 @@ RustBridge.cs (Windows)
 
 ---
 
-**Last Updated**: 2026-01-12
+**Last Updated**: 2026-01-13
 **Total Files**: 80+ files (Windows-only build)
 **Platform**: Windows 10/11 (.NET 8, WPF)
 **Core Version**: v1.0.103 (synced from upstream)
 **Coverage**: 100% of directories documented
 
-**v1.0.103 Updates (from upstream)**:
+**v1.0.103 Core Engine Updates (from upstream)**:
+- ✅ VNI uppercase mark revert preservation (`E22` → `E2`, uppercase preserved)
+- ✅ Standard double-revert behavior matching UniKey/ibus-unikey (`ass` → `as`)
 - ✅ Comprehensive auto-restore with 100% Vietnamese, 97.6% English coverage
 - ✅ English dictionary (17k+ words) for smart auto-restore
 - ✅ Telex doubles whitelist (10k+ words) for patterns like "coffee", "teeth"
-- ✅ Fix: auto-restore for multi-modifier patterns (nurses, horses)
+- ✅ Fix: auto-restore for multi-modifier patterns (nurses, horses, cursor)
 - ✅ Fix: mark removal works after backspace (#197, #201)
-- ✅ Fix: ESC restore uses exact raw input (#206)
+- ✅ Fix: ESC restore uses exact raw input (#206) with `telex_double_raw` tracking
 - ✅ Fix: bracket shortcut revert with Shift/CapsLock
 - ✅ 800+ test cases with 100k English + 22k Vietnamese word coverage
 
 **Resolved Issues**:
 - ✅ Race condition with fast typing (Phase 4 complete - async queue + key passthrough)
-- ✅ Character loss in Wave terminal (v1.7.4 - added to SlowApps list)
+- ✅ Character loss in Wave terminal (v1.7.4 - added `wave` and `waveterm` to SlowApps list)
 
 **Complete Features**:
 - ✅ 5 Advanced Settings
