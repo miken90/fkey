@@ -3,7 +3,7 @@
 .SYNOPSIS
     Build and package FKey portable release for Windows
 .DESCRIPTION
-    Builds self-contained portable executable and creates ZIP package for release
+    Builds Rust core DLL and self-contained portable executable, then creates package for release
 .PARAMETER Version
     Version number (e.g., "1.6.0")
 .EXAMPLE
@@ -18,8 +18,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Configuration
+$ProjectRoot = (Get-Item $PSScriptRoot).Parent.Parent.FullName
+$CoreDir = Join-Path $ProjectRoot "core"
 $ProjectPath = Join-Path $PSScriptRoot "GoNhanh"
 $ProjectFile = Join-Path $ProjectPath "GoNhanh.csproj"
+$NativeDir = Join-Path $ProjectPath "Native"
 $OutputDir = Join-Path $ProjectPath "bin\Release\net8.0-windows\win-x64\publish"
 $ZipName = "FKey-v$Version-portable.zip"
 $ZipPath = Join-Path $OutputDir $ZipName
@@ -30,22 +33,51 @@ Write-Host "══════════════════════�
 Write-Host ""
 
 # Step 1: Kill running instances
-Write-Host "[1/4] Stopping FKey processes..." -ForegroundColor Yellow
+Write-Host "[1/5] Stopping FKey processes..." -ForegroundColor Yellow
 Get-Process -Name "FKey" -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 Write-Host "[OK] Processes stopped" -ForegroundColor Green
 Write-Host ""
 
-# Step 2: Clean previous build
-Write-Host "[2/4] Cleaning previous build..." -ForegroundColor Yellow
+# Step 2: Build Rust core DLL
+Write-Host "[2/5] Building Rust core DLL..." -ForegroundColor Yellow
+Write-Host "  Directory: $CoreDir" -ForegroundColor Gray
+
+Push-Location $CoreDir
+try {
+    cargo build --release
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] Rust build failed" -ForegroundColor Red
+        exit 1
+    }
+}
+finally {
+    Pop-Location
+}
+
+# Copy DLL to Native directory
+$DllSource = Join-Path $CoreDir "target\release\gonhanh_core.dll"
+$DllDest = Join-Path $NativeDir "gonhanh_core.dll"
+
+if (-not (Test-Path $DllSource)) {
+    Write-Host "[ERROR] Rust DLL not found: $DllSource" -ForegroundColor Red
+    exit 1
+}
+
+Copy-Item -Path $DllSource -Destination $DllDest -Force
+Write-Host "[OK] Rust DLL built and copied" -ForegroundColor Green
+Write-Host ""
+
+# Step 3: Clean previous build
+Write-Host "[3/5] Cleaning previous build..." -ForegroundColor Yellow
 if (Test-Path $OutputDir) {
     Remove-Item -Path $OutputDir -Recurse -Force
 }
 Write-Host "[OK] Cleaned" -ForegroundColor Green
 Write-Host ""
 
-# Step 3: Build portable executable
-Write-Host "[3/4] Building portable executable..." -ForegroundColor Yellow
+# Step 4: Build portable executable
+Write-Host "[4/5] Building portable executable..." -ForegroundColor Yellow
 Write-Host "  Configuration: Release" -ForegroundColor Gray
 Write-Host "  Runtime: win-x64" -ForegroundColor Gray
 Write-Host "  Self-contained: Yes" -ForegroundColor Gray
@@ -69,8 +101,8 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "[OK] Build successful" -ForegroundColor Green
 Write-Host ""
 
-# Step 4: Create 7z package (better compression)
-Write-Host "[4/4] Creating 7z package..." -ForegroundColor Yellow
+# Step 5: Create 7z package (better compression)
+Write-Host "[5/5] Creating package..." -ForegroundColor Yellow
 
 $ExePath = Join-Path $OutputDir "FKey.exe"
 if (-not (Test-Path $ExePath)) {

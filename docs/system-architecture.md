@@ -154,14 +154,18 @@ void ime_init(void);
 
 // Process keystroke
 typedef struct {
-    uint32_t chars[32];      // UTF-32 output characters
-    uint8_t action;          // 0=None, 1=Send, 2=Restore
+    uint32_t chars[256];     // UTF-32 output characters (MAX=256)
+    uint8_t action;          // 0=None, 1=Send, 2=Restore (unused)
     uint8_t backspace;       // Number of chars to delete
     uint8_t count;           // Number of valid chars
-    uint8_t _pad;            // Padding for alignment
+    uint8_t flags;           // Flags: bit 0 = key_consumed (0x01)
 } ImeResult;
 
+// Basic key processing
 ImeResult* ime_key(uint16_t keycode, bool caps, bool ctrl);
+
+// Extended key processing (with Shift for VNI Shift+number keys)
+ImeResult* ime_key_ext(uint16_t keycode, bool caps, bool ctrl, bool shift);
 
 // Set input method (0=Telex, 1=VNI)
 void ime_method(uint8_t method);
@@ -236,10 +240,9 @@ SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 ### App Detection (AppDetector.cs)
 
 **Slow Apps** (require delays for compatibility):
-- Electron apps: Claude, Notion, Slack, Discord, VS Code, Cursor
-- Terminals: **Wave**, Windows Terminal, cmd, PowerShell
-- Browsers: Chrome, Edge, Firefox
-- IDEs: Obsidian, Figma
+- Electron apps: Claude, Notion, Slack, Discord, VS Code, Cursor, Obsidian, Figma
+- Terminals: Wave (`wave`, `waveterm`), Windows Terminal, wezterm, alacritty, hyper, mintty, cmd, PowerShell
+- Browsers: Chrome, Edge, Firefox, Brave, Opera, Vivaldi, Arc
 
 **Fast Apps** (default):
 - Notepad, Word, Excel, native Windows apps
@@ -446,9 +449,10 @@ Check if async mode (_queue != null):
 
 ---
 
-**Last Updated**: 2025-12-31
-**Architecture Version**: 2.1 (Windows-only)
+**Last Updated**: 2026-01-13
+**Architecture Version**: 2.2 (Windows-only)
 **Platform**: Windows 10/11 (.NET 8, WPF)
+**Core Version**: v1.0.103
 **Diagram Format**: ASCII (compatible with all documentation viewers)
 
 **Resolved Issues**:

@@ -8,7 +8,8 @@
 **Platform**: Windows 10/11 (production-ready)
 **Repository**: [miken90/gonhanh.org](https://github.com/miken90/gonhanh.org)
 **Original**: [khaphanspace/gonhanh.org](https://github.com/khaphanspace/gonhanh.org)
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-13
+**Roadmap Version**: 1.7.4
 
 ## Completed Milestones
 

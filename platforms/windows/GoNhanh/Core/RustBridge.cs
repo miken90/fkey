@@ -133,8 +133,17 @@ public static class RustBridge
 
         try
         {
+            // Calculate effective caps state for letters:
+            // - Shift+letter with CapsLock OFF → uppercase
+            // - Shift+letter with CapsLock ON → lowercase (toggles)
+            // - letter with CapsLock ON → uppercase
+            // - letter with CapsLock OFF → lowercase
+            // For letters: effectiveCaps = shift XOR capslock
+            // For non-letters (numbers, punctuation): use capslock directly
+            bool effectiveCaps = IsLetterKey(keycode) ? (shift != capslock) : capslock;
+            
             // Call ime_key_ext with correct parameter order: (key, caps, ctrl, shift)
-            IntPtr ptr = ime_key_ext(macKeycode, capslock, false, shift);
+            IntPtr ptr = ime_key_ext(macKeycode, effectiveCaps, false, shift);
 
             if (ptr == IntPtr.Zero)
             {
@@ -170,7 +179,9 @@ public static class RustBridge
 
         try
         {
-            IntPtr ptr = ime_key_ext(macKeycode, capslock, false, shift);
+            // Calculate effective caps state (same logic as ProcessKey)
+            bool effectiveCaps = IsLetterKey(keycode) ? (shift != capslock) : capslock;
+            IntPtr ptr = ime_key_ext(macKeycode, effectiveCaps, false, shift);
 
             if (ptr == IntPtr.Zero)
             {
@@ -496,6 +507,14 @@ public static class RustBridge
         };
     }
 
+    /// <summary>
+    /// Check if Windows Virtual Key is a letter (A-Z)
+    /// </summary>
+    private static bool IsLetterKey(ushort windowsVK)
+    {
+        return windowsVK >= 0x41 && windowsVK <= 0x5A; // VK_A to VK_Z
+    }
+
     #endregion
 }
 
@@ -524,7 +543,7 @@ public enum ImeAction : byte
 [StructLayout(LayoutKind.Sequential)]
 internal struct NativeResult
 {
-    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]  // MAX = 64 in Rust
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]  // MAX = 256 in Rust (core/src/engine/buffer.rs)
     public uint[] chars;
     public byte action;
     public byte backspace;

@@ -27,9 +27,11 @@ if (-not $ProjectRoot) {
 $WindowsDir = Join-Path $ProjectRoot "platforms\windows"
 $BuildScript = Join-Path $WindowsDir "build-release.ps1"
 $PublishDir = Join-Path $WindowsDir "GoNhanh\bin\Release\net8.0-windows\win-x64\publish"
-$ZipName = "FKey-v$Version-portable.zip"
-$ZipPath = Join-Path $PublishDir $ZipName
 $TagName = "v$Version"
+
+# Package name - check for 7z first (build-release.ps1 prefers 7z), fallback to zip
+$ZipName7z = "FKey-v$Version-portable.7z"
+$ZipNameZip = "FKey-v$Version-portable.zip"
 
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host " FKey GitHub Release" -ForegroundColor Cyan
@@ -76,9 +78,18 @@ else {
     Write-Host ""
 }
 
-# Verify ZIP exists
-if (-not (Test-Path $ZipPath)) {
-    throw "Build artifact not found: $ZipPath"
+# Verify package exists - check 7z first (preferred), fallback to zip
+$ZipPath7z = Join-Path $PublishDir $ZipName7z
+$ZipPathZip = Join-Path $PublishDir $ZipNameZip
+
+if (Test-Path $ZipPath7z) {
+    $ZipPath = $ZipPath7z
+    $ZipName = $ZipName7z
+} elseif (Test-Path $ZipPathZip) {
+    $ZipPath = $ZipPathZip
+    $ZipName = $ZipNameZip
+} else {
+    throw "Build artifact not found. Expected: $ZipPath7z or $ZipPathZip"
 }
 
 $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
@@ -114,11 +125,11 @@ $Commits
 
 ## Download
 
-- **Windows Portable**: [FKey-v$Version-portable.zip](https://github.com/$Repo/releases/download/v$Version/$ZipName) (~$ZipSize MB)
+- **Windows Portable**: [$ZipName](https://github.com/$Repo/releases/download/v$Version/$ZipName) (~$ZipSize MB)
 
 ## Installation
 
-1. Download ``FKey-v$Version-portable.zip``
+1. Download ``$ZipName``
 2. Extract and run ``FKey.exe``
 3. App runs in system tray
 

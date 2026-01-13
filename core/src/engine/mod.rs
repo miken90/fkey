@@ -894,6 +894,14 @@ impl Engine {
             caps
         };
 
+        // Reset has_non_letter_prefix when user starts typing a new word with a letter
+        // This fixes: "ko " + "test" + backspace×5 + "dc " should trigger shortcut
+        // The extra backspace into empty set has_non_letter_prefix=true, but when user
+        // types 'd' (a letter) into empty buffer, they're starting a fresh word.
+        if keys::is_letter(key) && self.buf.is_empty() {
+            self.has_non_letter_prefix = false;
+        }
+
         // Record raw keystroke for ESC restore (letters and numbers only)
         if keys::is_letter(key) || keys::is_number(key) {
             self.raw_input.push((key, effective_caps, shift));
@@ -3003,18 +3011,39 @@ impl Engine {
                     //   Example: "issue" → next is 'u' (vowel) → keep → "issue"
                     self.pending_mark_revert_pop = true;
 
-                    // Add only the reverting key (current key being pressed)
-                    // The original mark key was consumed as a modifier and doesn't produce output
-                    self.buf.push(Char::new(key, caps));
-
-                    // Calculate backspace and output
-                    let backspace = (self.buf.len() - pos - 1) as u8; // -1 because we added 1 char
-                    let output: Vec<char> = (pos..self.buf.len())
-                        .filter_map(|i| self.buf.get(i))
-                        .filter_map(|c| utils::key_to_char(c.key, c.caps))
-                        .collect();
-
-                    return Result::send(backspace, &output);
+                    // Add only the reverting key if it's a letter (Telex: s, f, r, x, j)
+                    // VNI uses numbers (1-5) for marks - don't add to buffer but return None
+                    // so the platform layer passes the number through
+                    // Example: Telex "ass" → "as" (second 's' is added to buffer, output)
+                    // Example: VNI "E22" → engine outputs "E", returns None for '2' to pass through
+                    if keys::is_letter(key) {
+                        self.buf.push(Char::new(key, caps));
+                        
+                        // Calculate backspace and output for Telex
+                        let backspace = (self.buf.len() - pos - 1) as u8;
+                        let output: Vec<char> = (pos..self.buf.len())
+                            .filter_map(|i| self.buf.get(i))
+                            .filter_map(|c| utils::key_to_char(c.key, c.caps))
+                            .collect();
+                        return Result::send(backspace, &output);
+                    } else {
+                        // VNI: just output the reverted vowel, don't include number
+                        // The number will be passed through by platform layer (action=None doesn't work here)
+                        // We need to output vowel + number together since we're replacing È with E2
+                        let backspace = (self.buf.len() - pos) as u8;
+                        let mut output: Vec<char> = (pos..self.buf.len())
+                            .filter_map(|i| self.buf.get(i))
+                            .filter_map(|c| utils::key_to_char(c.key, c.caps))
+                            .collect();
+                        // Append the number to output
+                        if let Some(ch) = utils::key_to_char(key, false) {
+                            output.push(ch);
+                            // Also add to buffer so ESC restore knows the true screen length
+                            // We use a special Char that will output as the number
+                            self.buf.push(Char::new(key, false));
+                        }
+                        return Result::send(backspace, &output);
+                    }
                 }
             }
         }
@@ -6610,6 +6639,28 @@ mod tests {
             assert_eq!(
                 result, *expected,
                 "[Interleaved diphthong] '{}' → '{}', expected '{}'",
+                input, result, expected
+            );
+        }
+    }
+
+    /// Issue: VNI mark revert should preserve uppercase
+    /// E + 2 → È, then 2 again → E2 (E uppercase preserved + number passed through)
+    #[test]
+    fn test_vni_uppercase_mark_revert() {
+        let cases: &[(&str, &str)] = &[
+            ("E22", "E2"),   // E + huyền + revert → E2 (uppercase preserved)
+            ("A11", "A1"),   // A + sắc + revert → A1
+            ("O33", "O3"),   // O + hỏi + revert → O3
+            ("e22", "e2"),   // lowercase should also work
+        ];
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            e.set_method(1); // VNI
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[VNI uppercase revert] '{}' → '{}', expected '{}'",
                 input, result, expected
             );
         }
