@@ -191,6 +191,12 @@ Những người đã báo lỗi, góp ý, và thảo luận giúp định hình
       </a>
     </td>
     <td align="center">
+      <a href="https://api.github.com/users/trongthanh">
+        <img src="https://avatars.githubusercontent.com/u/234226?v=4" width="50" style="border-radius:50%"/><br/>
+        <b>trongthanh</b>
+      </a>
+    </td>
+    <td align="center">
       <a href="https://api.github.com/users/vincent-south">
         <img src="https://avatars.githubusercontent.com/u/250263007?v=4" width="50" style="border-radius:50%"/><br/>
         <b>vincent-south</b>
@@ -206,12 +212,6 @@ Những người đã báo lỗi, góp ý, và thảo luận giúp định hình
       <a href="https://api.github.com/users/lantrinh1999">
         <img src="https://avatars.githubusercontent.com/u/41521233?v=4" width="50" style="border-radius:50%"/><br/>
         <b>lantrinh1999</b>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://api.github.com/users/trongthanh">
-        <img src="https://avatars.githubusercontent.com/u/234226?v=4" width="50" style="border-radius:50%"/><br/>
-        <b>trongthanh</b>
       </a>
     </td>
     <td align="center">
