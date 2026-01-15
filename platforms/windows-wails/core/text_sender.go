@@ -18,16 +18,25 @@ const (
 type InjectionMethod int
 
 const (
-	MethodFast InjectionMethod = iota // Batch injection for standard apps
-	MethodSlow                        // Per-character with delays for Electron apps
+	MethodFast      InjectionMethod = iota // Batch injection for standard apps
+	MethodSlow                             // Per-character with small delays
+	MethodExtraSlow                        // Per-character with larger delays (Discord, Wave)
 )
 
 // Delay settings (milliseconds)
 const (
-	SlowModeKeyDelay  = 5
-	SlowModePreDelay  = 20
-	SlowModePostDelay = 15
-	FastModeDelay     = 5
+	// Slow mode - most Electron apps, browsers, terminals
+	// Uses per-character sending but no delays
+	SlowModeKeyDelay  = 0
+	SlowModePreDelay  = 0
+	SlowModePostDelay = 0
+
+	// Extra slow mode - problematic apps like Wave
+	ExtraSlowModeKeyDelay  = 5
+	ExtraSlowModePreDelay  = 10
+	ExtraSlowModePostDelay = 8
+
+	FastModeDelay = 0 // Not used anymore
 )
 
 // INPUT structure for SendInput
@@ -70,28 +79,29 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 	case MethodFast:
 		sendFast(text, backspaces)
 	case MethodSlow:
-		sendSlow(text, backspaces)
+		sendSlow(text, backspaces, SlowModePreDelay, SlowModePostDelay, SlowModeKeyDelay)
+	case MethodExtraSlow:
+		sendSlow(text, backspaces, ExtraSlowModePreDelay, ExtraSlowModePostDelay, ExtraSlowModeKeyDelay)
 	}
 }
 
 func sendFast(text string, backspaces int) {
 	if backspaces > 0 {
 		sendBackspaces(backspaces)
-		time.Sleep(FastModeDelay * time.Millisecond)
 	}
 	if len(text) > 0 {
 		sendUnicodeTextBatch(text)
 	}
 }
 
-func sendSlow(text string, backspaces int) {
+func sendSlow(text string, backspaces int, preDelay, postDelay, keyDelay int) {
 	if backspaces > 0 {
 		sendBackspaces(backspaces)
-		time.Sleep(SlowModePostDelay * time.Millisecond)
+		time.Sleep(time.Duration(postDelay) * time.Millisecond)
 	}
 	if len(text) > 0 {
-		time.Sleep(SlowModePreDelay * time.Millisecond)
-		sendUnicodeTextSlow(text, SlowModeKeyDelay)
+		time.Sleep(time.Duration(preDelay) * time.Millisecond)
+		sendUnicodeTextSlow(text, keyDelay)
 	}
 }
 

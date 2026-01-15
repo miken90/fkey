@@ -617,15 +617,15 @@ func TestDetermineMethod(t *testing.T) {
 		{"vscode", core.MethodSlow},
 		{"cursor", core.MethodSlow},
 		{"slack", core.MethodSlow},
-		{"discord", core.MethodSlow},
+		{"discord", core.MethodFast},
 		{"notion", core.MethodSlow},
 		{"chrome", core.MethodSlow},
 		{"msedge", core.MethodSlow},
 		{"firefox", core.MethodSlow},
 		{"windowsterminal", core.MethodSlow},
 		{"powershell", core.MethodSlow},
-		{"wave", core.MethodSlow},
-		{"waveterm", core.MethodSlow},
+		{"wave", core.MethodExtraSlow},
+		{"waveterm", core.MethodExtraSlow},
 		{"claude", core.MethodSlow},
 		// Fast apps
 		{"notepad", core.MethodFast},
@@ -654,19 +654,33 @@ func TestInjectionMethodConstants(t *testing.T) {
 	if core.MethodSlow != 1 {
 		t.Errorf("MethodSlow = %d, want 1", core.MethodSlow)
 	}
+	if core.MethodExtraSlow != 2 {
+		t.Errorf("MethodExtraSlow = %d, want 2", core.MethodExtraSlow)
+	}
 }
 
 func TestTextSenderDelays(t *testing.T) {
-	if core.SlowModeKeyDelay != 5 {
-		t.Errorf("SlowModeKeyDelay = %d, want 5", core.SlowModeKeyDelay)
+	// Optimized delays for better responsiveness
+	if core.SlowModeKeyDelay != 0 {
+		t.Errorf("SlowModeKeyDelay = %d, want 0", core.SlowModeKeyDelay)
 	}
-	if core.SlowModePreDelay != 20 {
-		t.Errorf("SlowModePreDelay = %d, want 20", core.SlowModePreDelay)
+	if core.SlowModePreDelay != 0 {
+		t.Errorf("SlowModePreDelay = %d, want 0", core.SlowModePreDelay)
 	}
-	if core.SlowModePostDelay != 15 {
-		t.Errorf("SlowModePostDelay = %d, want 15", core.SlowModePostDelay)
+	if core.SlowModePostDelay != 0 {
+		t.Errorf("SlowModePostDelay = %d, want 0", core.SlowModePostDelay)
 	}
-	if core.FastModeDelay != 5 {
-		t.Errorf("FastModeDelay = %d, want 5", core.FastModeDelay)
+	if core.FastModeDelay != 0 {
+		t.Errorf("FastModeDelay = %d, want 0", core.FastModeDelay)
+	}
+	// Extra slow mode for problematic apps
+	if core.ExtraSlowModeKeyDelay != 5 {
+		t.Errorf("ExtraSlowModeKeyDelay = %d, want 5", core.ExtraSlowModeKeyDelay)
+	}
+	if core.ExtraSlowModePreDelay != 10 {
+		t.Errorf("ExtraSlowModePreDelay = %d, want 10", core.ExtraSlowModePreDelay)
+	}
+	if core.ExtraSlowModePostDelay != 8 {
+		t.Errorf("ExtraSlowModePostDelay = %d, want 8", core.ExtraSlowModePostDelay)
 	}
 }

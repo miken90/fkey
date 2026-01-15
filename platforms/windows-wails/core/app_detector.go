@@ -25,13 +25,12 @@ const (
 )
 
 // Apps requiring slow injection (Electron, terminals, browsers).
-// Slow mode adds delays between backspaces and text for reliability.
+// Slow mode adds small delays between backspaces and text.
 var slowApps = map[string]bool{
 	// Electron apps
 	"claude":   true,
 	"notion":   true,
 	"slack":    true,
-	"discord":  true,
 	"teams":    true,
 	"code":     true,
 	"vscode":   true,
@@ -47,8 +46,6 @@ var slowApps = map[string]bool{
 	"alacritty":       true,
 	"hyper":           true,
 	"mintty":          true,
-	"wave":            true,
-	"waveterm":        true,
 	// Browsers (use slow mode as safe default)
 	"chrome":  true,
 	"msedge":  true,
@@ -57,6 +54,12 @@ var slowApps = map[string]bool{
 	"opera":   true,
 	"vivaldi": true,
 	"arc":     true,
+}
+
+// Apps requiring extra slow injection (problematic apps that drop chars with normal slow mode)
+var extraSlowApps = map[string]bool{
+	"wave":     true,
+	"waveterm": true,
 }
 
 // Cache to avoid repeated process lookups
@@ -153,7 +156,11 @@ func ExtractProcessName(fullPath string) string {
 
 // DetermineMethod checks if process name needs slow mode - exported for testing
 func DetermineMethod(processName string) InjectionMethod {
-	if slowApps[strings.ToLower(processName)] {
+	name := strings.ToLower(processName)
+	if extraSlowApps[name] {
+		return MethodExtraSlow
+	}
+	if slowApps[name] {
 		return MethodSlow
 	}
 	return MethodFast
