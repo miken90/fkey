@@ -62,6 +62,13 @@ var extraSlowApps = map[string]bool{
 	"waveterm": true,
 }
 
+// DefaultCoalescingApps - apps that benefit from coalescing (heavy rich-text editors)
+var DefaultCoalescingApps = []string{
+	"discord",
+	"discordcanary",
+	"discordptb",
+}
+
 // Cache to avoid repeated process lookups
 var (
 	cachedProcessName string

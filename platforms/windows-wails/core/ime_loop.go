@@ -9,11 +9,12 @@ import (
 
 // ImeLoop manages the complete IME processing pipeline
 type ImeLoop struct {
-	hook     *KeyboardHook
-	bridge   *Bridge
-	settings *ImeSettings
-	running  bool
-	mu       sync.Mutex
+	hook      *KeyboardHook
+	bridge    *Bridge
+	settings  *ImeSettings
+	coalescer *Coalescer
+	running   bool
+	mu        sync.Mutex
 
 	// Callbacks for UI notification
 	OnEnabledChanged func(enabled bool)
@@ -62,6 +63,13 @@ func NewImeLoop() (*ImeLoop, error) {
 		bridge:   bridge,
 		settings: settings,
 	}
+
+	// Create coalescer with sendFunc callback
+	loop.coalescer = NewCoalescer(func(text string, backspaces int, method InjectionMethod) {
+		SendTextWithMethod(text, backspaces, method)
+	})
+	// Set default coalescing apps
+	loop.coalescer.SetApps(DefaultCoalescingApps)
 
 	// Set up key processing callback
 	hook.OnKeyPressed = loop.processKey
@@ -169,13 +177,16 @@ func (l *ImeLoop) ClearBuffer() {
 // Returns true if the key was handled (should be blocked)
 func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 	if !l.settings.Enabled {
+		// IME disabled, flush any pending and pass through
+		l.coalescer.Flush()
 		return false
 	}
 
 	// Translate Windows VK to macOS keycode for Rust engine
 	macKeycode := TranslateToMacKeycode(keyCode)
 	if macKeycode == 0xFFFF {
-		// Key not mapped, pass through
+		// Key not mapped, flush any pending coalesced text first
+		l.coalescer.Flush()
 		return false
 	}
 
@@ -190,18 +201,31 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 
 	switch result.Action {
 	case ActionNone:
-		// No action needed, pass through
+		// No action needed, but flush any pending coalesced text first
+		l.coalescer.Flush()
 		return false
 
 	case ActionSend:
 		// Send replacement text
 		text := result.GetText()
 		backspaces := int(result.Backspace)
-		SendText(text, backspaces)
+		method := DetectInjectionMethod()
+
+		// Check if current app benefits from coalescing AND this is a diacritic replacement
+		if l.coalescer.IsCoalescingApp(GetCurrentProcessName()) && backspaces > 0 {
+			// Diacritic replacement - coalesce for Discord-like apps
+			l.coalescer.Queue(text, backspaces, method)
+		} else {
+			// Non-diacritic or non-coalescing app - flush pending first, then send
+			l.coalescer.Flush()
+			SendTextWithMethod(text, backspaces, method)
+		}
 		return true
 
 	case ActionRestore:
 		// Restore original text (ESC pressed)
+		// Flush pending first, then restore
+		l.coalescer.Flush()
 		text := result.GetText()
 		backspaces := int(result.Backspace)
 		SendText(text, backspaces)
@@ -224,4 +248,9 @@ func (l *ImeLoop) RemoveShortcut(trigger string) {
 // ClearShortcuts removes all shortcuts
 func (l *ImeLoop) ClearShortcuts() {
 	l.bridge.ClearShortcuts()
+}
+
+// SetCoalescingApps updates the list of apps that use coalescing
+func (l *ImeLoop) SetCoalescingApps(apps []string) {
+	l.coalescer.SetApps(apps)
 }

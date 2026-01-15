@@ -34,6 +34,7 @@ const (
 	KeyEnglishAutoRestore = "EnglishAutoRestore"
 	KeyAutoCapitalize     = "AutoCapitalize"
 	KeyToggleHotkey       = "ToggleHotkey"
+	KeyCoalescingApps     = "CoalescingApps"
 )
 
 // Settings holds all application settings
@@ -49,6 +50,7 @@ type Settings struct {
 	EnglishAutoRestore bool   // Auto-restore English words
 	AutoCapitalize     bool   // Auto-capitalize after punctuation
 	ToggleHotkey       string // Format: "keycode,modifiers"
+	CoalescingApps     string // Comma-separated list of apps
 }
 
 // DefaultSettings returns settings with default values
@@ -65,6 +67,7 @@ func DefaultSettings() *Settings {
 		EnglishAutoRestore: false,
 		AutoCapitalize:     true,
 		ToggleHotkey:       "32,1", // Ctrl+Space
+		CoalescingApps:     "discord,discordcanary,discordptb",
 	}
 }
 
@@ -111,6 +114,7 @@ func (s *SettingsService) Load() error {
 	s.settings.EnglishAutoRestore = readDWORD(key, KeyEnglishAutoRestore, 0) == 1
 	s.settings.AutoCapitalize = readDWORD(key, KeyAutoCapitalize, 1) == 1
 	s.settings.ToggleHotkey = readString(key, KeyToggleHotkey, "32,1")
+	s.settings.CoalescingApps = readString(key, KeyCoalescingApps, "discord,discordcanary,discordptb")
 
 	return nil
 }
@@ -134,6 +138,7 @@ func (s *SettingsService) Save() error {
 	writeDWORD(key, KeyEnglishAutoRestore, boolToDWORD(s.settings.EnglishAutoRestore))
 	writeDWORD(key, KeyAutoCapitalize, boolToDWORD(s.settings.AutoCapitalize))
 	writeString(key, KeyToggleHotkey, s.settings.ToggleHotkey)
+	writeString(key, KeyCoalescingApps, s.settings.CoalescingApps)
 
 	// Update auto-start registry
 	s.updateAutoStart()
@@ -172,6 +177,23 @@ func (s *SettingsService) Reset() {
 	s.settings = DefaultSettings()
 	s.settings.FirstRun = false // Don't show onboarding again
 	s.Save()
+}
+
+// GetCoalescingApps returns list of apps that benefit from coalescing
+func (s *SettingsService) GetCoalescingApps() []string {
+	if s.settings.CoalescingApps == "" {
+		return nil
+	}
+	apps := strings.Split(s.settings.CoalescingApps, ",")
+	for i, app := range apps {
+		apps[i] = strings.TrimSpace(app)
+	}
+	return apps
+}
+
+// SetCoalescingApps updates the list
+func (s *SettingsService) SetCoalescingApps(apps []string) {
+	s.settings.CoalescingApps = strings.Join(apps, ",")
 }
 
 // Shortcut represents a text expansion shortcut
