@@ -111,13 +111,22 @@ Write-Host "[3/4] Generating release notes..." -ForegroundColor Yellow
 
 Push-Location $ProjectRoot
 try {
-    # Get last tag
-    $LastTag = git describe --tags --abbrev=0 2>$null
+    # Get previous tag (not the current one we're releasing)
+    # First get all tags sorted by version, then find the one before current
+    $AllTags = git tag --sort=-v:refname 2>$null
+    $PrevTag = $null
+    
+    if ($AllTags) {
+        $TagArray = $AllTags -split "`n" | Where-Object { $_ -and $_ -ne "v$Version" }
+        if ($TagArray.Count -gt 0) {
+            $PrevTag = $TagArray[0]
+        }
+    }
 
-    # Get commits since last tag
-    if ($LastTag) {
-        $CommitLines = git log "$LastTag..HEAD" --pretty=format:"%s" --no-merges 2>$null
-        $CompareLink = "**Full Changelog**: https://github.com/$Repo/compare/$LastTag...v$Version"
+    # Get commits since previous tag
+    if ($PrevTag) {
+        $CommitLines = git log "$PrevTag..HEAD" --pretty=format:"%s" --no-merges 2>$null
+        $CompareLink = "**Full Changelog**: https://github.com/$Repo/compare/$PrevTag...v$Version"
     } else {
         $CommitLines = git log -20 --pretty=format:"%s" --no-merges 2>$null
         $CompareLink = ""
