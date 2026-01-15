@@ -1,0 +1,255 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #0078d4;
+    --primary-dark: #005a9e;
+    --bg: #f3f3f3;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #5c5c5c;
+    --border: #d4d4d4;
+    --success: #107c10;
+    --error: #c42b1c;
+}
+
+html {
+    font-size: 13px;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 12px 16px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 2px;
+}
+
+header .subtitle {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.status-section {
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.status-section:hover {
+    background-color: #f9f9f9;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--success);
+    flex-shrink: 0;
+}
+
+.status-dot.disabled {
+    background-color: var(--error);
+}
+
+.status-text {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.settings-section,
+.advanced-section {
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+}
+
+.settings-section h2 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text);
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.setting-row:last-child {
+    border-bottom: none;
+}
+
+.setting-row > label {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--text);
+}
+
+.radio-group {
+    display: flex;
+    gap: 12px;
+}
+
+.radio-group label {
+    font-weight: normal;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--text);
+}
+
+.radio-group input[type="radio"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+.hotkey-button {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text);
+    min-width: 90px;
+    text-align: center;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.hotkey-button:hover {
+    border-color: var(--primary);
+    background-color: #e8f4fc;
+}
+
+.hotkey-button.recording {
+    border-color: var(--primary);
+    background-color: #e3f2fd;
+    animation: pulse 0.8s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+details summary {
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 12px;
+    padding: 4px 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+details summary::before {
+    content: '▶';
+    font-size: 8px;
+    transition: transform 0.15s;
+}
+
+details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+.advanced-settings {
+    padding-top: 8px;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.checkbox-row input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+}
+
+footer {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 10px;
+    padding-top: 4px;
+}
+
+footer a {
+    color: var(--primary);
+    text-decoration: none;
+    margin-left: 8px;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Error message */
+.error-msg {
+    color: var(--error);
+    font-size: 11px;
+    padding: 8px;
+    text-align: center;
+    background: #fef2f2;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}

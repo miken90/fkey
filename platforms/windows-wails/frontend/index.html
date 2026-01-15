@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FKey - Cài đặt</title>
+    <link rel="stylesheet" href="assets/app.css">
+</head>
+<body class="loading">
+    <!-- Wails Runtime (must load first) -->
+    <script src="assets/runtime.js" type="module"></script>
+    
+    <div class="container">
+        <header>
+            <h1>FKey</h1>
+            <p class="subtitle">Bộ gõ tiếng Việt</p>
+        </header>
+
+        <main>
+            <section class="status-section" title="Nhấp để bật/tắt">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Tiếng Việt: Đang bật</span>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h2>Cài đặt</h2>
+                
+                <div class="setting-row">
+                    <label>Kiểu gõ</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="inputMethod" value="0" checked>
+                            Telex
+                        </label>
+                        <label>
+                            <input type="radio" name="inputMethod" value="1">
+                            VNI
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label>Kiểu dấu</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="toneStyle" value="modern" checked>
+                            Mới (hòa)
+                        </label>
+                        <label>
+                            <input type="radio" name="toneStyle" value="old">
+                            Cũ (hoà)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <label>Phím tắt</label>
+                    <button class="hotkey-button" id="hotkeyBtn">Ctrl+Space</button>
+                </div>
+            </section>
+
+            <section class="advanced-section">
+                <details>
+                    <summary>Nâng cao</summary>
+                    <div class="advanced-settings">
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="autoStart">
+                            Khởi động cùng Windows
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="skipW">
+                            Bỏ qua w → ư (Telex)
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="escRestore" checked>
+                            ESC khôi phục văn bản gốc
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="freeTone">
+                            Đánh dấu tự do
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="englishRestore">
+                            Tự động khôi phục từ tiếng Anh
+                        </label>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="autoCapitalize" checked>
+                            Tự động viết hoa đầu câu
+                        </label>
+                    </div>
+                </details>
+            </section>
+        </main>
+
+        <footer>
+            <span id="versionText">FKey v2.0.0</span>
+            <a href="#" id="feedbackLink">Góp ý</a>
+        </footer>
+    </div>
+
+    <script src="assets/app.js" type="module"></script>
+</body>
+</html>

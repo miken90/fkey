@@ -54,6 +54,7 @@ obj/
 .claude/skills/.env*
 .opencode/
 plans/
+history/
 CLAUDE.md
 
 repomix-output.*

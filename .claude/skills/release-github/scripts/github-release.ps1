@@ -1,6 +1,6 @@
-# GoNhanh - GitHub Release Script
-# Builds and uploads release to GitHub Releases using standardized build script
-# Usage: .\github-release.ps1 -Version "1.5.9"
+# FKey - GitHub Release Script
+# Builds and uploads release to GitHub Releases using Go/Wails build
+# Usage: .\github-release.ps1 -Version "2.0.0"
 # Note: Only pushes to origin (miken90), never to upstream
 
 param(
@@ -8,33 +8,36 @@ param(
     [string]$Version,
 
     [string]$ProjectRoot = "",
-    [string]$Repo = "miken90/gonhanh.org",  # Target repo for release (never upstream)
+    [string]$Repo = "miken90/fkey",
     [switch]$SkipBuild,
-    [switch]$Draft
+    [switch]$Draft,
+    [switch]$Sign
 )
 
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 
 # Auto-detect project root if not specified
 if (-not $ProjectRoot) {
     $ProjectRoot = (Get-Item $PSScriptRoot).Parent.Parent.Parent.FullName
     # Fallback: look for gonhanh.org in common locations
-    if (-not (Test-Path "$ProjectRoot\platforms\windows\build-release.ps1")) {
-        $ProjectRoot = "C:\WORKSPACES\PERSONAL\gonhanh.org"
+    if (-not (Test-Path "$ProjectRoot\platforms\windows-wails\build.ps1")) {
+        $ProjectRoot = "C:\WORKSPACES\2026\gonhanh.org"
     }
 }
 
-$WindowsDir = Join-Path $ProjectRoot "platforms\windows"
-$BuildScript = Join-Path $WindowsDir "build-release.ps1"
-$PublishDir = Join-Path $WindowsDir "GoNhanh\bin\Release\net8.0-windows\win-x64\publish"
+$WailsDir = Join-Path $ProjectRoot "platforms\windows-wails"
+$BuildScript = Join-Path $WailsDir "build.ps1"
+$OutputDir = Join-Path $WailsDir "build\bin"
 $TagName = "v$Version"
 
-# Package name - check for 7z first (build-release.ps1 prefers 7z), fallback to zip
-$ZipName7z = "FKey-v$Version-portable.7z"
-$ZipNameZip = "FKey-v$Version-portable.zip"
+# Package name
+$ZipName = "FKey-v$Version-portable.zip"
+$ZipPath = Join-Path $OutputDir $ZipName
 
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host " FKey GitHub Release" -ForegroundColor Cyan
+Write-Host " FKey GitHub Release (Go/Wails)" -ForegroundColor Cyan
 Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
@@ -59,12 +62,16 @@ if (-not (Test-Path $BuildScript)) {
 
 # Step 1: Build portable package
 if (-not $SkipBuild) {
-    Write-Host "[1/3] Building portable package..." -ForegroundColor Yellow
+    Write-Host "[1/4] Building portable package..." -ForegroundColor Yellow
     Write-Host ""
 
-    Push-Location $WindowsDir
+    Push-Location $WailsDir
     try {
-        & $BuildScript -Version $Version
+        $buildArgs = @("-Release", "-Version", $Version)
+        if ($Sign) {
+            $buildArgs += "-Sign"
+        }
+        & $BuildScript @buildArgs
         if ($LASTEXITCODE -ne 0) { throw "Build failed" }
     }
     finally {
@@ -74,67 +81,137 @@ if (-not $SkipBuild) {
     Write-Host ""
 }
 else {
-    Write-Host "[1/3] Skipping build (--SkipBuild)" -ForegroundColor Gray
+    Write-Host "[1/4] Skipping build (--SkipBuild)" -ForegroundColor Gray
     Write-Host ""
 }
 
-# Verify package exists - check 7z first (preferred), fallback to zip
-$ZipPath7z = Join-Path $PublishDir $ZipName7z
-$ZipPathZip = Join-Path $PublishDir $ZipNameZip
+# Step 2: Create ZIP package
+Write-Host "[2/4] Creating ZIP package..." -ForegroundColor Yellow
 
-if (Test-Path $ZipPath7z) {
-    $ZipPath = $ZipPath7z
-    $ZipName = $ZipName7z
-} elseif (Test-Path $ZipPathZip) {
-    $ZipPath = $ZipPathZip
-    $ZipName = $ZipNameZip
-} else {
-    throw "Build artifact not found. Expected: $ZipPath7z or $ZipPathZip"
+$ExePath = Join-Path $OutputDir "FKey.exe"
+$DllPath = Join-Path $OutputDir "gonhanh_core.dll"
+
+if (-not (Test-Path $ExePath)) {
+    throw "Executable not found: $ExePath"
 }
 
+# Create ZIP with both EXE and DLL
+if (Test-Path $ZipPath) {
+    Remove-Item $ZipPath -Force
+}
+
+Compress-Archive -Path $ExePath, $DllPath -DestinationPath $ZipPath -CompressionLevel Optimal
+
 $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
-Write-Host "Package ready: $ZipName ($ZipSize MB)" -ForegroundColor Green
+Write-Host "[OK] Package ready: $ZipName ($ZipSize MB)" -ForegroundColor Green
 Write-Host ""
 
-# Step 2: Generate release notes
-Write-Host "[2/3] Generating release notes..." -ForegroundColor Yellow
+# Step 3: Generate release notes
+Write-Host "[3/4] Generating release notes..." -ForegroundColor Yellow
 
 Push-Location $ProjectRoot
 try {
     # Get last tag
     $LastTag = git describe --tags --abbrev=0 2>$null
 
-    # Generate notes from commits
+    # Get commits since last tag
     if ($LastTag) {
-        $Commits = git log "$LastTag..HEAD" --pretty=format:"- %s" --no-merges 2>$null
+        $CommitLines = git log "$LastTag..HEAD" --pretty=format:"%s" --no-merges 2>$null
         $CompareLink = "**Full Changelog**: https://github.com/$Repo/compare/$LastTag...v$Version"
     } else {
-        # No previous tags, get last 10 commits
-        $Commits = git log -10 --pretty=format:"- %s" --no-merges 2>$null
+        $CommitLines = git log -20 --pretty=format:"%s" --no-merges 2>$null
         $CompareLink = ""
     }
 
-    if (-not $Commits) {
-        $Commits = "- Initial release"
+    # Categorize commits
+    $Features = @()
+    $Fixes = @()
+    $Improvements = @()
+
+    if ($CommitLines) {
+        $CommitArray = $CommitLines -split "`n"
+        foreach ($commit in $CommitArray) {
+            $commit = $commit.Trim()
+            if (-not $commit) { continue }
+            
+            # Skip merge commits and version commits
+            if ($commit -match "^Merge" -or $commit -match "^v\d+\.\d+") { continue }
+            
+            # Categorize by conventional commit prefix
+            if ($commit -match "^feat(\(.+\))?:|^feature:|^add:|^new:") {
+                # Clean up prefix for display
+                $msg = $commit -replace "^feat(\(.+\))?:\s*", ""
+                $msg = $msg -replace "^feature:\s*", ""
+                $msg = $msg -replace "^add:\s*", ""
+                $msg = $msg -replace "^new:\s*", ""
+                if ($msg) { $Features += "- $msg" }
+            }
+            elseif ($commit -match "^fix(\(.+\))?:|^bug:|^hotfix:") {
+                $msg = $commit -replace "^fix(\(.+\))?:\s*", ""
+                $msg = $msg -replace "^bug:\s*", ""
+                $msg = $msg -replace "^hotfix:\s*", ""
+                if ($msg) { $Fixes += "- $msg" }
+            }
+            elseif ($commit -match "^refactor:|^perf:|^improve:|^chore:|^style:|^docs:|^test:|^ci:|^build:") {
+                $msg = $commit -replace "^(refactor|perf|improve|chore|style|docs|test|ci|build)(\(.+\))?:\s*", ""
+                if ($msg) { $Improvements += "- $msg" }
+            }
+            else {
+                # Uncategorized commits go to improvements
+                $Improvements += "- $commit"
+            }
+        }
     }
 
+    # Build release notes sections
+    $Sections = @()
+    
+    if ($Features.Count -gt 0) {
+        $Sections += "### ✨ New Features`n`n" + ($Features -join "`n")
+    }
+    
+    if ($Fixes.Count -gt 0) {
+        $Sections += "### 🐛 Bug Fixes`n`n" + ($Fixes -join "`n")
+    }
+    
+    if ($Improvements.Count -gt 0) {
+        $Sections += "### ⚡ Improvements`n`n" + ($Improvements -join "`n")
+    }
+
+    # Fallback if no categorized commits
+    if ($Sections.Count -eq 0) {
+        $Sections += "- Initial release"
+    }
+
+    $ChangesSection = $Sections -join "`n`n"
+
+    # Write release notes to temp file (fixes UTF-8 encoding issues)
+    $NotesFile = Join-Path $env:TEMP "release-notes-$Version.md"
+    
     $ReleaseNotes = @"
-## What's New in v$Version
+## What's Changed
 
-$Commits
+$ChangesSection
 
-## Download
+---
 
-- **Windows Portable**: [$ZipName](https://github.com/$Repo/releases/download/v$Version/$ZipName) (~$ZipSize MB)
+## 📦 Download
 
-## Installation
+| Platform | File | Size |
+|----------|------|------|
+| Windows (Portable) | [$ZipName](https://github.com/$Repo/releases/download/v$Version/$ZipName) | ~$ZipSize MB |
 
-1. Download ``$ZipName``
-2. Extract and run ``FKey.exe``
-3. App runs in system tray
+### Installation
+
+1. Download và giải nén ``$ZipName``
+2. Chạy ``FKey.exe``
+3. Ứng dụng chạy ở khay hệ thống (system tray)
 
 $CompareLink
 "@
+
+    # Write with UTF-8 BOM for proper encoding
+    [System.IO.File]::WriteAllText($NotesFile, $ReleaseNotes, [System.Text.UTF8Encoding]::new($false))
 
     Write-Host "[OK] Release notes generated" -ForegroundColor Green
     Write-Host ""
@@ -143,8 +220,8 @@ finally {
     Pop-Location
 }
 
-# Step 3: Create GitHub release
-Write-Host "[3/3] Creating GitHub release..." -ForegroundColor Yellow
+# Step 4: Create GitHub release
+Write-Host "[4/4] Creating GitHub release..." -ForegroundColor Yellow
 
 Push-Location $ProjectRoot
 try {
@@ -153,22 +230,25 @@ try {
     Write-Host "  Asset: $ZipName" -ForegroundColor Gray
     Write-Host ""
 
-    # Create tag locally and push to origin only (never upstream)
-    # Temporarily allow errors for git commands (stderr output is not actual errors)
+    # Push code and tag to origin only (never upstream)
     $prevErrorAction = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
 
+    Write-Host "  Pushing code to origin..." -ForegroundColor Gray
+    $null = git push origin HEAD 2>&1
+    
+    Write-Host "  Creating and pushing tag..." -ForegroundColor Gray
     $null = git tag $TagName 2>&1
     $null = git push origin $TagName 2>&1
 
     $ErrorActionPreference = $prevErrorAction
 
-    # Create release with gh CLI - explicitly specify repo to avoid pushing to wrong remote
+    # Create release with gh CLI using notes file
     $ReleaseArgs = @(
         "release", "create", $TagName, $ZipPath,
         "--repo", $Repo,
         "--title", "FKey v$Version",
-        "--notes", $ReleaseNotes
+        "--notes-file", $NotesFile
     )
     if ($Draft) {
         $ReleaseArgs += "--draft"
@@ -181,6 +261,9 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create GitHub release"
     }
+
+    # Clean up temp file
+    Remove-Item $NotesFile -ErrorAction SilentlyContinue
 
     Write-Host "[OK] Release created" -ForegroundColor Green
 }
@@ -197,7 +280,6 @@ Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
 Write-Host "Package:  $ZipSize MB" -ForegroundColor White
 
-# Show release URL (use $Repo directly, not gh repo view which may pick wrong repo)
 $ReleaseUrl = "https://github.com/$Repo/releases/tag/$TagName"
 Write-Host "GitHub:   $ReleaseUrl" -ForegroundColor White
 

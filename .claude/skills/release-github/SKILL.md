@@ -2,7 +2,7 @@
 name: release-github
 description: Build and upload releases to GitHub Releases using standardized build scripts. Automates version tagging, portable package creation, and release publishing. Use when releasing new versions or creating distribution packages.
 license: MIT
-version: 2.0.0
+version: 3.0.0
 ---
 
 # GitHub Release Skill
@@ -12,7 +12,7 @@ Automate building and publishing releases to GitHub using project's standardized
 ## When to Use This Skill
 
 Use this skill when:
-- Releasing a new version of GoNhanh
+- Releasing a new version of FKey
 - Creating portable distribution packages
 - Publishing release to GitHub with auto-generated notes
 - Tagging versions with semantic versioning
@@ -25,21 +25,22 @@ Use this skill when:
 
 Example:
 ```
-/release-github 1.5.9
+/release-github 2.0.0
 ```
 
 ## What It Does
 
-1. **Build Portable Package** - Uses `platforms/windows/build-release.ps1`
-   - Stops running instances
-   - Cleans previous builds
-   - Builds self-contained single-file executable
-   - Creates portable ZIP (~64MB)
+1. **Build Portable Package** - Uses `platforms/windows-wails/build.ps1`
+   - Builds Rust core DLL (if needed)
+   - Builds Go/Wails executable with version injection
+   - Applies UPX compression (if available)
+   - Optionally signs binaries
+   - Creates portable ZIP (~5MB)
 
 2. **Generate Release Notes** - Auto-generates from commits since last tag
 
 3. **Create GitHub Release** - Uses `gh` CLI to:
-   - Create version tag (e.g., `v1.5.9`)
+   - Create version tag (e.g., `v2.0.0`)
    - Upload portable ZIP
    - Publish release notes
 
@@ -47,16 +48,17 @@ Example:
 
 - `gh` CLI installed and authenticated (`gh auth login`)
 - Rust toolchain (`cargo`)
-- .NET 8 SDK (`dotnet`)
+- Go 1.21+ (`go`)
 - PowerShell 5.1+
 - Write access to repository
-- Optional: 7-Zip (`7z`) for better compression
+- Optional: UPX for compression (`winget install upx`)
+- Optional: Windows SDK for signing (`signtool.exe`)
 
 ## Parameters
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| version | Yes | Semantic version (e.g., 1.5.9) |
+| version | Yes | Semantic version (e.g., 2.0.0) |
 
 ## Flags
 
@@ -64,60 +66,85 @@ Example:
 |------|-------------|
 | `-SkipBuild` | Skip build step (use existing ZIP) |
 | `-Draft` | Create as draft release |
+| `-Sign` | Sign binaries with code signing certificate |
 
 ## Output
 
-- Local: `platforms/windows/GoNhanh/bin/Release/net8.0-windows/win-x64/publish/FKey-v{version}-portable.7z` (or `.zip` if 7z not available)
+- Local: `platforms/windows-wails/build/bin/FKey-v{version}-portable.zip`
 - GitHub: `https://github.com/{owner}/{repo}/releases/tag/v{version}`
 
 ## Build Process
 
-Uses `platforms/windows/build-release.ps1`:
-1. Stop FKey.exe processes
-2. Build Rust core DLL (`cargo build --release`)
-3. Copy `gonhanh_core.dll` to `GoNhanh/Native/`
-4. Clean `bin/Release` directory
-5. Build with `dotnet publish`:
-   - Configuration: Release
-   - Runtime: win-x64
-   - Self-contained: Yes
-   - Single file: Yes
-   - Version: {version}
-6. Create 7z package (or ZIP if 7z unavailable)
+Uses `platforms/windows-wails/build.ps1`:
+1. Build Rust core DLL (`cargo build --release`) if needed
+2. Build Go executable with ldflags:
+   - `-s -w` - Strip symbols
+   - `-H=windowsgui` - Windows GUI app
+   - `-X main.Version={version}` - Inject version
+3. Apply UPX compression (optional, ~4.8MB result)
+4. Sign binaries (optional)
+5. Create ZIP package
 
 ## Release Notes Format
 
+Auto-categorizes commits using conventional commit prefixes:
+
 ```markdown
-## 📦 What's New in v{version}
+## What's Changed
 
-- feat: description
-- fix: description
-...
+### ✨ New Features
 
-## 💾 Download
+- Feature description 1
+- Feature description 2
 
-- **Windows Portable**: [link] (~XX MB)
+### 🐛 Bug Fixes
 
-## 🔧 Installation
+- Bug fix description
 
-1. Download zip
-2. Extract and run GoNhanh.exe
-3. App runs in system tray
+### ⚡ Improvements
+
+- Improvement/refactor description
+
+---
+
+## 📦 Download
+
+| Platform | File | Size |
+|----------|------|------|
+| Windows (Portable) | [FKey-v2.0.0-portable.zip](...) | ~5 MB |
+
+### Installation
+
+1. Download và giải nén `FKey-v2.0.0-portable.zip`
+2. Chạy `FKey.exe`
+3. Ứng dụng chạy ở khay hệ thống (system tray)
 
 **Full Changelog**: [compare link]
 ```
+
+### Commit Prefixes
+
+| Prefix | Section |
+|--------|---------|
+| `feat:`, `feature:`, `add:`, `new:` | ✨ New Features |
+| `fix:`, `bug:`, `hotfix:` | 🐛 Bug Fixes |
+| `refactor:`, `perf:`, `chore:`, `docs:`, `test:`, `ci:`, `build:` | ⚡ Improvements |
+| (other) | ⚡ Improvements |
 
 ## Manual Execution
 
 ```powershell
 # Full release
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "1.5.9"
+.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0"
 
 # Draft release
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "1.5.9" -Draft
+.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0" -Draft
 
 # Skip build (use existing ZIP)
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "1.5.9" -SkipBuild
+.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0" -SkipBuild
+
+# With signing
+.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0" -Sign
 ```
 
 ## Direct Build Script
@@ -125,14 +152,17 @@ Uses `platforms/windows/build-release.ps1`:
 If you only need to build without releasing:
 
 ```powershell
-cd platforms/windows
-.\build-release.ps1 -Version "1.5.9"
+cd platforms/windows-wails
+.\build.ps1 -Release -Version "2.0.0"
+
+# With signing
+.\build.ps1 -Release -Version "2.0.0" -Sign
 ```
 
 ## Integration
 
 This skill integrates with:
-- `platforms/windows/build-release.ps1` - Standardized build process
+- `platforms/windows-wails/build.ps1` - Go/Wails build process
 - `gh` CLI - GitHub release creation
 - Git tags - Version management
 - Semantic versioning - Version numbering

@@ -1,0 +1,29 @@
+# Wails v3 build configuration
+# https://wails.io/docs/guides/build
+
+# Application info
+info:
+  name: FKey
+  description: Vietnamese Input Method for Windows
+  productName: FKey
+  productVersion: 2.0.0
+  copyright: © 2026 FKey Team
+  comments: Fast Vietnamese Input Method
+
+# Build settings
+build:
+  name: FKey
+  outputFilename: FKey
+
+# Windows specific
+windows:
+  icon: "assets/icon.ico"
+  manifest: ""
+  webview2: "embed"
+  
+# Frontend configuration  
+frontend:
+  # No npm/pnpm install needed - static HTML/JS/CSS
+  install: ""
+  build: ""
+  devWatcher: ""

@@ -21,19 +21,19 @@
 
 ## 📥 Tải về & Cài đặt
 
-### 📦 Tải thủ công
+| Nền tảng | Tải xuống |
+|:--------:|:---------:|
+| **Windows** | [📥 Tải FKey-portable.zip](https://github.com/miken90/fkey/releases/latest) |
 
-| Nền tảng | Trạng thái | Tải xuống |
-|:--------:|:----------:|:---------:|
-| **Windows** | ✅ Sẵn sàng | [📥 Tải FKey.zip](https://github.com/miken90/gonhanh.org/releases/latest) |
-
-> **Lưu ý:** File FKey.zip ~70MB (self-contained, không cần cài .NET Runtime)
+> **Lưu ý:** File portable ~5MB, không cần cài đặt
 
 ### Cài đặt nhanh
 
-1. Tải và giải nén `FKey.zip`
+1. Tải và giải nén `FKey-vX.X.X-portable.zip`
 2. Chạy `FKey.exe`
 3. App sẽ chạy trong system tray (khay hệ thống)
+
+---
 
 ## ✨ Tính năng
 
@@ -86,39 +86,23 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 | Layer | Công nghệ |
 |-------|-----------|
 | **Core Engine** | Rust 2021 (pure `std`, zero runtime deps) |
-| **Windows** | WPF/.NET 8 + SetWindowsHookEx + P/Invoke |
+| **Windows App** | Go + Wails v3 + WebView2 (~5MB) |
 | **Testing** | rstest + serial_test (700+ tests) |
-| **CI/CD** | GitHub Actions + auto-versioning |
 
 ### Build & Test
 
-**Windows**:
 ```powershell
 # Build Rust core
-.\scripts\build-core-windows.ps1
+cd core
+cargo build --release
 
 # Build Windows app
-.\scripts\build-windows.sh
+cd platforms/windows-wails
+.\build.ps1 -Release -Version "2.0.0"
 
 # Run tests
-cd core
 cargo test
 ```
-
-**Setup Development**:
-```powershell
-# Install dependencies
-.\scripts\setup-windows.ps1
-```
-
-### Known Issues
-
-- ✅ **Fast typing race condition** (FIXED - v1.6.0+)
-  - Vấn đề cũ: Gõ quá nhanh gây sai thứ tự ký tự ("hiện" → "hinệ")
-  - Đã fix: Async queue architecture (Phase 4 complete)
-- ✅ **Character loss in Wave terminal** (FIXED - v1.7.4)
-  - Vấn đề cũ: Ký tự bị mất khi gõ trong Wave terminal (Claude Code)
-  - Đã fix: Thêm Wave vào SlowApps list cho text injection chính xác
 
 ---
 
@@ -129,11 +113,6 @@ FKey được fork từ dự án **[Gõ Nhanh](https://github.com/khaphanspace/g
 Xin chân thành cảm ơn Kha Phan và các contributors của Gõ Nhanh đã tạo ra nền tảng tuyệt vời này. FKey kế thừa và tiếp nối sứ mệnh mang đến bộ gõ tiếng Việt chất lượng cao cho cộng đồng.
 
 Dự án này cũng là sự tiếp nối từ **UniKey**, **OpenKey** và **EVKey**.
-
-## 📦 Repository
-
-- **Original**: [khaphanspace/gonhanh.org](https://github.com/khaphanspace/gonhanh.org)
-- **FKey Fork**: [miken90/gonhanh.org](https://github.com/miken90/gonhanh.org)
 
 ---
 
