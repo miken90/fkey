@@ -15,8 +15,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+
+# Force ASCII output to avoid encoding issues in WSL/terminal
+$OutputEncoding = [System.Text.Encoding]::ASCII
 
 # Auto-detect project root if not specified
 if (-not $ProjectRoot) {
@@ -36,9 +37,9 @@ $TagName = "v$Version"
 $ZipName = "FKey-v$Version-portable.zip"
 $ZipPath = Join-Path $OutputDir $ZipName
 
-Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host " FKey GitHub Release (Go/Wails)" -ForegroundColor Cyan
-Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "========================================"
+Write-Host " FKey GitHub Release (Go/Wails)"
+Write-Host "========================================"
 Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
 Write-Host "Project:  $ProjectRoot" -ForegroundColor White
@@ -272,9 +273,9 @@ finally {
 
 # Summary
 Write-Host ""
-Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host " Release Complete" -ForegroundColor Cyan
-Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "========================================"
+Write-Host " Release Complete"
+Write-Host "========================================"
 Write-Host "Version:  $Version" -ForegroundColor White
 Write-Host "Tag:      $TagName" -ForegroundColor White
 Write-Host "Package:  $ZipSize MB" -ForegroundColor White
