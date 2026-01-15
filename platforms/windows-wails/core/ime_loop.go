@@ -179,8 +179,14 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		return false
 	}
 
+	// Calculate if character should be uppercase
+	// For letters: shift XOR capsLock determines uppercase
+	// Bug fix: Previously passed capsLock directly, but Rust engine expects
+	// the final "is uppercase" state, not the capsLock toggle state
+	caps := (shift && !capsLock) || (!shift && capsLock)
+
 	// Process through Rust engine
-	result := l.bridge.ProcessKey(macKeycode, capsLock, false, shift)
+	result := l.bridge.ProcessKey(macKeycode, caps, false, shift)
 
 	switch result.Action {
 	case ActionNone:

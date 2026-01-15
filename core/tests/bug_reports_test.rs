@@ -1485,3 +1485,37 @@ fn debug_vni_e22e_no_restore() {
     // Without space, should show buffer content = "E2E"
     assert_eq!(screen, "E2E", "VNI 'E22E' (no space) should produce 'E2E'");
 }
+
+// =============================================================================
+// BUG 42: Uppercase letter loses capitalization when adding diacritic mark
+// Shift+D then 9 (VNI stroke) should produce Đ, not đ
+// Shift+A then 1 (VNI sắc) should produce Á, not á
+// =============================================================================
+
+#[test]
+fn bug42_uppercase_with_vni_stroke() {
+    // VNI: D9 (uppercase D + 9 for stroke) should produce Đ
+    vni(&[("D9", "Đ")]);
+}
+
+#[test]
+fn bug42_uppercase_with_vni_mark() {
+    // VNI: A1 (uppercase A + 1 for sắc) should produce Á
+    vni(&[("A1", "Á")]);
+    // VNI: E2 (uppercase E + 2 for huyền) should produce È
+    vni(&[("E2", "È")]);
+}
+
+#[test]
+fn bug42_uppercase_with_telex_stroke() {
+    // Telex: Dd (uppercase D + d for stroke) should produce Đ
+    telex(&[("Dd", "Đ")]);
+}
+
+#[test]
+fn bug42_uppercase_with_telex_mark() {
+    // Telex: As (uppercase A + s for sắc) should produce Á
+    telex(&[("As", "Á")]);
+    // Telex: Ef (uppercase E + f for huyền) should produce È
+    telex(&[("Ef", "È")]);
+}

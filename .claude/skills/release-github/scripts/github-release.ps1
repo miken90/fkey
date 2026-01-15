@@ -85,25 +85,24 @@ else {
     Write-Host ""
 }
 
-# Step 2: Create ZIP package
+# Step 2: Create ZIP package (single exe only)
 Write-Host "[2/4] Creating ZIP package..." -ForegroundColor Yellow
 
 $ExePath = Join-Path $OutputDir "FKey.exe"
-$DllPath = Join-Path $OutputDir "gonhanh_core.dll"
 
 if (-not (Test-Path $ExePath)) {
     throw "Executable not found: $ExePath"
 }
 
-# Create ZIP with both EXE and DLL
+# Create ZIP with single EXE (DLL is embedded)
 if (Test-Path $ZipPath) {
     Remove-Item $ZipPath -Force
 }
 
-Compress-Archive -Path $ExePath, $DllPath -DestinationPath $ZipPath -CompressionLevel Optimal
+Compress-Archive -Path $ExePath -DestinationPath $ZipPath -CompressionLevel Optimal
 
 $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
-Write-Host "[OK] Package ready: $ZipName ($ZipSize MB)" -ForegroundColor Green
+Write-Host "[OK] Package ready: $ZipName ($ZipSize MB) - Single exe!" -ForegroundColor Green
 Write-Host ""
 
 # Step 3: Generate release notes
@@ -204,7 +203,7 @@ $ChangesSection
 ### Installation
 
 1. Download và giải nén ``$ZipName``
-2. Chạy ``FKey.exe``
+2. Chạy ``FKey.exe`` (chỉ 1 file, không cần DLL)
 3. Ứng dụng chạy ở khay hệ thống (system tray)
 
 $CompareLink

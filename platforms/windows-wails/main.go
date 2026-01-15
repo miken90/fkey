@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	user32DLL      = syscall.NewLazyDLL("user32.dll")
+	user32DLL       = syscall.NewLazyDLL("user32.dll")
 	procMessageBoxW = user32DLL.NewProc("MessageBoxW")
 )
 
@@ -68,6 +68,14 @@ var (
 )
 
 func main() {
+	// Extract embedded DLL (single-exe distribution)
+	dllPath, err := GetDLLPath()
+	if err != nil {
+		log.Fatalf("Failed to extract DLL: %v", err)
+	}
+	core.DLLPath = dllPath
+	log.Printf("Using DLL: %s", dllPath)
+
 	// Generate icons
 	iconOn = CreateIconOn()
 	iconOff = CreateIconOff()
@@ -80,7 +88,6 @@ func main() {
 	settings := settingsSvc.Settings()
 
 	// Initialize IME loop
-	var err error
 	globalImeLoop, err = core.NewImeLoop()
 	if err != nil {
 		log.Fatalf("Failed to create IME loop: %v", err)
@@ -102,6 +109,7 @@ func main() {
 	globalApp = application.New(application.Options{
 		Name:        "FKey",
 		Description: "Vietnamese Input Method",
+		Icon:        iconOn, // Application icon for windows
 		Assets: application.AssetOptions{
 			Handler: application.BundledAssetFileServer(frontendFS),
 		},
@@ -109,7 +117,7 @@ func main() {
 			application.NewService(appBindings), // Pass pointer directly
 		},
 		Windows: application.WindowsOptions{
-			// Hidden from taskbar when minimized to tray
+			// Windows-specific options
 		},
 	})
 
@@ -125,15 +133,18 @@ func main() {
 
 	// Create settings window (hidden by default)
 	globalSettingsWin = globalApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:          "FKey Settings",
-		Title:         "FKey - Cài đặt",
-		Width:         400,
-		Height:        500,
-		Hidden:        true,
-		DisableResize: false,
-		URL:           "/",
+		Name:                       "FKey Settings",
+		Title:                      "FKey - Cài đặt",
+		Width:                      400,
+		Height:                     500,
+		Hidden:                     true,
+		DisableResize:              false,
+		URL:                        "/",
+		DevToolsEnabled:            false,
+		DefaultContextMenuDisabled: true,
 		Windows: application.WindowsWindow{
-			HiddenOnTaskbar: true,
+			// Show on taskbar when window is visible
+			HiddenOnTaskbar: false,
 		},
 	})
 

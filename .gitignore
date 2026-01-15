@@ -30,6 +30,7 @@ obj/
 *.exe
 *.dll
 *.pdb
+*.syso
 
 # Build artifacts
 *.o
