@@ -6,32 +6,27 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" />
   <img src="https://img.shields.io/badge/License-BSD--3--Clause-blue.svg" alt="License: BSD-3-Clause">
+  <img src="https://img.shields.io/github/v/release/miken90/fkey" alt="Release">
 </p>
 
 <p align="center">
-  <strong>Bộ gõ tiếng Việt miễn phí, nhanh, ổn định cho Windows.</strong><br>
-  Cài là dùng. Không quảng cáo. Không thu thập dữ liệu.
-</p>
-
-<p align="center">
-  <img src="assets/screenshot.png" alt="FKey Screenshot" width="100%">
+  <strong>Bộ gõ tiếng Việt miễn phí, nhanh, nhẹ cho Windows.</strong><br>
+  ~5MB · Không cần cài đặt · Không quảng cáo · Không thu thập dữ liệu
 </p>
 
 ---
 
-## 📥 Tải về & Cài đặt
+## 📥 Tải về
 
-| Nền tảng | Tải xuống |
-|:--------:|:---------:|
-| **Windows** | [📥 Tải FKey-portable.zip](https://github.com/miken90/fkey/releases/latest) |
+| Nền tảng | Tải xuống | Kích thước |
+|:--------:|:---------:|:----------:|
+| **Windows** | [📥 FKey-portable.zip](https://github.com/miken90/fkey/releases/latest) | ~5 MB |
 
-> **Lưu ý:** File portable ~5MB, không cần cài đặt
-
-### Cài đặt nhanh
+### Cài đặt
 
 1. Tải và giải nén `FKey-vX.X.X-portable.zip`
 2. Chạy `FKey.exe`
-3. App sẽ chạy trong system tray (khay hệ thống)
+3. App chạy trong system tray (khay hệ thống)
 
 ---
 
@@ -39,43 +34,27 @@
 
 ### 🔥 Highlight
 
-- 🔍 **Hỗ trợ mọi app** - Chrome, VS Code, Notion, Terminal, Discord, Slack...
-- 🔤 **Auto-restore tiếng Anh** — Gõ `text` `expect` `user` `push` `sort` → tự khôi phục khi nhấn space
-- ⎋ **Gõ ESC tự khôi phục** — Gõ `user` → `úẻ` → nhấn **ESC** → `user`
-- 🔠 **Tự viết hoa đầu câu** — Gõ `ok.` Space `b` → `B` hoa
-- ⚡ **Siêu nhanh** — <1ms latency · ~10MB RAM
+| Tính năng | Mô tả |
+|-----------|-------|
+| ⚡ **Siêu nhẹ** | ~5MB portable, ~10MB RAM |
+| 🔍 **Mọi app** | Chrome, VS Code, Terminal, Discord, Slack... |
+| 🔤 **Auto-restore tiếng Anh** | `text` `expect` `user` → tự khôi phục khi nhấn Space |
+| ⎋ **ESC khôi phục** | Gõ sai → nhấn ESC → về lại chữ gốc |
+| 🔠 **Tự viết hoa** | Đầu câu tự động viết hoa |
 
 ### 📋 Đầy đủ
 
 - ⌨️ **Telex & VNI** — Chọn kiểu gõ quen thuộc
-- 🎯 **Đặt dấu chuẩn** — Tự động theo quy tắc mới: `hoà`, `khoẻ`, `thuỷ`
-- ✂️ **Gõ tắt** — `vn` → `Việt Nam`, `ko` → `không`
-- 🚀 **Auto-start** — Tự khởi động cùng Windows
-- 🔧 **Phím tắt tùy chỉnh** — Đổi Ctrl+Space thành phím bạn muốn
+- 🎯 **Đặt dấu chuẩn** — `hoà`, `khoẻ`, `thuỷ`
+- ✂️ **Gõ tắt** — `vn` → `Việt Nam`
+- 🚀 **Auto-start** — Khởi động cùng Windows
+- 🔧 **Phím tắt tùy chỉnh** — Ctrl+Space hoặc tuỳ ý
 
-### 🛡️ Cam kết "Ba Không"
+### 🛡️ Cam kết
 
-- 🚫 **Không thu phí** — Miễn phí mãi mãi, không bản Pro
-- 🚫 **Không quảng cáo** — Không popup, không làm phiền
+- 🚫 **Không thu phí** — Miễn phí mãi mãi
+- 🚫 **Không quảng cáo** — Không popup
 - 🚫 **Không theo dõi** — Offline 100%, mã nguồn mở
-
----
-
-## 🔤 Auto-restore tiếng Anh
-
-Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thành modifier tiếng Việt:
-- `s` → sắc, `f` → huyền, `r` → hỏi, `x` → ngã, `j` → nặng
-- `w` → dấu móc (ư, ơ)
-
-**FKey tự động khôi phục** khi nhấn **Space** nếu phát hiện pattern tiếng Anh.
-
-### ✅ Các pattern được nhận diện
-
-| Pattern | Ví dụ | Giải thích |
-|:--------|:------|:-----------|
-| **Modifier + phụ âm** | `text` `next` `test` `expect` | x/s theo sau bởi phụ âm |
-| **W đầu + phụ âm** | `window` `water` `write` | W không phải phụ âm đầu tiếng Việt |
-| **F đầu** | `file` `fix` `function` | F không tồn tại trong tiếng Việt |
 
 ---
 
@@ -85,11 +64,11 @@ Khi gõ tiếng Anh bằng Telex, một số chữ cái bị nhận nhầm thàn
 
 | Layer | Công nghệ |
 |-------|-----------|
-| **Core Engine** | Rust 2021 (pure `std`, zero runtime deps) |
-| **Windows App** | Go + Wails v3 + WebView2 (~5MB) |
-| **Testing** | rstest + serial_test (700+ tests) |
+| **Core Engine** | Rust (zero dependencies) |
+| **Windows App** | Go + Wails v3 + WebView2 |
+| **Testing** | 700+ tests |
 
-### Build & Test
+### Build
 
 ```powershell
 # Build Rust core
@@ -99,25 +78,30 @@ cargo build --release
 # Build Windows app
 cd platforms/windows-wails
 .\build.ps1 -Release -Version "2.0.0"
+```
 
-# Run tests
+### Test
+
+```powershell
+# Rust tests
+cd core
 cargo test
+
+# Go tests
+cd platforms/windows-wails
+go test ./...
 ```
 
 ---
 
 ## 🙏 Lời cảm ơn
 
-FKey được fork từ dự án **[Gõ Nhanh](https://github.com/khaphanspace/gonhanh.org)** của **Kha Phan**.
+FKey được phát triển dựa trên nền tảng của dự án **[Gõ Nhanh](https://github.com/khaphanspace/gonhanh.org)** bởi **Kha Phan**.
 
-Xin chân thành cảm ơn Kha Phan và các contributors của Gõ Nhanh đã tạo ra nền tảng tuyệt vời này. FKey kế thừa và tiếp nối sứ mệnh mang đến bộ gõ tiếng Việt chất lượng cao cho cộng đồng.
-
-Dự án này cũng là sự tiếp nối từ **UniKey**, **OpenKey** và **EVKey**.
+Cảm ơn Kha Phan và cộng đồng Gõ Nhanh đã tạo ra engine xử lý tiếng Việt tuyệt vời. FKey tiếp nối sứ mệnh mang đến bộ gõ chất lượng cao, miễn phí cho người Việt.
 
 ---
 
 ## 📄 License
 
-FKey được phân phối theo giấy phép [BSD-3-Clause](LICENSE).
-
-Bản quyền gốc © 2025 Gõ Nhanh Contributors.
+[BSD-3-Clause](LICENSE)
