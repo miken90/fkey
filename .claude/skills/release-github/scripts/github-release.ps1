@@ -162,19 +162,19 @@ try {
         }
     }
 
-    # Build release notes sections
+    # Build release notes sections (ASCII only - no emoji to avoid encoding issues)
     $Sections = @()
     
     if ($Features.Count -gt 0) {
-        $Sections += "### ✨ New Features`n`n" + ($Features -join "`n")
+        $Sections += "### New Features`n`n" + ($Features -join "`n")
     }
     
     if ($Fixes.Count -gt 0) {
-        $Sections += "### 🐛 Bug Fixes`n`n" + ($Fixes -join "`n")
+        $Sections += "### Bug Fixes`n`n" + ($Fixes -join "`n")
     }
     
     if ($Improvements.Count -gt 0) {
-        $Sections += "### ⚡ Improvements`n`n" + ($Improvements -join "`n")
+        $Sections += "### Improvements`n`n" + ($Improvements -join "`n")
     }
 
     # Fallback if no categorized commits
@@ -184,7 +184,7 @@ try {
 
     $ChangesSection = $Sections -join "`n`n"
 
-    # Write release notes to temp file (fixes UTF-8 encoding issues)
+    # Write release notes to temp file
     $NotesFile = Join-Path $env:TEMP "release-notes-$Version.md"
     
     $ReleaseNotes = @"
@@ -194,7 +194,7 @@ $ChangesSection
 
 ---
 
-## 📦 Download
+## Download
 
 | Platform | File | Size |
 |----------|------|------|
@@ -202,14 +202,14 @@ $ChangesSection
 
 ### Installation
 
-1. Download và giải nén ``$ZipName``
-2. Chạy ``FKey.exe`` (chỉ 1 file, không cần DLL)
-3. Ứng dụng chạy ở khay hệ thống (system tray)
+1. Download and extract ``$ZipName``
+2. Run ``FKey.exe`` (single file, no DLL needed)
+3. App runs in system tray
 
 $CompareLink
 "@
 
-    # Write with UTF-8 BOM for proper encoding
+    # Write with UTF-8 no BOM
     [System.IO.File]::WriteAllText($NotesFile, $ReleaseNotes, [System.Text.UTF8Encoding]::new($false))
 
     Write-Host "[OK] Release notes generated" -ForegroundColor Green
