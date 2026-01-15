@@ -86,12 +86,70 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 }
 
 func sendFast(text string, backspaces int) {
-	if backspaces > 0 {
-		sendBackspaces(backspaces)
+	// Combine backspaces and text into a SINGLE SendInput call for atomicity
+	// This prevents Discord/Electron flicker between backspace and text insertion
+	runes := []rune(text)
+	totalEvents := backspaces*2 + len(runes)*2
+
+	if totalEvents == 0 {
+		return
 	}
-	if len(text) > 0 {
-		sendUnicodeTextBatch(text)
+
+	inputs := make([]INPUT, totalEvents)
+	idx := 0
+
+	// Add backspace events first
+	for i := 0; i < backspaces; i++ {
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_BACK,
+				DwFlags:     0,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_BACK,
+				DwFlags:     KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
 	}
+
+	// Add Unicode text events
+	for _, r := range runes {
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         0,
+				WScan:       uint16(r),
+				DwFlags:     KEYEVENTF_UNICODE,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         0,
+				WScan:       uint16(r),
+				DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+	}
+
+	// Single atomic SendInput call
+	procSendInput.Call(
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&inputs[0])),
+		uintptr(inputSize),
+	)
 }
 
 func sendSlow(text string, backspaces int, preDelay, postDelay, keyDelay int) {
