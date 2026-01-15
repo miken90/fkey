@@ -1,0 +1,25 @@
+{
+  "$schema": "https://wails.io/schemas/config.v3.json",
+  "name": "FKey",
+  "outputfilename": "FKey",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "frontend:dev:serverUrl": "",
+  "author": {
+    "name": "FKey Team",
+    "email": ""
+  },
+  "info": {
+    "companyName": "FKey",
+    "productName": "FKey Vietnamese IME",
+    "productVersion": "2.0.0",
+    "copyright": "© 2026 FKey",
+    "comments": "Fast Vietnamese Input Method for Windows"
+  },
+  "bindings": {
+    "tsgeneration": {
+      "outputDir": "frontend/wailsjs"
+    }
+  }
+}

@@ -1,0 +1,301 @@
+package services
+
+// Settings service using Windows Registry
+// Port of SettingsService.cs from .NET implementation
+// Compatible with existing .NET settings (reads from GoNhanh key for migration)
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"golang.org/x/sys/windows/registry"
+)
+
+const (
+	RegistryKeyPath      = `SOFTWARE\FKey`
+	LegacyRegistryPath   = `SOFTWARE\GoNhanh` // For migration
+	AutoStartKeyPath     = `SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
+	ShortcutsKeyPath     = `SOFTWARE\FKey\Shortcuts`
+	LegacyShortcutsPath  = `SOFTWARE\GoNhanh\Shortcuts`
+	AppName              = "FKey"
+)
+
+// Settings keys
+const (
+	KeyInputMethod        = "InputMethod"
+	KeyModernTone         = "ModernTone"
+	KeyEnabled            = "Enabled"
+	KeyFirstRun           = "FirstRun"
+	KeyAutoStart          = "AutoStart"
+	KeySkipWShortcut      = "SkipWShortcut"
+	KeyEscRestore         = "EscRestore"
+	KeyFreeTone           = "FreeTone"
+	KeyEnglishAutoRestore = "EnglishAutoRestore"
+	KeyAutoCapitalize     = "AutoCapitalize"
+	KeyToggleHotkey       = "ToggleHotkey"
+)
+
+// Settings holds all application settings
+type Settings struct {
+	InputMethod        int    // 0=Telex, 1=VNI
+	ModernTone         bool   // Modern tone placement
+	Enabled            bool   // IME enabled
+	FirstRun           bool   // First run flag
+	AutoStart          bool   // Start with Windows
+	SkipWShortcut      bool   // Skip w→ư in Telex
+	EscRestore         bool   // ESC restores raw input
+	FreeTone           bool   // Free tone placement
+	EnglishAutoRestore bool   // Auto-restore English words
+	AutoCapitalize     bool   // Auto-capitalize after punctuation
+	ToggleHotkey       string // Format: "keycode,modifiers"
+}
+
+// DefaultSettings returns settings with default values
+func DefaultSettings() *Settings {
+	return &Settings{
+		InputMethod:        0,       // Telex
+		ModernTone:         true,
+		Enabled:            true,
+		FirstRun:           true,
+		AutoStart:          false,
+		SkipWShortcut:      false,
+		EscRestore:         true,
+		FreeTone:           false,
+		EnglishAutoRestore: false,
+		AutoCapitalize:     true,
+		ToggleHotkey:       "32,1", // Ctrl+Space
+	}
+}
+
+// SettingsService manages application settings via Registry
+type SettingsService struct {
+	settings *Settings
+}
+
+// NewSettingsService creates a new settings service
+func NewSettingsService() *SettingsService {
+	return &SettingsService{
+		settings: DefaultSettings(),
+	}
+}
+
+// Settings returns current settings
+func (s *SettingsService) Settings() *Settings {
+	return s.settings
+}
+
+// Load reads settings from Registry (tries FKey first, then legacy GoNhanh for migration)
+func (s *SettingsService) Load() error {
+	// Try new FKey key first
+	key, err := registry.OpenKey(registry.CURRENT_USER, RegistryKeyPath, registry.QUERY_VALUE)
+	if err != nil {
+		// Try legacy GoNhanh key for migration
+		key, err = registry.OpenKey(registry.CURRENT_USER, LegacyRegistryPath, registry.QUERY_VALUE)
+		if err != nil {
+			// No settings found, use defaults (first run)
+			s.settings.FirstRun = true
+			return nil
+		}
+	}
+	defer key.Close()
+
+	s.settings.InputMethod = readDWORD(key, KeyInputMethod, 0)
+	s.settings.ModernTone = readDWORD(key, KeyModernTone, 1) == 1
+	s.settings.Enabled = readDWORD(key, KeyEnabled, 1) == 1
+	s.settings.FirstRun = readDWORD(key, KeyFirstRun, 1) == 1
+	s.settings.AutoStart = readDWORD(key, KeyAutoStart, 0) == 1
+	s.settings.SkipWShortcut = readDWORD(key, KeySkipWShortcut, 0) == 1
+	s.settings.EscRestore = readDWORD(key, KeyEscRestore, 1) == 1
+	s.settings.FreeTone = readDWORD(key, KeyFreeTone, 0) == 1
+	s.settings.EnglishAutoRestore = readDWORD(key, KeyEnglishAutoRestore, 0) == 1
+	s.settings.AutoCapitalize = readDWORD(key, KeyAutoCapitalize, 1) == 1
+	s.settings.ToggleHotkey = readString(key, KeyToggleHotkey, "32,1")
+
+	return nil
+}
+
+// Save writes settings to Registry
+func (s *SettingsService) Save() error {
+	key, _, err := registry.CreateKey(registry.CURRENT_USER, RegistryKeyPath, registry.SET_VALUE)
+	if err != nil {
+		return fmt.Errorf("failed to create registry key: %w", err)
+	}
+	defer key.Close()
+
+	writeDWORD(key, KeyInputMethod, uint32(s.settings.InputMethod))
+	writeDWORD(key, KeyModernTone, boolToDWORD(s.settings.ModernTone))
+	writeDWORD(key, KeyEnabled, boolToDWORD(s.settings.Enabled))
+	writeDWORD(key, KeyFirstRun, boolToDWORD(s.settings.FirstRun))
+	writeDWORD(key, KeyAutoStart, boolToDWORD(s.settings.AutoStart))
+	writeDWORD(key, KeySkipWShortcut, boolToDWORD(s.settings.SkipWShortcut))
+	writeDWORD(key, KeyEscRestore, boolToDWORD(s.settings.EscRestore))
+	writeDWORD(key, KeyFreeTone, boolToDWORD(s.settings.FreeTone))
+	writeDWORD(key, KeyEnglishAutoRestore, boolToDWORD(s.settings.EnglishAutoRestore))
+	writeDWORD(key, KeyAutoCapitalize, boolToDWORD(s.settings.AutoCapitalize))
+	writeString(key, KeyToggleHotkey, s.settings.ToggleHotkey)
+
+	// Update auto-start registry
+	s.updateAutoStart()
+
+	return nil
+}
+
+// updateAutoStart updates Windows startup entry
+func (s *SettingsService) updateAutoStart() {
+	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE)
+	if err != nil {
+		return
+	}
+	defer key.Close()
+
+	if s.settings.AutoStart {
+		// Get current executable path
+		// Note: In production, use os.Executable()
+		exePath := "" // TODO: Get actual exe path
+		if exePath != "" {
+			key.SetStringValue(AppName, fmt.Sprintf(`"%s"`, exePath))
+		}
+	} else {
+		key.DeleteValue(AppName)
+	}
+}
+
+// MarkFirstRunComplete sets FirstRun to false
+func (s *SettingsService) MarkFirstRunComplete() {
+	s.settings.FirstRun = false
+	s.Save()
+}
+
+// Reset resets all settings to defaults
+func (s *SettingsService) Reset() {
+	s.settings = DefaultSettings()
+	s.settings.FirstRun = false // Don't show onboarding again
+	s.Save()
+}
+
+// Shortcut represents a text expansion shortcut
+type Shortcut struct {
+	Trigger     string
+	Replacement string
+}
+
+// LoadShortcuts reads shortcuts from Registry (tries FKey first, then legacy)
+func (s *SettingsService) LoadShortcuts() ([]Shortcut, error) {
+	// Try new FKey key first
+	key, err := registry.OpenKey(registry.CURRENT_USER, ShortcutsKeyPath, registry.QUERY_VALUE)
+	if err != nil {
+		// Try legacy GoNhanh key
+		key, err = registry.OpenKey(registry.CURRENT_USER, LegacyShortcutsPath, registry.QUERY_VALUE)
+		if err != nil {
+			return nil, nil // No shortcuts key yet
+		}
+	}
+	defer key.Close()
+
+	names, err := key.ReadValueNames(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	shortcuts := make([]Shortcut, 0, len(names))
+	for _, name := range names {
+		replacement, _, err := key.GetStringValue(name)
+		if err == nil {
+			shortcuts = append(shortcuts, Shortcut{
+				Trigger:     name,
+				Replacement: replacement,
+			})
+		}
+	}
+
+	return shortcuts, nil
+}
+
+// SaveShortcuts writes shortcuts to Registry
+func (s *SettingsService) SaveShortcuts(shortcuts []Shortcut) error {
+	// Delete existing key and recreate
+	registry.DeleteKey(registry.CURRENT_USER, ShortcutsKeyPath)
+
+	if len(shortcuts) == 0 {
+		return nil
+	}
+
+	key, _, err := registry.CreateKey(registry.CURRENT_USER, ShortcutsKeyPath, registry.SET_VALUE)
+	if err != nil {
+		return err
+	}
+	defer key.Close()
+
+	for _, sc := range shortcuts {
+		key.SetStringValue(sc.Trigger, sc.Replacement)
+	}
+
+	return nil
+}
+
+// ParseHotkey parses "keycode,modifiers" format
+func ParseHotkey(s string) (keyCode uint16, ctrl, alt, shift bool) {
+	parts := strings.Split(s, ",")
+	if len(parts) < 2 {
+		return 0, false, false, false
+	}
+
+	kc, _ := strconv.ParseUint(parts[0], 10, 16)
+	keyCode = uint16(kc)
+
+	mod, _ := strconv.ParseUint(parts[1], 10, 8)
+	ctrl = (mod & 1) != 0
+	alt = (mod & 2) != 0
+	shift = (mod & 4) != 0
+
+	return
+}
+
+// FormatHotkey formats hotkey to "keycode,modifiers" string
+func FormatHotkey(keyCode uint16, ctrl, alt, shift bool) string {
+	mod := 0
+	if ctrl {
+		mod |= 1
+	}
+	if alt {
+		mod |= 2
+	}
+	if shift {
+		mod |= 4
+	}
+	return fmt.Sprintf("%d,%d", keyCode, mod)
+}
+
+// Helper functions
+
+func readDWORD(key registry.Key, name string, defaultVal int) int {
+	val, _, err := key.GetIntegerValue(name)
+	if err != nil {
+		return defaultVal
+	}
+	return int(val)
+}
+
+func readString(key registry.Key, name string, defaultVal string) string {
+	val, _, err := key.GetStringValue(name)
+	if err != nil {
+		return defaultVal
+	}
+	return val
+}
+
+func writeDWORD(key registry.Key, name string, val uint32) {
+	key.SetDWordValue(name, val)
+}
+
+func writeString(key registry.Key, name string, val string) {
+	key.SetStringValue(name, val)
+}
+
+func boolToDWORD(b bool) uint32 {
+	if b {
+		return 1
+	}
+	return 0
+}
