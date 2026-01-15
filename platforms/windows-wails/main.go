@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"fkey/core"
@@ -194,6 +195,9 @@ func main() {
 
 // checkForUpdatesBackground checks for updates silently at startup
 func checkForUpdatesBackground() {
+	// Wait a bit for app to fully initialize
+	time.Sleep(3 * time.Second)
+
 	info, err := updaterSvc.CheckForUpdates(false)
 	if err != nil {
 		log.Printf("Update check failed: %v", err)
@@ -202,7 +206,14 @@ func checkForUpdatesBackground() {
 
 	if info.Available {
 		log.Printf("Update available: %s -> %s", info.CurrentVersion, info.LatestVersion)
-		// Could show notification here via Wails events
+		// Show update notification dialog
+		result := showMessageBox("Có phiên bản mới!",
+			fmt.Sprintf("Phiên bản mới: %s\nPhiên bản hiện tại: %s\n\nBạn có muốn mở trang tải về?",
+				info.LatestVersion, info.CurrentVersion),
+			MB_YESNO|MB_ICONINFORMATION)
+		if result == IDYES {
+			updaterSvc.OpenReleasePage(info.ReleaseURL)
+		}
 	}
 }
 
