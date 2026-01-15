@@ -18,6 +18,14 @@
 
 html {
     font-size: 13px;
+    /* Hide scrollbar but allow scrolling */
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+html::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
 }
 
 body {
@@ -26,6 +34,11 @@ body {
     color: var(--text);
     line-height: 1.4;
     -webkit-font-smoothing: antialiased;
+    /* Disable text selection */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .container {

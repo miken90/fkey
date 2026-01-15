@@ -135,19 +135,21 @@ try {
     }
     Write-Host "`nVersion: $Version" -ForegroundColor Magenta
 
-    # Check if Rust DLL exists
+    # Check if Rust DLL exists - build/update if needed
     $DllSource = Join-Path $CoreDir "target\release\gonhanh_core.dll"
     $DllDest = Join-Path $ProjectDir "gonhanh_core.dll"
     
-    if (!(Test-Path $DllDest)) {
-        Write-Host "`nRust DLL not found. Building..." -ForegroundColor Yellow
+    # Always rebuild DLL for release builds, or if missing
+    $NeedBuildDll = $Release -or !(Test-Path $DllDest)
+    if ($NeedBuildDll) {
+        Write-Host "`nBuilding Rust DLL..." -ForegroundColor Yellow
         Push-Location $CoreDir
         cargo build --release
         Pop-Location
         
         if (Test-Path $DllSource) {
-            Copy-Item $DllSource $DllDest
-            Write-Host "DLL copied to project directory." -ForegroundColor Green
+            Copy-Item $DllSource $DllDest -Force
+            Write-Host "DLL copied to project directory (for embedding)." -ForegroundColor Green
         } else {
             Write-Host "ERROR: Failed to build Rust DLL" -ForegroundColor Red
             exit 1
@@ -158,6 +160,36 @@ try {
     Write-Host "`nGetting Go dependencies..." -ForegroundColor Yellow
     go mod tidy
 
+    # Generate Windows resources (.syso) with icon
+    Write-Host "`nGenerating Windows resources..." -ForegroundColor Yellow
+    $GoWinRes = Get-Command go-winres -ErrorAction SilentlyContinue
+    if ($GoWinRes) {
+        # Update version in winres.json if specified
+        if ($Version -and $Version -ne "dev") {
+            $winresFile = Join-Path $ProjectDir "winres.json"
+            if (Test-Path $winresFile) {
+                $winresContent = Get-Content $winresFile -Raw | ConvertFrom-Json
+                $versionParts = $Version -split '\.'
+                $versionFull = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2]).0"
+                $winresContent.RT_VERSION.'#1'.'0409'.fixed.file_version = $versionFull
+                $winresContent.RT_VERSION.'#1'.'0409'.fixed.product_version = $versionFull
+                $winresContent.RT_VERSION.'#1'.'0409'.info.'0409'.FileVersion = $Version
+                $winresContent.RT_VERSION.'#1'.'0409'.info.'0409'.ProductVersion = $Version
+                $winresContent.RT_MANIFEST.'#1'.'0409'.identity.version = $versionFull
+                $winresContent | ConvertTo-Json -Depth 10 | Set-Content $winresFile
+            }
+        }
+        go-winres make --in winres.json --arch amd64
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Windows resources generated (icon embedded)." -ForegroundColor Green
+        } else {
+            Write-Host "WARNING: Failed to generate Windows resources." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "go-winres not found. Install with: go install github.com/tc-hib/go-winres@latest" -ForegroundColor Yellow
+        Write-Host "Continuing without embedded icon..." -ForegroundColor DarkGray
+    }
+
     # Build ldflags with version
     $ldflags = "-X main.Version=$Version"
 
@@ -166,21 +198,29 @@ try {
         wails3 dev
     }
     elseif ($Release) {
-        Write-Host "`nBuilding release..." -ForegroundColor Yellow
+        Write-Host "`nBuilding release (single-exe with embedded DLL)..." -ForegroundColor Yellow
         
         # Add optimization flags for release
         $ldflags = "-s -w -H=windowsgui -X main.Version=$Version"
         
         # Build with Go directly (wails3 build has issues with ldflags)
+        # Use -tags production to disable DevTools in release
+        # DLL is embedded via go:embed in dll_embed.go
         $env:CGO_ENABLED = "1"
-        go build -ldflags="$ldflags" -o "build\bin\FKey.exe" .
+        go build -tags production -ldflags="$ldflags" -o "build\bin\FKey.exe" .
         
-        # Copy DLL to output
+        # Output directory (no DLL copy needed - it's embedded!)
         $OutputDir = Join-Path $ProjectDir "build\bin"
         if (!(Test-Path $OutputDir)) {
             New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
         }
-        Copy-Item $DllDest $OutputDir
+        
+        # Remove old DLL from output dir if exists (single-exe now)
+        $OldDll = Join-Path $OutputDir "gonhanh_core.dll"
+        if (Test-Path $OldDll) {
+            Remove-Item $OldDll -Force
+            Write-Host "Removed old DLL from output (now embedded in exe)." -ForegroundColor DarkGray
+        }
         
         # Check size
         $ExePath = Join-Path $OutputDir "FKey.exe"
@@ -188,7 +228,7 @@ try {
             $Size = (Get-Item $ExePath).Length / 1MB
             Write-Host "`nBuild complete!" -ForegroundColor Green
             Write-Host "Version: $Version" -ForegroundColor Cyan
-            Write-Host "Executable size: $([math]::Round($Size, 2)) MB" -ForegroundColor Cyan
+            Write-Host "Executable size: $([math]::Round($Size, 2)) MB (DLL embedded)" -ForegroundColor Cyan
             
             # UPX compression (optional)
             $UPX = Get-Command upx -ErrorAction SilentlyContinue
@@ -204,13 +244,8 @@ try {
             # Code signing
             Sign-Binary $ExePath
             
-            # Also sign the DLL if requested
-            $DllPath = Join-Path $OutputDir "gonhanh_core.dll"
-            if ((Test-Path $DllPath) -and $Sign) {
-                Sign-Binary $DllPath
-            }
-            
             Write-Host "`nOutput: $ExePath" -ForegroundColor Green
+            Write-Host "Distribution: Single file, no DLL needed!" -ForegroundColor Green
         }
     }
     else {
