@@ -1,6 +1,7 @@
 BSD 3-Clause License
 
-Copyright (c) 2025, Gõ Nhanh Contributors
+Copyright (c) 2025, Gõ Nhanh Contributors (original Rust core engine)
+Copyright (c) 2026, FKey Contributors (Go/Wails port)
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
