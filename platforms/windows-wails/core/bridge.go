@@ -76,6 +76,10 @@ var (
 	bridgeErr  error
 )
 
+// DLLPath is set by main package before GetBridge() is called
+// This allows embedded DLL extraction to work
+var DLLPath string
+
 // DLL names to try (fkey_core.dll first, fallback to gonhanh_core.dll for compatibility)
 var dllNames = []string{"fkey_core.dll", "gonhanh_core.dll"}
 
@@ -91,7 +95,15 @@ func newBridge() (*Bridge, error) {
 	var dll *syscall.DLL
 	var err error
 
-	// Try each DLL name
+	// Try embedded DLL path first (set by main package)
+	if DLLPath != "" {
+		dll, err = syscall.LoadDLL(DLLPath)
+		if err == nil {
+			goto loaded
+		}
+	}
+
+	// Fallback: try each DLL name in current directory
 	for _, name := range dllNames {
 		dll, err = syscall.LoadDLL(name)
 		if err == nil {
@@ -101,6 +113,8 @@ func newBridge() (*Bridge, error) {
 	if err != nil {
 		return nil, err
 	}
+
+loaded:
 
 	b := &Bridge{dll: dll}
 
