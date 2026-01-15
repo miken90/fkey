@@ -2731,14 +2731,13 @@ impl Engine {
                 return None;
             }
 
-            let effective_vowels: &[Vowel] =
-                if has_qu && vowels.len() >= 2 && vowels[0].key == keys::U {
-                    &vowels[1..]
-                } else if has_gi && vowels.len() >= 2 && vowels[0].key == keys::I {
-                    &vowels[1..]
-                } else {
-                    &vowels
-                };
+            let effective_vowels: &[Vowel] = if vowels.len() >= 2
+                && ((has_qu && vowels[0].key == keys::U) || (has_gi && vowels[0].key == keys::I))
+            {
+                &vowels[1..]
+            } else {
+                &vowels
+            };
 
             if effective_vowels.len() >= 2
                 && effective_vowels
