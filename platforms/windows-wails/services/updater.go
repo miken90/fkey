@@ -18,7 +18,7 @@ import (
 
 const (
 	GitHubOwner      = "miken90"
-	GitHubRepo       = "gonhanh.org"
+	GitHubRepo       = "fkey"
 	GitHubAPIURL     = "https://api.github.com/repos/%s/%s/releases/latest"
 	CheckInterval    = 24 * time.Hour // Check once per day
 	UserAgent        = "FKey-Updater/1.0"

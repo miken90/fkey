@@ -318,9 +318,9 @@ function setupEventListeners() {
     document.getElementById('feedbackLink')?.addEventListener('click', (e) => {
         e.preventDefault();
         if (wails.Browser && wails.Browser.OpenURL) {
-            wails.Browser.OpenURL('https://github.com/miken90/gonhanh.org/issues');
+            wails.Browser.OpenURL('https://github.com/miken90/fkey/issues');
         } else {
-            window.open('https://github.com/miken90/gonhanh.org/issues', '_blank');
+            window.open('https://github.com/miken90/fkey/issues', '_blank');
         }
     });
 }
