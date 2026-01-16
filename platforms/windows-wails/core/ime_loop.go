@@ -68,8 +68,6 @@ func NewImeLoop() (*ImeLoop, error) {
 	loop.coalescer = NewCoalescer(func(text string, backspaces int, method InjectionMethod) {
 		SendTextWithMethod(text, backspaces, method)
 	})
-	// Set default coalescing apps
-	loop.coalescer.SetApps(DefaultCoalescingApps)
 
 	// Set up key processing callback
 	hook.OnKeyPressed = loop.processKey
@@ -182,6 +180,12 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		return false
 	}
 
+	// Check if foreground app changed - if so, clear buffer
+	if AppChanged() {
+		l.bridge.Clear()
+		l.coalescer.Flush()
+	}
+
 	// Translate Windows VK to macOS keycode for Rust engine
 	macKeycode := TranslateToMacKeycode(keyCode)
 	if macKeycode == 0xFFFF {
@@ -209,16 +213,17 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		// Send replacement text
 		text := result.GetText()
 		backspaces := int(result.Backspace)
-		method := DetectInjectionMethod()
-
-		// Check if current app benefits from coalescing AND this is a diacritic replacement
-		if l.coalescer.IsCoalescingApp(GetCurrentProcessName()) && backspaces > 0 {
-			// Diacritic replacement - coalesce for Discord-like apps
-			l.coalescer.Queue(text, backspaces, method)
+		
+		// Get app profile for current process
+		profile := GetAppProfile(GetCurrentProcessName())
+		
+		// Use coalescing if profile says so AND this is a diacritic replacement
+		if profile.Coalesce && backspaces > 0 {
+			l.coalescer.Queue(text, backspaces, profile.Method, profile.CoalesceMs)
 		} else {
-			// Non-diacritic or non-coalescing app - flush pending first, then send
+			// Send immediately
 			l.coalescer.Flush()
-			SendTextWithMethod(text, backspaces, method)
+			SendTextWithMethod(text, backspaces, profile.Method)
 		}
 		return true
 
@@ -248,9 +253,4 @@ func (l *ImeLoop) RemoveShortcut(trigger string) {
 // ClearShortcuts removes all shortcuts
 func (l *ImeLoop) ClearShortcuts() {
 	l.bridge.ClearShortcuts()
-}
-
-// SetCoalescingApps updates the list of apps that use coalescing
-func (l *ImeLoop) SetCoalescingApps(apps []string) {
-	l.coalescer.SetApps(apps)
 }

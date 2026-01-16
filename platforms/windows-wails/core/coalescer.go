@@ -1,7 +1,6 @@
 package core
 
 import (
-	"strings"
 	"sync"
 	"time"
 )
@@ -18,7 +17,6 @@ type Coalescer struct {
 	pending  *PendingReplace
 	timer    *time.Timer
 	mu       sync.Mutex
-	apps     map[string]bool
 	timerMs  int
 	sendFunc func(text string, backspaces int, method InjectionMethod)
 }
@@ -27,14 +25,14 @@ type Coalescer struct {
 func NewCoalescer(sendFunc func(text string, backspaces int, method InjectionMethod)) *Coalescer {
 	return &Coalescer{
 		timerMs:  25,
-		apps:     make(map[string]bool),
 		sendFunc: sendFunc,
 	}
 }
 
 // Queue adds a replacement to the pending queue
 // If a pending replacement exists, it is replaced entirely (not accumulated)
-func (c *Coalescer) Queue(text string, backspaces int, method InjectionMethod) {
+// timerMs: custom timer in ms, 0 = use default (25ms)
+func (c *Coalescer) Queue(text string, backspaces int, method InjectionMethod, timerMs int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -48,7 +46,13 @@ func (c *Coalescer) Queue(text string, backspaces int, method InjectionMethod) {
 		method:     method,
 	}
 
-	c.timer = time.AfterFunc(time.Duration(c.timerMs)*time.Millisecond, func() {
+	// Use custom timer or default
+	delay := c.timerMs
+	if timerMs > 0 {
+		delay = timerMs
+	}
+
+	c.timer = time.AfterFunc(time.Duration(delay)*time.Millisecond, func() {
 		c.sendPending()
 	})
 }
@@ -81,23 +85,4 @@ func (c *Coalescer) sendPending() {
 	c.sendFunc(c.pending.text, c.pending.backspaces, c.pending.method)
 	c.pending = nil
 	c.timer = nil
-}
-
-// SetApps sets the list of apps that should use coalescing
-func (c *Coalescer) SetApps(apps []string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.apps = make(map[string]bool, len(apps))
-	for _, app := range apps {
-		c.apps[strings.ToLower(app)] = true
-	}
-}
-
-// IsCoalescingApp checks if the given process name should use coalescing
-func (c *Coalescer) IsCoalescingApp(currentProcessName string) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	return c.apps[strings.ToLower(currentProcessName)]
 }

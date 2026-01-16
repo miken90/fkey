@@ -18,9 +18,9 @@ const (
 type InjectionMethod int
 
 const (
-	MethodFast      InjectionMethod = iota // Batch injection for standard apps
-	MethodSlow                             // Per-character with small delays
-	MethodExtraSlow                        // Per-character with larger delays (Discord, Wave)
+	MethodFast   InjectionMethod = iota // Separate calls with small delay (most apps)
+	MethodSlow                          // Per-character with delays (Electron, browsers)
+	MethodAtomic                        // Single atomic SendInput (Discord - no flicker)
 )
 
 // Delay settings (milliseconds)
@@ -32,12 +32,6 @@ const (
 	SlowModeKeyDelay  = 5
 	SlowModePreDelay  = 20
 	SlowModePostDelay = 15
-
-	// Extra slow mode - Discord, Wave (heavy rich-text editors)
-	// Minimal delays - rely on coalescing for smoothness
-	ExtraSlowModeKeyDelay  = 0
-	ExtraSlowModePreDelay  = 0
-	ExtraSlowModePostDelay = 0
 )
 
 // INPUT structure for SendInput
@@ -81,8 +75,8 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 		sendFast(text, backspaces)
 	case MethodSlow:
 		sendSlow(text, backspaces, SlowModePreDelay, SlowModePostDelay, SlowModeKeyDelay)
-	case MethodExtraSlow:
-		sendSlow(text, backspaces, ExtraSlowModePreDelay, ExtraSlowModePostDelay, ExtraSlowModeKeyDelay)
+	case MethodAtomic:
+		sendAtomic(text, backspaces)
 	}
 }
 
@@ -107,6 +101,73 @@ func sendSlow(text string, backspaces int, preDelay, postDelay, keyDelay int) {
 		time.Sleep(time.Duration(preDelay) * time.Millisecond)
 		sendUnicodeTextSlow(text, keyDelay)
 	}
+}
+
+// sendAtomic combines backspaces and text into a single SendInput call
+// This prevents flicker in Discord and other rich-text editors
+func sendAtomic(text string, backspaces int) {
+	runes := []rune(text)
+	totalEvents := backspaces*2 + len(runes)*2
+
+	if totalEvents == 0 {
+		return
+	}
+
+	inputs := make([]INPUT, totalEvents)
+	idx := 0
+
+	// Add backspace events first
+	for i := 0; i < backspaces; i++ {
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_BACK,
+				DwFlags:     0,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_BACK,
+				DwFlags:     KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+	}
+
+	// Add Unicode text events
+	for _, r := range runes {
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         0,
+				WScan:       uint16(r),
+				DwFlags:     KEYEVENTF_UNICODE,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         0,
+				WScan:       uint16(r),
+				DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+	}
+
+	// Single atomic SendInput call
+	procSendInput.Call(
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&inputs[0])),
+		uintptr(inputSize),
+	)
 }
 
 func sendBackspaces(count int) {
