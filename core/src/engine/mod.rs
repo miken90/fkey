@@ -3916,6 +3916,75 @@ impl Engine {
                 if !has_marks && !has_stroke && !has_repeated_consonant && !raw_much_longer {
                     return None; // Keep buffer (clean, no Vietnamese transforms)
                 }
+
+                // Issue #230: Alternating pattern fix (herere → here, therere → there)
+                // Detect alternating vowel-mark-vowel-mark pattern at end of raw_input.
+                // Pattern like `h-e-r-e-r-e` (V-M-V-M-V at end) indicates English typing where
+                // marks got applied then reverted, and user continued with vowel.
+                //
+                // NOTE: We check self.raw_input (full input like "Therere"), not stored
+                // (telex_double_raw = "There" at time of revert). The pattern appears in full input.
+                //
+                // IMPORTANT: Only apply this fix when:
+                // 1. raw input is NOT a valid English word (avoid breaking "theses" etc.)
+                // 2. raw input matches alternating V-M-V-M or V-M-V-M-V pattern with SAME vowels
+                //    - "herere": e-r-e-r-e (V-M-V-M-V) → keep "here"
+                //    - "herer": e-r-e-r (V-M-V-M) → keep "her"
+                //    - "harare": a-r-a-r-e (different vowels a≠e) → skip fix
+                let raw_input_str = self.get_raw_input_string();
+                let raw_is_english = english_dict::is_english_word(&raw_input_str);
+                let chars: Vec<char> = raw_input_str.chars().collect();
+
+                if !raw_is_english && chars.len() >= 4 {
+                    let len = chars.len();
+                    let is_mark_char = |c: char| matches!(c, 's' | 'f' | 'r' | 'x' | 'j');
+                    let is_vowel_char = |c: char| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+                    let last = chars[len - 1].to_ascii_lowercase();
+
+                    // Check for two alternating patterns:
+                    // 1. V-M-V-M-V (ends with vowel): "herere" = e-r-e-r-e → keep "here"
+                    // 2. V-M-V-M (ends with mark): "herer" = e-r-e-r → keep "her"
+
+                    let is_vmvmv_pattern = len >= 5
+                        && is_vowel_char(last) // ends with vowel
+                        && {
+                            let v1 = last;
+                            let m1 = chars[len - 2].to_ascii_lowercase();
+                            let v2 = chars[len - 3].to_ascii_lowercase();
+                            let m2 = chars[len - 4].to_ascii_lowercase();
+                            let v3 = chars[len - 5].to_ascii_lowercase();
+
+                            is_mark_char(m1)
+                                && is_vowel_char(v2)
+                                && is_mark_char(m2)
+                                && is_vowel_char(v3)
+                                && m1 == m2           // Same mark repeated
+                                && v1 == v2 && v2 == v3 // Same vowel repeated
+                        };
+
+                    let is_vmvm_pattern = is_mark_char(last) // ends with mark
+                        && {
+                            let m1 = last;
+                            let v1 = chars[len - 2].to_ascii_lowercase();
+                            let m2 = chars[len - 3].to_ascii_lowercase();
+                            let v2 = chars[len - 4].to_ascii_lowercase();
+
+                            is_vowel_char(v1)
+                                && is_mark_char(m2)
+                                && is_vowel_char(v2)
+                                && m1 == m2       // Same mark repeated
+                                && v1 == v2       // Same vowel repeated
+                        };
+
+                    // For alternating pattern, only check for actual diacritic marks (sắc/huyền/hỏi/ngã/nặng),
+                    // not vowel modifiers (circumflex/horn/breve from doubled vowels like ee→ê).
+                    let has_diacritic_marks = self.buf.iter().any(|c| c.mark > 0);
+
+                    if (is_vmvmv_pattern || is_vmvm_pattern) && !has_diacritic_marks && !has_stroke
+                    {
+                        return None; // Keep buffer (alternating pattern reverted cleanly)
+                    }
+                }
             }
         }
 
