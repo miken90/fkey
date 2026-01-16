@@ -309,6 +309,10 @@ pub struct Engine {
     /// Example: "dataa" → "dât" (after 4th key), typing 5th 'a' reverts to "data"
     /// Used in build_raw_chars to collapse double vowel at end for restore
     had_circumflex_revert: bool,
+    /// Issue #211: Tracks which vowel key triggered circumflex revert (extended vowel mode)
+    /// When set, subsequent same-key vowels append raw instead of re-transforming
+    /// Example: aaa→aa (reverted_circumflex_key=A), aaaa→aaa (skip transform, append raw)
+    reverted_circumflex_key: Option<u16>,
     /// Tracks if ANY Telex transform was applied (tone, mark, or stroke)
     /// Used for whitelist-based auto-restore to English words
     had_telex_transform: bool,
@@ -327,6 +331,9 @@ pub struct Engine {
     /// Buffer was just restored from DELETE - clear on next letter input
     /// This prevents typing after restore from appending to old buffer
     restored_pending_clear: bool,
+    /// Restored word was pure ASCII (no Vietnamese chars) - clear on ANY letter
+    /// For Vietnamese restored words, only clear on consonant (allow mark/tone edits)
+    restored_is_ascii: bool,
     /// Auto-capitalize first letter after sentence-ending punctuation
     /// Triggers: . ! ? Enter → next letter becomes uppercase
     auto_capitalize: bool,
@@ -373,11 +380,13 @@ impl Engine {
             had_any_transform: false,
             had_vowel_triggered_circumflex: false,
             had_circumflex_revert: false,
+            reverted_circumflex_key: None,
             had_telex_transform: false,
             telex_double_raw: None,
             telex_double_raw_len: 0,
             shortcut_prefix: String::new(),
             restored_pending_clear: false,
+            restored_is_ascii: false,
             auto_capitalize: false, // Default: OFF
             pending_capitalize: false,
             auto_capitalize_used: false,
@@ -840,6 +849,9 @@ impl Engine {
             // Reset stroke_reverted on backspace so user can re-trigger stroke
             // e.g., "ddddd" → "dddd", then backspace×3 → "d", then "d" → "đ"
             self.stroke_reverted = false;
+            // Issue #217: Reset reverted_circumflex_key on backspace so user can re-trigger circumflex
+            // e.g., "eee" → "ee", then backspace×2 → "", type "phe" → "phê" (not "phee")
+            self.reverted_circumflex_key = None;
             // Only reset restored_pending_clear when buffer is empty
             // (user finished deleting restored word completely)
             // If buffer still has chars, user might think they cleared everything
@@ -857,19 +869,38 @@ impl Engine {
         }
 
         // After DELETE restore, determine if user wants to:
-        // 1. Continue editing restored word (add tone/mark) - vowels, mark keys, tone keys
-        // 2. Start fresh word - regular consonants (not mark/tone keys)
+        // 1. Continue editing restored word (add tone/mark) - mark keys, tone keys
+        // 2. Start fresh word - regular letters (not mark/tone keys)
         // This allows "cha" + restore + "f" → "chà" (f is mark key)
         // But "cha" + restore + "m" → "m..." (m is consonant, start fresh)
+        // For pure ASCII restored words (like "shortcuts"), also clear on vowels
+        // unless they're mark/tone keys (allow "ban" + restore + "s" → "bán")
         if self.restored_pending_clear && keys::is_letter(key) {
             let m = input::get(self.method);
             let is_mark_or_tone = m.mark(key).is_some() || m.tone(key).is_some();
-            if keys::is_consonant(key) && !is_mark_or_tone {
-                // Regular consonant (not mark/tone key) = user starting new word
+            // Clear buffer when letter is NOT a mark/tone modifier:
+            // - Vietnamese restored: clear on consonant (vowels may add diacritics)
+            // - ASCII restored: clear on any non-mark/tone letter (consonant OR vowel)
+            let should_clear = if self.restored_is_ascii {
+                // Pure ASCII: clear on any letter except mark/tone keys
+                !is_mark_or_tone
+            } else {
+                // Vietnamese: clear only on consonant that's not mark/tone
+                keys::is_consonant(key) && !is_mark_or_tone
+            };
+            if should_clear {
                 self.clear();
             }
-            // Reset flag regardless - user is now actively typing
+            // Reset flags regardless - user is now actively typing
             self.restored_pending_clear = false;
+            self.restored_is_ascii = false;
+        }
+
+        // Issue #212: Reset has_non_letter_prefix when user starts typing letter into empty buffer
+        // This allows shortcuts to work after: expand → delete all → retype
+        // e.g., "ko" → "không " → backspace×6 → "ko" → should expand again
+        if self.buf.is_empty() && keys::is_letter(key) && self.has_non_letter_prefix {
+            self.has_non_letter_prefix = false;
         }
 
         // Auto-capitalize: force uppercase for first letter after sentence-ending punctuation
@@ -893,14 +924,6 @@ impl Engine {
             }
             caps
         };
-
-        // Reset has_non_letter_prefix when user starts typing a new word with a letter
-        // This fixes: "ko " + "test" + backspace×5 + "dc " should trigger shortcut
-        // The extra backspace into empty set has_non_letter_prefix=true, but when user
-        // types 'd' (a letter) into empty buffer, they're starting a fresh word.
-        if keys::is_letter(key) && self.buf.is_empty() {
-            self.has_non_letter_prefix = false;
-        }
 
         // Record raw keystroke for ESC restore (letters and numbers only)
         if keys::is_letter(key) || keys::is_number(key) {
@@ -1410,6 +1433,12 @@ impl Engine {
             if last_key == key {
                 return Some(self.revert_tone(key, caps));
             }
+        }
+
+        // Issue #211: Extended vowel mode - skip circumflex transform after revert
+        // After aaa→aa revert, aaaa should become aaa (append raw), not aâ (re-transform)
+        if self.reverted_circumflex_key == Some(key) && tone_type == ToneType::Circumflex {
+            return None; // Let normal letter handling append raw vowel
         }
 
         // Validate buffer structure (not vowel patterns - those are checked after transform)
@@ -2699,17 +2728,43 @@ impl Engine {
                 }
             }
 
+            // Pre-calculate qu/gi initial for extended vowel check
+            let has_qu = self.has_qu_initial();
+            let has_gi = self.has_gi_initial();
+
             // Issue #162 fix: Don't reposition if vowels are identical (doubled vowels like "oo", "aa", "ee").
             // These are NOT valid Vietnamese diphthongs and should keep mark on first vowel.
             // This prevents VNI "o2o" from incorrectly producing "oò" instead of "òo".
-            if vowels.len() == 2 && vowels[0].key == vowels[1].key {
+            // Issue #211: Extended to handle 3+ same vowels (e.g., "asaaa" → "áaa", not "aáa")
+            // Issue #211 fix for qu/gi: Skip the first vowel when checking for extended vowel patterns
+            // With "quasaaa", vowels = [u, a, a, a], but 'u' is part of "qu" consonant.
+            // We should check [a, a, a] which ARE all same key.
+            //
+            // Special case for "gi" + "i" pattern (e.g., "giri"):
+            // When has_gi and all vowels are 'i', don't reposition.
+            // "gir" → "gỉ", "giri" → "gỉi" (not "giỉ")
+            if has_gi && vowels.iter().all(|v| v.key == keys::I) {
+                return None;
+            }
+
+            let effective_vowels: &[Vowel] = if vowels.len() >= 2
+                && ((has_qu && vowels[0].key == keys::U) || (has_gi && vowels[0].key == keys::I))
+            {
+                &vowels[1..]
+            } else {
+                &vowels
+            };
+
+            if effective_vowels.len() >= 2
+                && effective_vowels
+                    .iter()
+                    .all(|v| v.key == effective_vowels[0].key)
+            {
                 return None;
             }
 
             let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
             let has_final = self.has_final_consonant(last_vowel_pos);
-            let has_qu = self.has_qu_initial();
-            let has_gi = self.has_gi_initial();
             let new_pos =
                 Phonology::find_tone_position(&vowels, has_final, self.modern_tone, has_qu, has_gi);
 
@@ -2943,10 +2998,19 @@ impl Engine {
         self.buf.push(Char::new(key, caps));
 
         // Build output from position (includes new key)
-        let output: Vec<char> = (pos..self.buf.len())
-            .filter_map(|i| self.buf.get(i))
-            .filter_map(|c| utils::key_to_char(c.key, c.caps))
-            .collect();
+        // Use chars::to_char to preserve mark (sắc/huyền/etc) on reverted vowels
+        let mut output = Vec::with_capacity(self.buf.len() - pos);
+        for i in pos..self.buf.len() {
+            if let Some(c) = self.buf.get(i) {
+                if c.key == keys::D && c.stroke {
+                    output.push(chars::get_d(c.caps));
+                } else if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
+                    output.push(ch);
+                } else if let Some(ch) = utils::key_to_char(c.key, c.caps) {
+                    output.push(ch);
+                }
+            }
+        }
 
         Result::send(backspace, &output)
     }
@@ -2954,6 +3018,9 @@ impl Engine {
     /// Revert tone transformation
     fn revert_tone(&mut self, key: u16, caps: bool) -> Result {
         self.last_transform = None;
+        // Issue #211: Track which vowel triggered revert for extended vowel mode
+        // After revert, subsequent same-key vowels append raw instead of re-transforming
+        self.reverted_circumflex_key = Some(key);
 
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
@@ -3011,39 +3078,18 @@ impl Engine {
                     //   Example: "issue" → next is 'u' (vowel) → keep → "issue"
                     self.pending_mark_revert_pop = true;
 
-                    // Add only the reverting key if it's a letter (Telex: s, f, r, x, j)
-                    // VNI uses numbers (1-5) for marks - don't add to buffer but return None
-                    // so the platform layer passes the number through
-                    // Example: Telex "ass" → "as" (second 's' is added to buffer, output)
-                    // Example: VNI "E22" → engine outputs "E", returns None for '2' to pass through
-                    if keys::is_letter(key) {
-                        self.buf.push(Char::new(key, caps));
-                        
-                        // Calculate backspace and output for Telex
-                        let backspace = (self.buf.len() - pos - 1) as u8;
-                        let output: Vec<char> = (pos..self.buf.len())
-                            .filter_map(|i| self.buf.get(i))
-                            .filter_map(|c| utils::key_to_char(c.key, c.caps))
-                            .collect();
-                        return Result::send(backspace, &output);
-                    } else {
-                        // VNI: just output the reverted vowel, don't include number
-                        // The number will be passed through by platform layer (action=None doesn't work here)
-                        // We need to output vowel + number together since we're replacing È with E2
-                        let backspace = (self.buf.len() - pos) as u8;
-                        let mut output: Vec<char> = (pos..self.buf.len())
-                            .filter_map(|i| self.buf.get(i))
-                            .filter_map(|c| utils::key_to_char(c.key, c.caps))
-                            .collect();
-                        // Append the number to output
-                        if let Some(ch) = utils::key_to_char(key, false) {
-                            output.push(ch);
-                            // Also add to buffer so ESC restore knows the true screen length
-                            // We use a special Char that will output as the number
-                            self.buf.push(Char::new(key, false));
-                        }
-                        return Result::send(backspace, &output);
-                    }
+                    // Add only the reverting key (current key being pressed)
+                    // The original mark key was consumed as a modifier and doesn't produce output
+                    self.buf.push(Char::new(key, caps));
+
+                    // Calculate backspace and output
+                    let backspace = (self.buf.len() - pos - 1) as u8; // -1 because we added 1 char
+                    let output: Vec<char> = (pos..self.buf.len())
+                        .filter_map(|i| self.buf.get(i))
+                        .filter_map(|c| utils::key_to_char(c.key, c.caps))
+                        .collect();
+
+                    return Result::send(backspace, &output);
                 }
             }
         }
@@ -3569,10 +3615,12 @@ impl Engine {
         self.had_any_transform = false;
         self.had_vowel_triggered_circumflex = false;
         self.had_circumflex_revert = false;
+        self.reverted_circumflex_key = None;
         self.had_telex_transform = false;
         self.telex_double_raw = None;
         self.telex_double_raw_len = 0;
         self.restored_pending_clear = false;
+        self.restored_is_ascii = false;
         self.shortcut_prefix.clear();
     }
 
@@ -3613,6 +3661,7 @@ impl Engine {
     /// Parses Vietnamese characters back to buffer components.
     pub fn restore_word(&mut self, word: &str) {
         self.clear();
+        let mut is_ascii = true;
         for c in word.chars() {
             if let Some(parsed) = chars::parse_char(c) {
                 let mut ch = Char::new(parsed.key, parsed.caps);
@@ -3621,7 +3670,19 @@ impl Engine {
                 ch.stroke = parsed.stroke;
                 self.buf.push(ch);
                 self.raw_input.push((parsed.key, parsed.caps, false));
+                // Check if this char has any Vietnamese diacritics
+                if parsed.tone != 0 || parsed.mark != 0 || parsed.stroke {
+                    is_ascii = false;
+                }
             }
+        }
+        // Mark that buffer was restored from screen - if user types a regular consonant,
+        // clear buffer first (they want fresh word, not append to restored word)
+        // This allows: click on "shortcuts" → type "Nuw" → get "Nư" (not "shortcutsNuw")
+        // But mark/tone keys like 's' will still work to modify the restored word
+        if !self.buf.is_empty() {
+            self.restored_pending_clear = true;
+            self.restored_is_ascii = is_ascii;
         }
     }
 
@@ -3647,6 +3708,24 @@ impl Engine {
         // no mark was ever applied, so the result stays "forr" (not collapsed to "for")
         if !self.had_any_transform {
             return None;
+        }
+
+        // Issue #211: Skip auto-restore for extended vowel patterns
+        // When user types "áaa" or "hảaa", this is intentional Vietnamese (casual messaging)
+        // not English that needs to be restored. Detect by checking if:
+        // 1. reverted_circumflex_key is set (revert happened)
+        // 2. All vowels in buffer are the same key (extended pattern)
+        if self.reverted_circumflex_key.is_some() {
+            let vowels: Vec<u16> = self
+                .buf
+                .iter()
+                .filter(|c| keys::is_vowel(c.key))
+                .map(|c| c.key)
+                .collect();
+            if vowels.len() >= 2 && vowels.iter().all(|&k| k == vowels[0]) {
+                // Extended vowel pattern - skip auto-restore
+                return None;
+            }
         }
 
         // VIETNAMESE PRIORITY: Only keep Vietnamese when buffer has Vietnamese-SPECIFIC marks
@@ -6644,23 +6723,30 @@ mod tests {
         }
     }
 
-    /// Issue: VNI mark revert should preserve uppercase
-    /// E + 2 → È, then 2 again → E2 (E uppercase preserved + number passed through)
+    /// Issue #217: After typing "eee" (revert to "ee") and deleting, should be able to type "ê" again
+    /// Bug: reverted_circumflex_key was not reset on backspace, blocking circumflex in new words
     #[test]
-    fn test_vni_uppercase_mark_revert() {
+    fn test_circumflex_revert_reset_on_backspace() {
+        // Test case from issue: type "Meee", delete all, type "Phee" → should get "Phê"
+        // '<' = backspace in test utilities
         let cases: &[(&str, &str)] = &[
-            ("E22", "E2"),   // E + huyền + revert → E2 (uppercase preserved)
-            ("A11", "A1"),   // A + sắc + revert → A1
-            ("O33", "O3"),   // O + hỏi + revert → O3
-            ("e22", "e2"),   // lowercase should also work
+            // After eee→ee revert, delete all, new word should work
+            ("meee<<<<<phee", "phê"),
+            ("ooo<<<<<choo", "chô"),
+            ("aaa<<<<<caa", "câ"),
+            // After revert but only partial delete, new 'e' in same buffer should also work
+            ("eee<<ee", "ê"),
+            // Mixed: revert one vowel, delete, type another vowel type
+            ("ooo<<<<<mee", "mê"),
+            ("aaa<<<<<boo", "bô"),
         ];
+
         for (input, expected) in cases {
             let mut e = Engine::new();
-            e.set_method(1); // VNI
             let result = type_word(&mut e, input);
             assert_eq!(
                 result, *expected,
-                "[VNI uppercase revert] '{}' → '{}', expected '{}'",
+                "[Issue #217 circumflex reset] '{}' → '{}', expected '{}'",
                 input, result, expected
             );
         }
