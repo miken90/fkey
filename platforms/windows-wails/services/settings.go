@@ -6,6 +6,7 @@ package services
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -156,9 +157,8 @@ func (s *SettingsService) updateAutoStart() {
 
 	if s.settings.AutoStart {
 		// Get current executable path
-		// Note: In production, use os.Executable()
-		exePath := "" // TODO: Get actual exe path
-		if exePath != "" {
+		exePath, err := os.Executable()
+		if err == nil && exePath != "" {
 			key.SetStringValue(AppName, fmt.Sprintf(`"%s"`, exePath))
 		}
 	} else {

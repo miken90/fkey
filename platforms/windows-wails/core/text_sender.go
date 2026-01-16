@@ -25,18 +25,19 @@ const (
 
 // Delay settings (milliseconds)
 const (
-	// Slow mode - most Electron apps, browsers, terminals
-	// Uses per-character sending but no delays
-	SlowModeKeyDelay  = 0
-	SlowModePreDelay  = 0
-	SlowModePostDelay = 0
+	// Fast mode - standard apps, small delay between backspaces and text
+	FastModeDelay = 5
 
-	// Extra slow mode - problematic apps like Wave
-	ExtraSlowModeKeyDelay  = 5
-	ExtraSlowModePreDelay  = 10
-	ExtraSlowModePostDelay = 8
+	// Slow mode - Electron apps, browsers, terminals
+	SlowModeKeyDelay  = 5
+	SlowModePreDelay  = 20
+	SlowModePostDelay = 15
 
-	FastModeDelay = 0 // Not used anymore
+	// Extra slow mode - Discord, Wave (heavy rich-text editors)
+	// Minimal delays - rely on coalescing for smoothness
+	ExtraSlowModeKeyDelay  = 0
+	ExtraSlowModePreDelay  = 0
+	ExtraSlowModePostDelay = 0
 )
 
 // INPUT structure for SendInput
@@ -86,70 +87,15 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 }
 
 func sendFast(text string, backspaces int) {
-	// Combine backspaces and text into a SINGLE SendInput call for atomicity
-	// This prevents Discord/Electron flicker between backspace and text insertion
-	runes := []rune(text)
-	totalEvents := backspaces*2 + len(runes)*2
-
-	if totalEvents == 0 {
-		return
+	// v2.0.1 logic: separate SendInput calls with small delay
+	// This works reliably on most apps including Claude Code terminal
+	if backspaces > 0 {
+		sendBackspaces(backspaces)
+		time.Sleep(FastModeDelay * time.Millisecond)
 	}
-
-	inputs := make([]INPUT, totalEvents)
-	idx := 0
-
-	// Add backspace events first
-	for i := 0; i < backspaces; i++ {
-		inputs[idx] = INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         VK_BACK,
-				DwFlags:     0,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		}
-		idx++
-		inputs[idx] = INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         VK_BACK,
-				DwFlags:     KEYEVENTF_KEYUP,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		}
-		idx++
+	if len(text) > 0 {
+		sendUnicodeTextBatch(text)
 	}
-
-	// Add Unicode text events
-	for _, r := range runes {
-		inputs[idx] = INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         0,
-				WScan:       uint16(r),
-				DwFlags:     KEYEVENTF_UNICODE,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		}
-		idx++
-		inputs[idx] = INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         0,
-				WScan:       uint16(r),
-				DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		}
-		idx++
-	}
-
-	// Single atomic SendInput call
-	procSendInput.Call(
-		uintptr(len(inputs)),
-		uintptr(unsafe.Pointer(&inputs[0])),
-		uintptr(inputSize),
-	)
 }
 
 func sendSlow(text string, backspaces int, preDelay, postDelay, keyDelay int) {

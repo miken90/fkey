@@ -58,8 +58,11 @@ var slowApps = map[string]bool{
 
 // Apps requiring extra slow injection (problematic apps that drop chars with normal slow mode)
 var extraSlowApps = map[string]bool{
-	"wave":     true,
-	"waveterm": true,
+	"discord":       true,
+	"discordcanary": true,
+	"discordptb":    true,
+	"wave":          true,
+	"waveterm":      true,
 }
 
 // DefaultCoalescingApps - apps that benefit from coalescing (heavy rich-text editors)
