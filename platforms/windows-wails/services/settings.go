@@ -7,6 +7,7 @@ package services
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -149,16 +150,24 @@ func (s *SettingsService) Save() error {
 
 // updateAutoStart updates Windows startup entry
 func (s *SettingsService) updateAutoStart() {
-	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE)
+	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE|registry.QUERY_VALUE)
 	if err != nil {
 		return
 	}
 	defer key.Close()
 
+	// Clean up legacy GoNhanh entry if exists
+	key.DeleteValue("GoNhanh")
+
 	if s.settings.AutoStart {
 		// Get current executable path
 		exePath, err := os.Executable()
-		if err == nil && exePath != "" {
+		if err != nil {
+			return
+		}
+		// Resolve symlinks to get real path
+		exePath, _ = filepath.EvalSymlinks(exePath)
+		if exePath != "" {
 			key.SetStringValue(AppName, fmt.Sprintf(`"%s"`, exePath))
 		}
 	} else {

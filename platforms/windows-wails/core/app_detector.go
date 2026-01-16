@@ -24,52 +24,70 @@ const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
-// Apps requiring slow injection (Electron, terminals, browsers).
-// Slow mode adds small delays between backspaces and text.
-var slowApps = map[string]bool{
-	// Electron apps
-	"claude":   true,
-	"notion":   true,
-	"slack":    true,
-	"teams":    true,
-	"code":     true,
-	"vscode":   true,
-	"cursor":   true,
-	"obsidian": true,
-	"figma":    true,
-	// Terminals
-	"windowsterminal": true,
-	"cmd":             true,
-	"powershell":      true,
-	"pwsh":            true,
-	"wezterm":         true,
-	"alacritty":       true,
-	"hyper":           true,
-	"mintty":          true,
-	// Browsers (use slow mode as safe default)
-	"chrome":  true,
-	"msedge":  true,
-	"firefox": true,
-	"brave":   true,
-	"opera":   true,
-	"vivaldi": true,
-	"arc":     true,
+// AppProfile defines injection behavior for an app
+type AppProfile struct {
+	Method    InjectionMethod
+	Coalesce  bool // Whether to use coalescing
+	CoalesceMs int  // Coalescing timer (0 = use default 25ms)
 }
 
-// Apps requiring extra slow injection (problematic apps that drop chars with normal slow mode)
-var extraSlowApps = map[string]bool{
-	"discord":       true,
-	"discordcanary": true,
-	"discordptb":    true,
-	"wave":          true,
-	"waveterm":      true,
+// Default profiles
+var (
+	ProfileFast   = AppProfile{Method: MethodFast, Coalesce: false}
+	ProfileSlow   = AppProfile{Method: MethodSlow, Coalesce: false}
+	ProfileAtomic = AppProfile{Method: MethodAtomic, Coalesce: false}
+	// Discord profile: atomic + coalescing with short timer for smooth typing
+	ProfileDiscord = AppProfile{Method: MethodAtomic, Coalesce: true, CoalesceMs: 15}
+)
+
+// appProfiles maps process names to their injection profiles
+// Add new apps here with custom settings
+var appProfiles = map[string]AppProfile{
+	// Discord - atomic mode with short coalescing for smooth diacritics
+	"discord":       ProfileDiscord,
+	"discordcanary": ProfileDiscord,
+	"discordptb":    ProfileDiscord,
+
+	// Electron apps - slow mode with delays
+	"claude":   ProfileSlow,
+	"notion":   ProfileSlow,
+	"slack":    ProfileSlow,
+	"teams":    ProfileSlow,
+	"code":     ProfileSlow,
+	"vscode":   ProfileSlow,
+	"cursor":   ProfileSlow,
+	"obsidian": ProfileSlow,
+	"figma":    ProfileSlow,
+
+	// Terminals - slow mode
+	"windowsterminal": ProfileSlow,
+	"cmd":             ProfileSlow,
+	"powershell":      ProfileSlow,
+	"pwsh":            ProfileSlow,
+	"wezterm":         ProfileSlow,
+	"alacritty":       ProfileSlow,
+	"hyper":           ProfileSlow,
+	"mintty":          ProfileSlow,
+	"wave":            ProfileSlow,
+	"waveterm":        ProfileSlow,
+
+	// Browsers - slow mode as safe default
+	"chrome":  ProfileSlow,
+	"msedge":  ProfileSlow,
+	"firefox": ProfileSlow,
+	"brave":   ProfileSlow,
+	"opera":   ProfileSlow,
+	"vivaldi": ProfileSlow,
+	"arc":     ProfileSlow,
 }
 
-// DefaultCoalescingApps - apps that benefit from coalescing (heavy rich-text editors)
-var DefaultCoalescingApps = []string{
-	"discord",
-	"discordcanary",
-	"discordptb",
+// GetAppProfile returns the injection profile for a process name
+func GetAppProfile(processName string) AppProfile {
+	name := strings.ToLower(processName)
+	if profile, ok := appProfiles[name]; ok {
+		return profile
+	}
+	return ProfileFast // Default
 }
 
 // Cache to avoid repeated process lookups
@@ -166,14 +184,7 @@ func ExtractProcessName(fullPath string) string {
 
 // DetermineMethod checks if process name needs slow mode - exported for testing
 func DetermineMethod(processName string) InjectionMethod {
-	name := strings.ToLower(processName)
-	if extraSlowApps[name] {
-		return MethodExtraSlow
-	}
-	if slowApps[name] {
-		return MethodSlow
-	}
-	return MethodFast
+	return GetAppProfile(processName).Method
 }
 
 // InvalidateCache forces refresh of cached process info
@@ -182,6 +193,30 @@ func InvalidateCache() {
 	cachedProcessName = ""
 	cachedWindow = 0
 	cacheMu.Unlock()
+}
+
+// AppChanged checks if foreground app changed since last call
+// Returns true if app changed, and updates cache
+func AppChanged() bool {
+	hwnd, _, _ := procGetForegroundWindow.Call()
+	if hwnd == 0 {
+		return false
+	}
+
+	cacheMu.RLock()
+	changed := hwnd != cachedWindow
+	cacheMu.RUnlock()
+
+	if changed {
+		// Update cache with new window/process
+		processName := getProcessName(hwnd)
+		cacheMu.Lock()
+		cachedProcessName = processName
+		cachedWindow = hwnd
+		cacheMu.Unlock()
+	}
+
+	return changed
 }
 
 // GetCurrentProcessName returns cached process name (for debugging)
