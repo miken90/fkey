@@ -123,51 +123,98 @@ try {
         }
     }
 
-    # Get commits since previous tag
+    # Get commits since previous tag (subject + body)
+    # Use temp file because PowerShell doesn't preserve newlines in git output properly
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    
     if ($PrevTag) {
-        $CommitLines = git log "$PrevTag..HEAD" --pretty=format:"%s" --no-merges 2>$null
+        git log "$PrevTag..HEAD" --pretty=format:"---COMMIT---%n%s%n%b" --no-merges 2>$null | Out-File -FilePath $tempFile -Encoding UTF8
         $CompareLink = "**Full Changelog**: https://github.com/$Repo/compare/$PrevTag...v$Version"
     } else {
-        $CommitLines = git log -20 --pretty=format:"%s" --no-merges 2>$null
+        git log -20 --pretty=format:"---COMMIT---%n%s%n%b" --no-merges 2>$null | Out-File -FilePath $tempFile -Encoding UTF8
         $CompareLink = ""
     }
+    
+    $CommitData = Get-Content $tempFile -Raw -ErrorAction SilentlyContinue
+    Remove-Item $tempFile -ErrorAction SilentlyContinue
 
     # Categorize commits
     $Features = @()
     $Fixes = @()
     $Improvements = @()
 
-    if ($CommitLines) {
-        $CommitArray = $CommitLines -split "`n"
-        foreach ($commit in $CommitArray) {
-            $commit = $commit.Trim()
-            if (-not $commit) { continue }
+    if ($CommitData) {
+        # Normalize line endings
+        $CommitData = $CommitData -replace "`r`n", "`n"
+        
+        # Split by commit delimiter
+        $Commits = $CommitData -split "---COMMIT---" | Where-Object { $_.Trim() }
+        
+        foreach ($commitBlock in $Commits) {
+            $lines = $commitBlock.Trim() -split "`n"
+            if ($lines.Count -eq 0) { continue }
             
-            # Skip merge commits and version commits
-            if ($commit -match "^Merge" -or $commit -match "^v\d+\.\d+") { continue }
+            $subject = $lines[0].Trim()
+            $bodyLines = @()
+            if ($lines.Count -gt 1) {
+                $bodyLines = $lines[1..($lines.Count-1)] | ForEach-Object { $_.Trim() } | Where-Object { $_ -match "^-\s" }
+            }
             
-            # Categorize by conventional commit prefix
-            if ($commit -match "^feat(\(.+\))?:|^feature:|^add:|^new:") {
-                # Clean up prefix for display
-                $msg = $commit -replace "^feat(\(.+\))?:\s*", ""
-                $msg = $msg -replace "^feature:\s*", ""
-                $msg = $msg -replace "^add:\s*", ""
-                $msg = $msg -replace "^new:\s*", ""
-                if ($msg) { $Features += "- $msg" }
+            if (-not $subject) { continue }
+            
+            # Skip merge commits and version-only commits
+            if ($subject -match "^Merge" -or $subject -match "^v\d+\.\d+\.\d+$") { continue }
+            
+            # Determine default category from subject
+            $defaultCategory = "improvements"
+            if ($subject -match "^feat(\(.+\))?:|^feature:|^add:|^new:") {
+                $defaultCategory = "features"
             }
-            elseif ($commit -match "^fix(\(.+\))?:|^bug:|^hotfix:") {
-                $msg = $commit -replace "^fix(\(.+\))?:\s*", ""
-                $msg = $msg -replace "^bug:\s*", ""
-                $msg = $msg -replace "^hotfix:\s*", ""
-                if ($msg) { $Fixes += "- $msg" }
+            elseif ($subject -match "^fix(\(.+\))?:|^bug:|^hotfix:") {
+                $defaultCategory = "fixes"
             }
-            elseif ($commit -match "^refactor:|^perf:|^improve:|^chore:|^style:|^docs:|^test:|^ci:|^build:") {
-                $msg = $commit -replace "^(refactor|perf|improve|chore|style|docs|test|ci|build)(\(.+\))?:\s*", ""
-                if ($msg) { $Improvements += "- $msg" }
+            
+            # If body has bullet points, parse each line for its own category
+            if ($bodyLines.Count -gt 0) {
+                foreach ($line in $bodyLines) {
+                    # Remove leading dash and spaces
+                    $item = $line -replace "^-\s*", ""
+                    $item = $item.Trim()
+                    if (-not $item) { continue }
+                    
+                    # Check if line itself has a category prefix
+                    $lineCategory = $defaultCategory
+                    if ($item -match "^feat(\(.+\))?:|^feature:") {
+                        $lineCategory = "features"
+                        $item = $item -replace "^feat(\(.+\))?:\s*", ""
+                        $item = $item -replace "^feature:\s*", ""
+                    }
+                    elseif ($item -match "^fix(\(.+\))?:|^bug:") {
+                        $lineCategory = "fixes"
+                        $item = $item -replace "^fix(\(.+\))?:\s*", ""
+                        $item = $item -replace "^bug:\s*", ""
+                    }
+                    
+                    $item = $item.Trim()
+                    if ($item) {
+                        switch ($lineCategory) {
+                            "features" { $Features += "- $item" }
+                            "fixes" { $Fixes += "- $item" }
+                            default { $Improvements += "- $item" }
+                        }
+                    }
+                }
             }
             else {
-                # Uncategorized commits go to improvements
-                $Improvements += "- $commit"
+                # Clean up prefix for display
+                $msg = $subject -replace "^(feat|feature|fix|bug|hotfix|chore|refactor|perf|docs|test|ci|build|add|new)(\(.+\))?:\s*", ""
+                if ($msg) {
+                    switch ($defaultCategory) {
+                        "features" { $Features += "- $msg" }
+                        "fixes" { $Fixes += "- $msg" }
+                        default { $Improvements += "- $msg" }
+                    }
+                }
             }
         }
     }
