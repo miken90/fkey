@@ -260,7 +260,9 @@ func applySettings(loop *core.ImeLoop, settings *services.Settings) {
 	shortcuts, err := settingsSvc.LoadShortcuts()
 	if err == nil {
 		for _, sc := range shortcuts {
-			loop.AddShortcut(sc.Trigger, sc.Replacement)
+			if sc.Enabled {
+				loop.AddShortcut(sc.Trigger, sc.Replacement)
+			}
 		}
 	}
 }

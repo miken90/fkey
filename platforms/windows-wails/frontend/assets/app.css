@@ -266,3 +266,236 @@ footer a:hover {
     border-radius: 4px;
     margin-bottom: 10px;
 }
+
+/* Shortcuts section */
+.shortcuts-section {
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+}
+
+.shortcuts-section h2 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text);
+}
+
+.shortcut-form {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.shortcut-form input {
+    flex: 1;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    min-width: 0;
+}
+
+.shortcut-form input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.shortcut-form button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background-color 0.15s;
+}
+
+.shortcut-form button:hover {
+    background: var(--primary-dark);
+}
+
+.shortcut-list {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+}
+
+.shortcut-item:last-child {
+    border-bottom: none;
+}
+
+.shortcut-item .trigger {
+    font-weight: 500;
+    color: var(--primary);
+    min-width: 60px;
+}
+
+.shortcut-item .arrow {
+    color: var(--text-secondary);
+    margin: 0 6px;
+}
+
+.shortcut-item .replacement {
+    flex: 1;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shortcut-item .delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 14px;
+    line-height: 1;
+    border-radius: 3px;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.shortcut-item .delete-btn:hover {
+    color: var(--error);
+    background: #fef2f2;
+}
+
+.shortcut-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 11px;
+    padding: 8px 0;
+}
+
+.shortcut-item .toggle-btn {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+.shortcut-item.disabled .trigger,
+.shortcut-item.disabled .replacement {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.shortcut-item .edit-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 3px;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.shortcut-item .edit-btn:hover {
+    color: var(--primary);
+    background: #e8f4fc;
+}
+
+/* Update dialog */
+.update-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.update-dialog {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 16px 20px;
+    max-width: 300px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.update-dialog h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: var(--primary);
+}
+
+.update-dialog p {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: var(--text);
+}
+
+.update-notes {
+    max-height: 80px;
+    overflow-y: auto;
+    font-size: 11px !important;
+    color: var(--text-secondary) !important;
+    background: var(--bg);
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 12px !important;
+}
+
+.update-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.update-btn-yes {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.update-btn-yes:hover {
+    background: var(--primary-dark);
+}
+
+.update-btn-no {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.update-btn-no:hover {
+    background: #e8e8e8;
+}
+
+.update-status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--primary);
+    margin-top: 8px;
+}

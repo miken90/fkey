@@ -11,6 +11,10 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as services$0 from "./services/models.js";
+
 /**
  * AddShortcut adds a single shortcut
  * @param {string} trigger
@@ -19,6 +23,26 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
  */
 export function AddShortcut(trigger, replacement) {
     return $Call.ByID(1733001600, trigger, replacement);
+}
+
+/**
+ * CheckForUpdates checks GitHub for a newer version
+ * @param {boolean} force
+ * @returns {$CancellablePromise<services$0.UpdateInfo | null>}
+ */
+export function CheckForUpdates(force) {
+    return $Call.ByID(152619814, force).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType1($result);
+    }));
+}
+
+/**
+ * DownloadAndInstallUpdate downloads and installs the update
+ * @param {string} downloadURL
+ * @returns {$CancellablePromise<void>}
+ */
+export function DownloadAndInstallUpdate(downloadURL) {
+    return $Call.ByID(29466370, downloadURL);
 }
 
 /**
@@ -43,17 +67,17 @@ export function GetInputMethod() {
  */
 export function GetSettings() {
     return $Call.ByID(3726452464).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType0($result);
+        return $$createType2($result);
     }));
 }
 
 /**
  * GetShortcuts returns all shortcuts
- * @returns {$CancellablePromise<{ [_: string]: string }[]>}
+ * @returns {$CancellablePromise<{ [_: string]: any }[]>}
  */
 export function GetShortcuts() {
     return $Call.ByID(96855928).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType2($result);
+        return $$createType3($result);
     }));
 }
 
@@ -63,6 +87,15 @@ export function GetShortcuts() {
  */
 export function GetVersion() {
     return $Call.ByID(3451983167);
+}
+
+/**
+ * OpenReleasePage opens the release page in browser
+ * @param {string} url
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenReleasePage(url) {
+    return $Call.ByID(2902927167, url);
 }
 
 /**
@@ -85,7 +118,7 @@ export function SaveSettings(settings) {
 
 /**
  * SaveShortcuts saves all shortcuts
- * @param {{ [_: string]: string }[]} shortcuts
+ * @param {{ [_: string]: any }[]} shortcuts
  * @returns {$CancellablePromise<void>}
  */
 export function SaveShortcuts(shortcuts) {
@@ -119,6 +152,7 @@ export function Toggle() {
 }
 
 // Private type creation functions
-const $$createType0 = $Create.Map($Create.Any, $Create.Any);
-const $$createType1 = $Create.Map($Create.Any, $Create.Any);
-const $$createType2 = $Create.Array($$createType1);
+const $$createType0 = services$0.UpdateInfo.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Map($Create.Any, $Create.Any);
+const $$createType3 = $Create.Array($$createType2);

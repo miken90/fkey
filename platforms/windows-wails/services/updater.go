@@ -4,6 +4,7 @@ package services
 // Checks for new versions and notifies user
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -273,4 +274,122 @@ func (u *UpdaterService) OpenReleasePage(url string) error {
 // GetCurrentVersion returns the current version
 func (u *UpdaterService) GetCurrentVersion() string {
 	return u.currentVersion
+}
+
+// InstallUpdate extracts and installs the update, then restarts the app
+// Returns the path to the batch script that will perform the update
+func (u *UpdaterService) InstallUpdate(zipPath string) (string, error) {
+	// Get current exe path
+	currentExe, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %w", err)
+	}
+	currentExe, _ = filepath.Abs(currentExe)
+	
+	// Extract zip to temp
+	extractDir := filepath.Join(os.TempDir(), "fkey-update-extract")
+	os.RemoveAll(extractDir)
+	os.MkdirAll(extractDir, 0755)
+	
+	if err := u.extractZip(zipPath, extractDir); err != nil {
+		return "", fmt.Errorf("failed to extract update: %w", err)
+	}
+	
+	// Find new exe in extracted files
+	var newExePath string
+	filepath.Walk(extractDir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() && strings.EqualFold(filepath.Ext(path), ".exe") {
+			newExePath = path
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	
+	if newExePath == "" {
+		return "", fmt.Errorf("no exe found in update package")
+	}
+	
+	// Create batch script to replace exe after app exits
+	batchPath := filepath.Join(os.TempDir(), "fkey-updater.bat")
+	batchContent := fmt.Sprintf(`@echo off
+echo Updating FKey...
+timeout /t 2 /nobreak > nul
+:retry
+del "%s" > nul 2>&1
+if exist "%s" (
+    timeout /t 1 /nobreak > nul
+    goto retry
+)
+copy /y "%s" "%s" > nul
+if errorlevel 1 (
+    echo Update failed!
+    pause
+    exit /b 1
+)
+start "" "%s"
+del "%s" > nul 2>&1
+rmdir /s /q "%s" > nul 2>&1
+del "%%~f0"
+`, currentExe, currentExe, newExePath, currentExe, currentExe, zipPath, extractDir)
+	
+	if err := os.WriteFile(batchPath, []byte(batchContent), 0755); err != nil {
+		return "", fmt.Errorf("failed to create updater script: %w", err)
+	}
+	
+	return batchPath, nil
+}
+
+// RunUpdateScript runs the update batch script and signals app to exit
+func (u *UpdaterService) RunUpdateScript(batchPath string) error {
+	cmd := exec.Command("cmd", "/c", "start", "", "/min", batchPath)
+	return cmd.Start()
+}
+
+// extractZip extracts a zip file to destination directory
+func (u *UpdaterService) extractZip(src, dst string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	
+	for _, f := range r.File {
+		// Prevent zip slip
+		name := filepath.Base(f.Name)
+		if name == "" || strings.HasPrefix(name, ".") {
+			continue
+		}
+		
+		fpath := filepath.Join(dst, name)
+		
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(fpath, 0755)
+			continue
+		}
+		
+		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+			return err
+		}
+		
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return err
+		}
+		
+		rc, err := f.Open()
+		if err != nil {
+			outFile.Close()
+			return err
+		}
+		
+		_, err = io.Copy(outFile, rc)
+		outFile.Close()
+		rc.Close()
+		
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
 }

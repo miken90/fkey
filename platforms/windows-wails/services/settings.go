@@ -209,6 +209,7 @@ func (s *SettingsService) SetCoalescingApps(apps []string) {
 type Shortcut struct {
 	Trigger     string
 	Replacement string
+	Enabled     bool
 }
 
 // LoadShortcuts reads shortcuts from Registry (tries FKey first, then legacy)
@@ -231,11 +232,19 @@ func (s *SettingsService) LoadShortcuts() ([]Shortcut, error) {
 
 	shortcuts := make([]Shortcut, 0, len(names))
 	for _, name := range names {
-		replacement, _, err := key.GetStringValue(name)
+		value, _, err := key.GetStringValue(name)
 		if err == nil {
+			// Format: "replacement" or "replacement|0" (disabled) or "replacement|1" (enabled)
+			replacement := value
+			enabled := true
+			if idx := strings.LastIndex(value, "|"); idx != -1 {
+				replacement = value[:idx]
+				enabled = value[idx+1:] != "0"
+			}
 			shortcuts = append(shortcuts, Shortcut{
 				Trigger:     name,
 				Replacement: replacement,
+				Enabled:     enabled,
 			})
 		}
 	}
@@ -259,7 +268,12 @@ func (s *SettingsService) SaveShortcuts(shortcuts []Shortcut) error {
 	defer key.Close()
 
 	for _, sc := range shortcuts {
-		key.SetStringValue(sc.Trigger, sc.Replacement)
+		// Format: "replacement|1" (enabled) or "replacement|0" (disabled)
+		enabledFlag := "1"
+		if !sc.Enabled {
+			enabledFlag = "0"
+		}
+		key.SetStringValue(sc.Trigger, sc.Replacement+"|"+enabledFlag)
 	}
 
 	return nil

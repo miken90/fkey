@@ -136,36 +136,47 @@ func (a *AppBindings) GetVersion() string {
 }
 
 // GetShortcuts returns all shortcuts
-func (a *AppBindings) GetShortcuts() ([]map[string]string, error) {
+func (a *AppBindings) GetShortcuts() ([]map[string]interface{}, error) {
 	shortcuts, err := a.settingsSvc.LoadShortcuts()
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]map[string]string, len(shortcuts))
+	result := make([]map[string]interface{}, len(shortcuts))
 	for i, sc := range shortcuts {
-		result[i] = map[string]string{
+		result[i] = map[string]interface{}{
 			"trigger":     sc.Trigger,
 			"replacement": sc.Replacement,
+			"enabled":     sc.Enabled,
 		}
 	}
 	return result, nil
 }
 
 // SaveShortcuts saves all shortcuts
-func (a *AppBindings) SaveShortcuts(shortcuts []map[string]string) error {
+func (a *AppBindings) SaveShortcuts(shortcuts []map[string]interface{}) error {
 	// Clear existing shortcuts in engine
 	a.imeLoop.ClearShortcuts()
 
 	// Convert and save
 	scs := make([]services.Shortcut, len(shortcuts))
 	for i, sc := range shortcuts {
-		scs[i] = services.Shortcut{
-			Trigger:     sc["trigger"],
-			Replacement: sc["replacement"],
+		trigger, _ := sc["trigger"].(string)
+		replacement, _ := sc["replacement"].(string)
+		enabled := true
+		if e, ok := sc["enabled"].(bool); ok {
+			enabled = e
 		}
-		// Add to engine
-		a.imeLoop.AddShortcut(sc["trigger"], sc["replacement"])
+		
+		scs[i] = services.Shortcut{
+			Trigger:     trigger,
+			Replacement: replacement,
+			Enabled:     enabled,
+		}
+		// Only add enabled shortcuts to engine
+		if enabled {
+			a.imeLoop.AddShortcut(trigger, replacement)
+		}
 	}
 
 	return a.settingsSvc.SaveShortcuts(scs)
@@ -191,4 +202,26 @@ func (a *AppBindings) CheckForUpdates(force bool) (*services.UpdateInfo, error) 
 // OpenReleasePage opens the release page in browser
 func (a *AppBindings) OpenReleasePage(url string) error {
 	return a.updaterSvc.OpenReleasePage(url)
+}
+
+// DownloadAndInstallUpdate downloads and installs the update
+func (a *AppBindings) DownloadAndInstallUpdate(downloadURL string) error {
+	// Download
+	zipPath, err := a.updaterSvc.DownloadUpdate(downloadURL, nil)
+	if err != nil {
+		return err
+	}
+	
+	// Create install script
+	batchPath, err := a.updaterSvc.InstallUpdate(zipPath)
+	if err != nil {
+		return err
+	}
+	
+	// Run script (will wait for app to exit, then replace exe)
+	if err := a.updaterSvc.RunUpdateScript(batchPath); err != nil {
+		return err
+	}
+	
+	return nil
 }
