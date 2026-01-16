@@ -1,0 +1,61 @@
+{
+  "enabled": true,
+  "defaultProfile": "disabled",
+  "hotkeys": {
+    "code": "Ctrl+`",
+    "italic": "Ctrl+I",
+    "link": "Ctrl+K",
+    "strikethrough": "Ctrl+Alt+S",
+    "underline": "Ctrl+U"
+  },
+  "profiles": {
+    "html": {
+      "bold": "\u003cb\u003e{text}\u003c/b\u003e",
+      "italic": "\u003ci\u003e{text}\u003c/i\u003e",
+      "underline": "\u003cu\u003e{text}\u003c/u\u003e",
+      "code": "\u003ccode\u003e{text}\u003c/code\u003e",
+      "strikethrough": "\u003cs\u003e{text}\u003c/s\u003e",
+      "link": "\u003ca href=\"url\"\u003e{text}\u003c/a\u003e"
+    },
+    "markdown": {
+      "bold": "**{text}**",
+      "italic": "*{text}*",
+      "underline": "__{text}__",
+      "code": "`{text}`",
+      "strikethrough": "~~{text}~~",
+      "link": "[{text}](url)"
+    }
+  },
+  "apps": {
+    "chrome": {
+      "profile": "markdown"
+    },
+    "discord": {
+      "profile": "markdown"
+    },
+    "discordcanary": {
+      "profile": "markdown"
+    },
+    "discordptb": {
+      "profile": "markdown"
+    },
+    "firefox": {
+      "profile": "markdown"
+    },
+    "msedge": {
+      "profile": "markdown"
+    },
+    "notion": {
+      "profile": "markdown"
+    },
+    "obsidian": {
+      "profile": "markdown"
+    },
+    "slack": {
+      "profile": "markdown"
+    },
+    "telegram": {
+      "profile": "markdown"
+    }
+  }
+}

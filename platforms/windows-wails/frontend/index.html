@@ -72,6 +72,54 @@
                 <div class="shortcut-list" id="shortcutList"></div>
             </section>
 
+            <section class="formatting-section">
+                <details>
+                    <summary>Định dạng văn bản</summary>
+                    
+                    <div class="help-text">
+                        💡 Quét chọn văn bản → nhấn phím tắt → tự động wrap markdown/html
+                    </div>
+                    
+                    <label class="checkbox-row">
+                        <input type="checkbox" id="formattingEnabled">
+                        Bật tính năng định dạng
+                    </label>
+                    
+                    <div class="formatting-settings" id="formattingSettings">
+                        <div class="setting-group">
+                            <label class="group-label">Phím tắt</label>
+                            <div id="formattingHotkeyList"></div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label class="group-label">
+                                Ứng dụng
+                                <span class="help-icon" data-tooltip="Nhấn 🎯 để tự động detect process name của app đang mở">?</span>
+                            </label>
+                            <div id="formattingAppList"></div>
+                            <div class="add-app-form">
+                                <input id="newAppName" placeholder="Nhấn 🎯 để detect" readonly data-tooltip="Process name sẽ tự động điền khi detect">
+                                <button id="detectAppBtn" type="button" class="detect-btn" data-tooltip="Nhấn → chuyển sang app → chờ 3s">🎯</button>
+                                <select id="newAppProfile">
+                                    <option value="markdown">Markdown</option>
+                                    <option value="html">HTML</option>
+                                </select>
+                                <button id="addAppBtn" type="button">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-row">
+                            <label>App khác</label>
+                            <select id="defaultFormattingProfile">
+                                <option value="disabled">Tắt</option>
+                                <option value="markdown">Markdown</option>
+                                <option value="html">HTML</option>
+                            </select>
+                        </div>
+                    </div>
+                </details>
+            </section>
+
             <section class="advanced-section">
                 <details>
                     <summary>Nâng cao</summary>

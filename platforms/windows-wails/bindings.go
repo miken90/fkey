@@ -7,17 +7,19 @@ import (
 
 // AppBindings exposes methods to the frontend via Wails bindings
 type AppBindings struct {
-	imeLoop     *core.ImeLoop
-	settingsSvc *services.SettingsService
-	updaterSvc  *services.UpdaterService
+	imeLoop       *core.ImeLoop
+	settingsSvc   *services.SettingsService
+	updaterSvc    *services.UpdaterService
+	formattingSvc *services.FormattingService
 }
 
 // NewAppBindings creates a new AppBindings instance
-func NewAppBindings(imeLoop *core.ImeLoop, settingsSvc *services.SettingsService) *AppBindings {
+func NewAppBindings(imeLoop *core.ImeLoop, settingsSvc *services.SettingsService, formattingSvc *services.FormattingService) *AppBindings {
 	return &AppBindings{
-		imeLoop:     imeLoop,
-		settingsSvc: settingsSvc,
-		updaterSvc:  services.NewUpdaterService(Version),
+		imeLoop:       imeLoop,
+		settingsSvc:   settingsSvc,
+		updaterSvc:    services.NewUpdaterService(Version),
+		formattingSvc: formattingSvc,
 	}
 }
 
@@ -224,4 +226,34 @@ func (a *AppBindings) DownloadAndInstallUpdate(downloadURL string) error {
 	}
 	
 	return nil
+}
+
+// --- Formatting Methods ---
+
+// GetFormattingConfig returns the formatting configuration
+func (a *AppBindings) GetFormattingConfig() map[string]interface{} {
+	if a.formattingSvc == nil {
+		return map[string]interface{}{
+			"enabled":        false,
+			"defaultProfile": "disabled",
+			"hotkeys":        map[string]string{},
+			"apps":           map[string]string{},
+		}
+	}
+	return a.formattingSvc.ToMap()
+}
+
+// SaveFormattingConfig saves the formatting configuration
+func (a *AppBindings) SaveFormattingConfig(config map[string]interface{}) error {
+	if a.formattingSvc == nil {
+		return nil
+	}
+	a.formattingSvc.FromMap(config)
+	return a.formattingSvc.Save()
+}
+
+// DetectCurrentApp returns the process name of the currently focused application
+// User can click "Detect" button, switch to target app, and the name will be captured
+func (a *AppBindings) DetectCurrentApp() string {
+	return core.DetectForegroundApp()
 }

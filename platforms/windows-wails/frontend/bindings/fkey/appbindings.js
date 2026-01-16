@@ -37,6 +37,15 @@ export function CheckForUpdates(force) {
 }
 
 /**
+ * DetectCurrentApp returns the process name of the currently focused application
+ * User can click "Detect" button, switch to target app, and the name will be captured
+ * @returns {$CancellablePromise<string>}
+ */
+export function DetectCurrentApp() {
+    return $Call.ByID(3058819472);
+}
+
+/**
  * DownloadAndInstallUpdate downloads and installs the update
  * @param {string} downloadURL
  * @returns {$CancellablePromise<void>}
@@ -51,6 +60,16 @@ export function DownloadAndInstallUpdate(downloadURL) {
  */
 export function GetEnabled() {
     return $Call.ByID(4139715286);
+}
+
+/**
+ * GetFormattingConfig returns the formatting configuration
+ * @returns {$CancellablePromise<{ [_: string]: any }>}
+ */
+export function GetFormattingConfig() {
+    return $Call.ByID(2794236240).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
+    }));
 }
 
 /**
@@ -105,6 +124,15 @@ export function OpenReleasePage(url) {
  */
 export function RemoveShortcut(trigger) {
     return $Call.ByID(2479821437, trigger);
+}
+
+/**
+ * SaveFormattingConfig saves the formatting configuration
+ * @param {{ [_: string]: any }} config
+ * @returns {$CancellablePromise<void>}
+ */
+export function SaveFormattingConfig(config) {
+    return $Call.ByID(4109063599, config);
 }
 
 /**

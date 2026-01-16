@@ -66,6 +66,7 @@ var (
 	globalSettingsWin application.Window
 	settingsSvc      *services.SettingsService
 	updaterSvc       *services.UpdaterService
+	formattingSvc    *services.FormattingService
 )
 
 func main() {
@@ -88,6 +89,12 @@ func main() {
 	}
 	settings := settingsSvc.Settings()
 
+	// Initialize formatting service
+	formattingSvc = services.NewFormattingService()
+	if err := formattingSvc.Load(); err != nil {
+		log.Printf("Failed to load formatting config: %v", err)
+	}
+
 	// Initialize IME loop
 	globalImeLoop, err = core.NewImeLoop()
 	if err != nil {
@@ -97,8 +104,11 @@ func main() {
 	// Apply settings to IME
 	applySettings(globalImeLoop, settings)
 
+	// Initialize format handler for text formatting feature
+	core.InitFormatHandler(formattingSvc)
+
 	// Create App bindings
-	appBindings := NewAppBindings(globalImeLoop, settingsSvc)
+	appBindings := NewAppBindings(globalImeLoop, settingsSvc, formattingSvc)
 
 	// Create embedded assets filesystem
 	frontendFS, err := fs.Sub(assets, "frontend")

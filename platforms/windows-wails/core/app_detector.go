@@ -225,3 +225,13 @@ func GetCurrentProcessName() string {
 	defer cacheMu.RUnlock()
 	return cachedProcessName
 }
+
+// DetectForegroundApp forces a fresh detection of the currently focused app
+// Used by the UI detect button
+func DetectForegroundApp() string {
+	hwnd, _, _ := procGetForegroundWindow.Call()
+	if hwnd == 0 {
+		return ""
+	}
+	return getProcessName(hwnd)
+}
