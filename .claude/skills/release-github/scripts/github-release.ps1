@@ -21,11 +21,9 @@ $OutputEncoding = [System.Text.Encoding]::ASCII
 
 # Auto-detect project root if not specified
 if (-not $ProjectRoot) {
-    $ProjectRoot = (Get-Item $PSScriptRoot).Parent.Parent.Parent.FullName
-    # Fallback: look for gonhanh.org in common locations
-    if (-not (Test-Path "$ProjectRoot\platforms\windows-wails\build.ps1")) {
-        $ProjectRoot = "C:\WORKSPACES\2026\gonhanh.org"
-    }
+    # Script is at .claude/skills/release-github/scripts/github-release.ps1
+    # Need to go up 4 levels to reach project root
+    $ProjectRoot = (Get-Item $PSScriptRoot).Parent.Parent.Parent.Parent.FullName
 }
 
 $WailsDir = Join-Path $ProjectRoot "platforms\windows-wails"
