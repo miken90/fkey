@@ -9,15 +9,24 @@ import (
 
 // Format handler delays (milliseconds)
 const (
-	ClipboardCopyDelay   = 50  // Delay after Ctrl+C to let clipboard update
+	ClipboardCopyDelay   = 50  // Fallback delay if polling fails
 	ClipboardPasteDelay  = 30  // Delay after paste for restoration
-	ClipboardRestoreWait = 100 // Wait before restoring original clipboard
+	ClipboardRestoreWait = 150 // Wait before restoring original clipboard
+
+	// L/R modifier virtual key codes
+	VK_LCONTROL = 0xA2
+	VK_RCONTROL = 0xA3
+	VK_LSHIFT   = 0xA0
+	VK_RSHIFT   = 0xA1
+	VK_LMENU    = 0xA4
+	VK_RMENU    = 0xA5
 )
 
 var (
 	formatHandler     *FormatHandler
 	formatHandlerOnce sync.Once
 	formatHandlerMu   sync.RWMutex
+	formatOpMu        sync.Mutex // Serializes all formatting operations
 )
 
 // FormatHandler handles text formatting via clipboard operations
@@ -235,8 +244,12 @@ func KeyCodeToString(keyCode uint16) string {
 }
 
 // HandleFormatHotkey processes a format hotkey with clipboard flow
-// Flow: save clipboard → release modifiers → Ctrl+C → get text → format → set clipboard → Ctrl+V → restore
+// Flow: save clipboard → release modifiers → Ctrl+C → poll clipboard → format → set clipboard → Ctrl+V → restore
 func (h *FormatHandler) HandleFormatHotkey(formatType, profile string) {
+	// Serialize all formatting operations to prevent race conditions
+	formatOpMu.Lock()
+	defer formatOpMu.Unlock()
+
 	h.mu.RLock()
 	if !h.enabled || h.service == nil {
 		h.mu.RUnlock()
@@ -245,82 +258,87 @@ func (h *FormatHandler) HandleFormatHotkey(formatType, profile string) {
 	svc := h.service
 	h.mu.RUnlock()
 
-	// Step 1: Save original clipboard content
-	originalClipboard, _ := GetClipboardText()
+	// Step 1: Get clipboard sequence number before copy
+	seqBefore := GetClipboardSequenceNumber()
 
-	// Step 1.5: Release all modifier keys (Alt, Shift, Ctrl) so Ctrl+C works cleanly
+	// Step 2: Save original clipboard content (with retry)
+	originalClipboard, _ := GetClipboardTextRetry()
+	wasEmpty := originalClipboard == ""
+
+	// Step 3: Release all modifier keys (including L/R variants)
 	ReleaseAllModifiers()
 
-	// Step 2: Simulate Ctrl+C to copy selected text
+	// Step 4: Simulate Ctrl+C to copy selected text
 	SimulateCtrlC()
 
-	// Step 3: Wait for clipboard to update
-	time.Sleep(ClipboardCopyDelay * time.Millisecond)
+	// Step 5: Wait for clipboard to update using sequence polling (more reliable than fixed delay)
+	clipboardChanged := WaitClipboardChange(seqBefore)
+	if !clipboardChanged {
+		// Fallback: use fixed delay
+		time.Sleep(ClipboardCopyDelay * time.Millisecond)
+	}
 
-	// Step 4: Get selected text from clipboard
-	selectedText, err := GetClipboardText()
+	// Step 6: Get selected text from clipboard (with retry)
+	selectedText, err := GetClipboardTextRetry()
 	if err != nil {
+		restoreClipboard(originalClipboard, wasEmpty)
 		return
 	}
 
-	// Step 5: Check if selection is valid (not empty and different from original)
+	// Step 7: Check if selection is valid (not empty and different from original)
 	if selectedText == "" || selectedText == originalClipboard {
+		restoreClipboard(originalClipboard, wasEmpty)
 		return
 	}
 
-	// Step 6: Apply formatting
+	// Step 8: Apply formatting
 	formattedText := svc.Format(formatType, selectedText, profile)
 
-	// Step 7: Set formatted text to clipboard
-	if err := SetClipboardText(formattedText); err != nil {
+	// Step 9: Set formatted text to clipboard (with retry)
+	if err := SetClipboardTextRetry(formattedText); err != nil {
+		restoreClipboard(originalClipboard, wasEmpty)
 		return
 	}
 
-	// Step 8: Simulate Ctrl+V to paste
+	// Step 10: Simulate Ctrl+V to paste
 	SimulateCtrlV()
 
-	// Step 9: Wait and restore original clipboard
-	go func() {
-		time.Sleep(ClipboardRestoreWait * time.Millisecond)
-		if originalClipboard != "" {
-			SetClipboardText(originalClipboard)
-		}
-	}()
+	// Step 11: Wait and restore original clipboard synchronously
+	time.Sleep(ClipboardRestoreWait * time.Millisecond)
+	restoreClipboard(originalClipboard, wasEmpty)
 }
 
-// ReleaseAllModifiers releases Ctrl, Alt, Shift keys if they are down
+// restoreClipboard restores the original clipboard content or clears it
+func restoreClipboard(original string, wasEmpty bool) {
+	if wasEmpty {
+		ClearClipboard()
+	} else {
+		SetClipboardTextRetry(original)
+	}
+}
+
+// ReleaseAllModifiers releases Ctrl, Alt, Shift keys (including L/R variants) if they are down
 func ReleaseAllModifiers() {
 	inputs := []INPUT{}
 	
-	if isKeyDown(VK_CONTROL) {
-		inputs = append(inputs, INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         VK_CONTROL,
-				DwFlags:     KEYEVENTF_KEYUP,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		})
+	// Release all modifier variants
+	keysToCheck := []uint16{
+		VK_CONTROL, VK_LCONTROL, VK_RCONTROL,
+		VK_SHIFT, VK_LSHIFT, VK_RSHIFT,
+		VK_MENU, VK_LMENU, VK_RMENU,
 	}
-	if isKeyDown(VK_MENU) {
-		inputs = append(inputs, INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         VK_MENU,
-				DwFlags:     KEYEVENTF_KEYUP,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		})
-	}
-	if isKeyDown(VK_SHIFT) {
-		inputs = append(inputs, INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         VK_SHIFT,
-				DwFlags:     KEYEVENTF_KEYUP,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		})
+	
+	for _, vk := range keysToCheck {
+		if isKeyDown(int(vk)) {
+			inputs = append(inputs, INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         vk,
+					DwFlags:     KEYEVENTF_KEYUP,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			})
+		}
 	}
 	
 	if len(inputs) > 0 {

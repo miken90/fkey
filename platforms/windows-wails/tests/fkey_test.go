@@ -617,15 +617,15 @@ func TestDetermineMethod(t *testing.T) {
 		{"vscode", core.MethodSlow},
 		{"cursor", core.MethodSlow},
 		{"slack", core.MethodSlow},
-		{"discord", core.MethodFast},
+		{"discord", core.MethodAtomic},
 		{"notion", core.MethodSlow},
 		{"chrome", core.MethodSlow},
 		{"msedge", core.MethodSlow},
 		{"firefox", core.MethodSlow},
 		{"windowsterminal", core.MethodSlow},
 		{"powershell", core.MethodSlow},
-		{"wave", core.MethodExtraSlow},
-		{"waveterm", core.MethodExtraSlow},
+		{"wave", core.MethodSlow},
+		{"waveterm", core.MethodSlow},
 		{"claude", core.MethodSlow},
 		// Fast apps
 		{"notepad", core.MethodFast},
@@ -654,33 +654,79 @@ func TestInjectionMethodConstants(t *testing.T) {
 	if core.MethodSlow != 1 {
 		t.Errorf("MethodSlow = %d, want 1", core.MethodSlow)
 	}
-	if core.MethodExtraSlow != 2 {
-		t.Errorf("MethodExtraSlow = %d, want 2", core.MethodExtraSlow)
+	if core.MethodAtomic != 2 {
+		t.Errorf("MethodAtomic = %d, want 2", core.MethodAtomic)
 	}
 }
 
 func TestTextSenderDelays(t *testing.T) {
-	// Optimized delays for better responsiveness
-	if core.SlowModeKeyDelay != 0 {
-		t.Errorf("SlowModeKeyDelay = %d, want 0", core.SlowModeKeyDelay)
+	// Delay settings for slow mode
+	if core.SlowModeKeyDelay != 5 {
+		t.Errorf("SlowModeKeyDelay = %d, want 5", core.SlowModeKeyDelay)
 	}
-	if core.SlowModePreDelay != 0 {
-		t.Errorf("SlowModePreDelay = %d, want 0", core.SlowModePreDelay)
+	if core.SlowModePreDelay != 20 {
+		t.Errorf("SlowModePreDelay = %d, want 20", core.SlowModePreDelay)
 	}
-	if core.SlowModePostDelay != 0 {
-		t.Errorf("SlowModePostDelay = %d, want 0", core.SlowModePostDelay)
+	if core.SlowModePostDelay != 15 {
+		t.Errorf("SlowModePostDelay = %d, want 15", core.SlowModePostDelay)
 	}
-	if core.FastModeDelay != 0 {
-		t.Errorf("FastModeDelay = %d, want 0", core.FastModeDelay)
+	if core.FastModeDelay != 5 {
+		t.Errorf("FastModeDelay = %d, want 5", core.FastModeDelay)
 	}
-	// Extra slow mode for problematic apps
-	if core.ExtraSlowModeKeyDelay != 5 {
-		t.Errorf("ExtraSlowModeKeyDelay = %d, want 5", core.ExtraSlowModeKeyDelay)
+}
+
+// ==================== Clipboard Constants Tests ====================
+
+func TestClipboardRetryConstants(t *testing.T) {
+	if core.ClipboardMaxRetries != 5 {
+		t.Errorf("ClipboardMaxRetries = %d, want 5", core.ClipboardMaxRetries)
 	}
-	if core.ExtraSlowModePreDelay != 10 {
-		t.Errorf("ExtraSlowModePreDelay = %d, want 10", core.ExtraSlowModePreDelay)
+	// ClipboardRetryDelay should be 20ms
+	if core.ClipboardRetryDelay != 20*1e6 { // 20ms in nanoseconds
+		t.Errorf("ClipboardRetryDelay = %v, want 20ms", core.ClipboardRetryDelay)
 	}
-	if core.ExtraSlowModePostDelay != 8 {
-		t.Errorf("ExtraSlowModePostDelay = %d, want 8", core.ExtraSlowModePostDelay)
+	// ClipboardPollTimeout should be 600ms
+	if core.ClipboardPollTimeout != 600*1e6 {
+		t.Errorf("ClipboardPollTimeout = %v, want 600ms", core.ClipboardPollTimeout)
+	}
+	// ClipboardPollInterval should be 10ms
+	if core.ClipboardPollInterval != 10*1e6 {
+		t.Errorf("ClipboardPollInterval = %v, want 10ms", core.ClipboardPollInterval)
+	}
+}
+
+// ==================== Format Handler Constants Tests ====================
+
+func TestFormatHandlerModifierConstants(t *testing.T) {
+	// L/R modifier virtual key codes
+	if core.VK_LCONTROL != 0xA2 {
+		t.Errorf("VK_LCONTROL = 0x%X, want 0xA2", core.VK_LCONTROL)
+	}
+	if core.VK_RCONTROL != 0xA3 {
+		t.Errorf("VK_RCONTROL = 0x%X, want 0xA3", core.VK_RCONTROL)
+	}
+	if core.VK_LSHIFT != 0xA0 {
+		t.Errorf("VK_LSHIFT = 0x%X, want 0xA0", core.VK_LSHIFT)
+	}
+	if core.VK_RSHIFT != 0xA1 {
+		t.Errorf("VK_RSHIFT = 0x%X, want 0xA1", core.VK_RSHIFT)
+	}
+	if core.VK_LMENU != 0xA4 {
+		t.Errorf("VK_LMENU = 0x%X, want 0xA4", core.VK_LMENU)
+	}
+	if core.VK_RMENU != 0xA5 {
+		t.Errorf("VK_RMENU = 0x%X, want 0xA5", core.VK_RMENU)
+	}
+}
+
+func TestFormatHandlerDelays(t *testing.T) {
+	if core.ClipboardCopyDelay != 50 {
+		t.Errorf("ClipboardCopyDelay = %d, want 50", core.ClipboardCopyDelay)
+	}
+	if core.ClipboardPasteDelay != 30 {
+		t.Errorf("ClipboardPasteDelay = %d, want 30", core.ClipboardPasteDelay)
+	}
+	if core.ClipboardRestoreWait != 150 {
+		t.Errorf("ClipboardRestoreWait = %d, want 150", core.ClipboardRestoreWait)
 	}
 }
