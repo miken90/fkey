@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/miken90/fkey/releases/latest">
+  <a href="https://github.com/miken90/fkey/releases/latest" target="_blank">
     <img src="https://img.shields.io/badge/📥_Tải_về-FKey_Portable-success?style=for-the-badge" alt="Download" />
   </a>
 </p>
@@ -28,18 +28,18 @@
 <table>
   <tr>
     <td>
-      <a href="https://vibecodecheap.com/?ref=fkey">
+      <a href="https://vibecodecheap.com/?ref=SAUDF092" target="_blank">
         <img src="assets/vibecodecheap-banner.png" alt="VibeCodeCheap"/>
       </a>
     </td>
   </tr>
   <tr>
     <td>
-      <strong><a href="https://vibecodecheap.com/?ref=SAUDF092">VibeCodeCheap</a> - AI Coding Subscriptions up to 80% OFF</strong><br/><br/>
+      <strong><a href="https://vibecodecheap.com/?ref=SAUDF092" target="_blank">VibeCodeCheap</a> - AI Coding Subscriptions up to 80% OFF</strong><br/><br/>
       🎯 <strong>Full support for Amp Code & Claude Code</strong><br/>
       💰 <strong>$7.99/mo</strong> (vs $20 Claude Pro) | <strong>$29.99/mo</strong> (vs $100 Max 5x)<br/>
       ✅ Claude Opus 4.5, Sonnet 4.5, Gemini 3 Pro | 99.9% Uptime<br/><br/>
-      <a href="https://vibecodecheap.com/?ref=SAUDF092"><strong>👉 Subscribe Now</strong></a>
+      <a href="https://vibecodecheap.com/?ref=SAUDF092" target="_blank"><strong>👉 Subscribe Now</strong></a>
     </td>
   </tr>
 </table>
@@ -70,7 +70,7 @@
 - WebView2 Runtime (thường có sẵn trên Windows 10/11)
 
 ### Cài đặt
-1. Tải [`FKey-vX.X.X-portable.zip`](https://github.com/miken90/fkey/releases/latest) từ GitHub Releases
+1. Tải <a href="https://github.com/miken90/fkey/releases/latest" target="_blank"><code>FKey-vX.X.X-portable.zip</code></a> từ GitHub Releases
 2. Giải nén vào thư mục bất kỳ
 3. Chạy `FKey.exe`
 4. App chạy trong system tray (khay hệ thống)
@@ -145,7 +145,7 @@ Cảm ơn bạn đã ủng hộ! 💖
 
 ## 🙏 Lời cảm ơn
 
-FKey được phát triển dựa trên nền tảng của dự án **[Gõ Nhanh](https://github.com/khaphanspace/gonhanh.org)** bởi **Kha Phan**.
+FKey được phát triển dựa trên nền tảng của dự án <strong><a href="https://github.com/khaphanspace/gonhanh.org" target="_blank">Gõ Nhanh</a></strong> bởi <strong>Kha Phan</strong>.
 
 Cảm ơn Kha Phan và cộng đồng Gõ Nhanh đã tạo ra engine xử lý tiếng Việt tuyệt vời. FKey tiếp nối sứ mệnh mang đến bộ gõ chất lượng cao, miễn phí cho người Việt.
 
