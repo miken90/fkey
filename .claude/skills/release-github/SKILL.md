@@ -1,6 +1,9 @@
 ---
 name: release-github
-description: Build and upload releases to GitHub Releases using standardized build scripts. Automates version tagging, portable package creation, and release publishing. Use when releasing new versions or creating distribution packages.
+description: >-
+  Build and upload releases to GitHub Releases using standardized build scripts.
+  Automates version tagging, portable package creation, and release publishing.
+  Use when releasing new versions or creating distribution packages.
 license: MIT
 version: 3.0.0
 ---
