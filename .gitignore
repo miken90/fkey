@@ -56,6 +56,7 @@ obj/
 .opencode/
 plans/
 history/
+docs/
 CLAUDE.md
 
 repomix-output.*

@@ -29,9 +29,11 @@
   <tr>
     <td>
       <a href="https://vibecodecheap.com/?ref=fkey">
-        <img src="assets/vibecodecheap-banner.jpg" alt="VibeCodeCheap" width="200"/>
+        <img src="assets/vibecodecheap-banner.png" alt="VibeCodeCheap"/>
       </a>
     </td>
+  </tr>
+  <tr>
     <td>
       <strong><a href="https://vibecodecheap.com/?ref=SAUDF092">VibeCodeCheap</a> - AI Coding Subscriptions up to 80% OFF</strong><br/><br/>
       🎯 <strong>Full support for Amp Code & Claude Code</strong><br/>
@@ -84,6 +86,14 @@
 ---
 
 ## 🔧 Dành cho Developer
+Kiểm tra guide [DEVELOPMENT.md](docs/DEVELOPMENT.md) để biết thêm thông tin.
+
+### Yêu cầu
+
+- Rust
+- Go
+- Wails v3
+- WebView2 Runtime
 
 ### Tech Stack
 
