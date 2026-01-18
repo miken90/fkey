@@ -201,15 +201,18 @@ try {
         Write-Host "`nBuilding release (single-exe with embedded DLL)..." -ForegroundColor Yellow
         
         # Add optimization flags for release
+        # -s: strip symbol table, -w: strip DWARF debug info
+        # -H=windowsgui: Windows GUI app (no console)
         $ldflags = "-s -w -H=windowsgui -X main.Version=$Version"
         
         # Build with Go directly (wails3 build has issues with ldflags)
-        # Use -tags production to disable DevTools in release
+        # -tags production: disable DevTools in release
+        # -trimpath: remove file system paths from binary
         # DLL is embedded via go:embed in dll_embed.go
         $env:CGO_ENABLED = "1"
-        go build -tags production -ldflags="$ldflags" -o "build\bin\FKey.exe" .
+        go build -tags production -ldflags="$ldflags" -trimpath -o "build\bin\FKey.exe" .
         
-        # Output directory (no DLL copy needed - it's embedded!)
+        # Output directory
         $OutputDir = Join-Path $ProjectDir "build\bin"
         if (!(Test-Path $OutputDir)) {
             New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
@@ -219,7 +222,6 @@ try {
         $OldDll = Join-Path $OutputDir "gonhanh_core.dll"
         if (Test-Path $OldDll) {
             Remove-Item $OldDll -Force
-            Write-Host "Removed old DLL from output (now embedded in exe)." -ForegroundColor DarkGray
         }
         
         # Check size
@@ -228,24 +230,12 @@ try {
             $Size = (Get-Item $ExePath).Length / 1MB
             Write-Host "`nBuild complete!" -ForegroundColor Green
             Write-Host "Version: $Version" -ForegroundColor Cyan
-            Write-Host "Executable size: $([math]::Round($Size, 2)) MB (DLL embedded)" -ForegroundColor Cyan
-            
-            # UPX compression (optional)
-            $UPX = Get-Command upx -ErrorAction SilentlyContinue
-            if ($UPX) {
-                Write-Host "`nApplying UPX compression..." -ForegroundColor Yellow
-                upx --best $ExePath 2>$null
-                $CompressedSize = (Get-Item $ExePath).Length / 1MB
-                Write-Host "Compressed size: $([math]::Round($CompressedSize, 2)) MB" -ForegroundColor Cyan
-            } else {
-                Write-Host "`nTip: Install UPX for smaller binary (winget install upx)" -ForegroundColor DarkGray
-            }
+            Write-Host "Executable size: $([math]::Round($Size, 2)) MB" -ForegroundColor Cyan
             
             # Code signing
             Sign-Binary $ExePath
             
             Write-Host "`nOutput: $ExePath" -ForegroundColor Green
-            Write-Host "Distribution: Single file, no DLL needed!" -ForegroundColor Green
         }
     }
     else {
