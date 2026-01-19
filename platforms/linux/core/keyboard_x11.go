@@ -234,7 +234,7 @@ func (h *KeyboardHandler) sendKey(keycode xproto.Keycode, release bool) {
 		eventType = byte(xproto.KeyRelease)
 	}
 	
-	xtest.FakeInput(h.conn, eventType, keycode, 0, h.root, 0, 0, 0)
+	xtest.FakeInput(h.conn, eventType, byte(keycode), 0, h.root, 0, 0, 0)
 	h.conn.Sync()
 }
 
