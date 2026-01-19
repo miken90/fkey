@@ -43,13 +43,16 @@ func (s *TextSender) sendWithXdotool(text string, backspaces int) error {
 	// Small delay to ensure original key has been processed
 	time.Sleep(10 * time.Millisecond)
 
-	// Send backspaces one at a time (more reliable than multiple keys in one command)
-	for i := 0; i < backspaces; i++ {
-		cmd := exec.Command("xdotool", "key", "BackSpace")
+	// Send backspaces - use multiple key arguments in one command
+	if backspaces > 0 {
+		args := []string{"key"}
+		for i := 0; i < backspaces; i++ {
+			args = append(args, "BackSpace")
+		}
+		cmd := exec.Command("xdotool", args...)
 		if err := cmd.Run(); err != nil {
 			log.Printf("xdotool backspace error: %v", err)
 		}
-		time.Sleep(5 * time.Millisecond)
 	}
 
 	// Send text using type (handles Unicode)

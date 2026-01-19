@@ -99,6 +99,7 @@ type KeyboardHandler struct {
 	textSender *TextSender
 	running    bool
 	evChan     chan hook.Event
+	injecting  bool // Flag to ignore events during text injection
 }
 
 // NewKeyboardHandler creates keyboard handler using gohook
@@ -147,6 +148,11 @@ func (h *KeyboardHandler) Stop() {
 }
 
 func (h *KeyboardHandler) handleKeyEvent(ev hook.Event) {
+	// Skip if we're currently injecting text (avoid feedback loop)
+	if h.injecting {
+		return
+	}
+
 	// Debug: log all key events
 	log.Printf("[DEBUG] Key event: rawcode=%d, keychar=%c (%d), mask=0x%x",
 		ev.Rawcode, ev.Keychar, ev.Keychar, ev.Mask)
@@ -199,7 +205,11 @@ func (h *KeyboardHandler) handleKeyEvent(ev hook.Event) {
 		// Add 1 to backspace count to delete the original keystroke
 		totalBackspace := int(result.Backspace) + 1
 		log.Printf("Sending: backspace=%d (+1 for original key), text=%q", totalBackspace, result.Text)
+		
+		// Set injecting flag to ignore feedback events
+		h.injecting = true
 		h.sendText(result.Text, totalBackspace)
+		h.injecting = false
 	}
 }
 
