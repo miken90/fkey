@@ -35,7 +35,7 @@ func main() {
 	bridge.SetEnabled(cfg.Enabled)
 	bridge.SetModernTone(cfg.ModernTone)
 
-	// Initialize X11 keyboard handler
+	// Initialize global keyboard hook (using gohook)
 	kbd, err := core.NewKeyboardHandler(bridge)
 	if err != nil {
 		log.Fatalf("Failed to init keyboard handler: %v", err)
