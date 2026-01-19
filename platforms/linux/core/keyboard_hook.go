@@ -140,21 +140,29 @@ func (h *KeyboardHandler) Stop() {
 }
 
 func (h *KeyboardHandler) handleKeyEvent(ev hook.Event) {
+	// Debug: log all key events
+	log.Printf("[DEBUG] Key event: rawcode=%d, keychar=%c (%d), mask=0x%x",
+		ev.Rawcode, ev.Keychar, ev.Keychar, ev.Mask)
+
 	// Map rawcode to internal code
 	internalCode, ok := rawcodeToInternal[ev.Rawcode]
 	if !ok {
+		log.Printf("[DEBUG] Unmapped rawcode: %d", ev.Rawcode)
 		return // Not a key we care about
 	}
 
+	log.Printf("[DEBUG] Mapped to internal code: %d", internalCode)
+
 	// Get modifier states from gohook
 	// ev.Mask contains modifier info
-	shift := (ev.Mask & 0x01) != 0  // Shift
-	ctrl := (ev.Mask & 0x04) != 0   // Ctrl
+	shift := (ev.Mask & 0x01) != 0 // Shift
+	ctrl := (ev.Mask & 0x04) != 0  // Ctrl
 	// capsLock detection via gohook is limited, assume false for now
 	capsLock := false
 
 	// Skip if Ctrl is pressed (except already handled by hotkey)
 	if ctrl {
+		log.Printf("[DEBUG] Ctrl pressed, clearing buffer")
 		h.bridge.Clear()
 		return
 	}
@@ -164,16 +172,27 @@ func (h *KeyboardHandler) handleKeyEvent(ev hook.Event) {
 		shift = true
 	}
 
+	log.Printf("[DEBUG] Processing key: code=%d, shift=%v, caps=%v", internalCode, shift, capsLock)
+
 	// Process through IME
 	result := h.bridge.ProcessKey(internalCode, capsLock, ctrl, shift)
 	if result == nil {
+		log.Printf("[DEBUG] IME returned nil (no action)")
 		return
 	}
 
+	log.Printf("[DEBUG] IME result: action=%d, backspace=%d, text=%q",
+		result.Action, result.Backspace, result.Text)
+
 	// Send replacement text
+	// IMPORTANT: gohook doesn't suppress original keystrokes, so the original
+	// character has already been typed. We need to add 1 extra backspace to
+	// delete it before sending our replacement text.
 	if result.Action == ActionSend || result.Action == ActionRestore {
-		log.Printf("Sending: backspace=%d, text=%q", result.Backspace, result.Text)
-		h.sendText(result.Text, int(result.Backspace))
+		// Add 1 to backspace count to delete the original keystroke
+		totalBackspace := int(result.Backspace) + 1
+		log.Printf("Sending: backspace=%d (+1 for original key), text=%q", totalBackspace, result.Text)
+		h.sendText(result.Text, totalBackspace)
 	}
 }
 
