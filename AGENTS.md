@@ -61,15 +61,31 @@ powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo build -
 ## Go/Wails Commands
 
 ```bash
-# Build dev
+# Build dev (uses version from git tag)
 powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 2>&1"
 
-# Build release with version
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 -Release -Version '2.0.0' 2>&1"
+# Build release (uses version from git tag)
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 -Release 2>&1"
 
 # Run Go tests
 powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; go test ./... 2>&1"
 ```
+
+### ⚠️ Version Management (IMPORTANT)
+
+**Before building, ALWAYS verify version is correct:**
+
+1. Check current git tag: `git describe --tags --abbrev=0`
+2. Verify `winres.json` matches the tag version in these fields:
+   - `RT_MANIFEST.#1.0409.identity.version` (e.g., "2.0.9.0")
+   - `RT_VERSION.#1.0409.fixed.file_version` (e.g., "2.0.9.0")
+   - `RT_VERSION.#1.0409.fixed.product_version` (e.g., "2.0.9.0")
+   - `RT_VERSION.#1.0409.info.0409.FileVersion` (e.g., "2.0.9")
+   - `RT_VERSION.#1.0409.info.0409.ProductVersion` (e.g., "2.0.9")
+
+3. If mismatched, update `winres.json` before building
+
+The build script reads version from git tag and injects via `-ldflags`, but `winres.json` must also be updated for Windows executable properties.
 
 ---
 

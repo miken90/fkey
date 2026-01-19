@@ -20,11 +20,14 @@ const (
 	MB_OK              = 0x00000000
 	MB_OKCANCEL        = 0x00000001
 	MB_YESNO           = 0x00000004
+	MB_YESNOCANCEL     = 0x00000003
 	MB_ICONINFORMATION = 0x00000040
 	MB_ICONWARNING     = 0x00000030
 	MB_ICONQUESTION    = 0x00000020
 	IDYES              = 6
+	IDNO               = 7
 	IDOK               = 1
+	IDCANCEL           = 2
 )
 
 var (
@@ -214,17 +217,64 @@ func checkForUpdatesBackground() {
 		return
 	}
 
-	if info.Available {
+	if info.Available && info.DownloadURL != "" {
 		log.Printf("Update available: %s -> %s", info.CurrentVersion, info.LatestVersion)
-		// Show update notification dialog
+		// Show update notification dialog with auto-update option
 		result := showMessageBox("Có phiên bản mới!",
-			fmt.Sprintf("Phiên bản mới: %s\nPhiên bản hiện tại: %s\n\nBạn có muốn mở trang tải về?",
+			fmt.Sprintf("Phiên bản mới: %s\nPhiên bản hiện tại: %s\n\nBạn có muốn tự động cập nhật?\n\n(Chọn No để mở trang tải về)",
 				info.LatestVersion, info.CurrentVersion),
-			MB_YESNO|MB_ICONINFORMATION)
+			MB_YESNOCANCEL|MB_ICONINFORMATION)
 		if result == IDYES {
+			performAutoUpdate(info.DownloadURL)
+		} else if result == IDNO {
 			updaterSvc.OpenReleasePage(info.ReleaseURL)
 		}
 	}
+}
+
+// performAutoUpdate downloads and installs update automatically
+func performAutoUpdate(downloadURL string) {
+	log.Printf("Starting auto-update from: %s", downloadURL)
+	
+	// Show downloading message
+	showMessageBox("Đang tải về...", 
+		"FKey đang tải bản cập nhật.\nVui lòng đợi...", 
+		MB_OK|MB_ICONINFORMATION)
+	
+	// Download update
+	zipPath, err := updaterSvc.DownloadUpdate(downloadURL, nil)
+	if err != nil {
+		log.Printf("Download failed: %v", err)
+		showMessageBox("Lỗi cập nhật", 
+			"Không thể tải bản cập nhật.\n\n"+err.Error(), 
+			MB_OK|MB_ICONWARNING)
+		return
+	}
+	log.Printf("Downloaded to: %s", zipPath)
+	
+	// Install update (creates batch script)
+	batchPath, err := updaterSvc.InstallUpdate(zipPath)
+	if err != nil {
+		log.Printf("Install failed: %v", err)
+		showMessageBox("Lỗi cập nhật", 
+			"Không thể cài đặt bản cập nhật.\n\n"+err.Error(), 
+			MB_OK|MB_ICONWARNING)
+		return
+	}
+	log.Printf("Update script created: %s", batchPath)
+	
+	// Run update script and quit app
+	if err := updaterSvc.RunUpdateScript(batchPath); err != nil {
+		log.Printf("Failed to run update script: %v", err)
+		showMessageBox("Lỗi cập nhật", 
+			"Không thể chạy script cập nhật.\n\n"+err.Error(), 
+			MB_OK|MB_ICONWARNING)
+		return
+	}
+	
+	// Quit app to allow update
+	log.Printf("Quitting for update...")
+	globalApp.Quit()
 }
 
 func toggleIME() {
@@ -330,13 +380,15 @@ func createTrayMenu(enabled bool) *application.Menu {
 					MB_OK|MB_ICONWARNING)
 				return
 			}
-			if info.Available {
+			if info.Available && info.DownloadURL != "" {
 				log.Printf("Update available: %s", info.LatestVersion)
 				result := showMessageBox("Có phiên bản mới!", 
-					fmt.Sprintf("Phiên bản mới: %s\nPhiên bản hiện tại: %s\n\nBạn có muốn mở trang tải về?", 
+					fmt.Sprintf("Phiên bản mới: %s\nPhiên bản hiện tại: %s\n\nBạn có muốn tự động cập nhật?\n\n(Chọn No để mở trang tải về)", 
 						info.LatestVersion, info.CurrentVersion),
-					MB_YESNO|MB_ICONQUESTION)
+					MB_YESNOCANCEL|MB_ICONQUESTION)
 				if result == IDYES {
+					performAutoUpdate(info.DownloadURL)
+				} else if result == IDNO {
 					updaterSvc.OpenReleasePage(info.ReleaseURL)
 				}
 			} else {
