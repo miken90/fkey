@@ -15,11 +15,15 @@ void ime_esc_restore(bool enabled);
 void ime_clear(void);
 void ime_free(void* ptr);
 
+// Result struct must match Rust's #[repr(C)] layout exactly:
+// - chars[64] comes FIRST (256 bytes)
+// - then action, backspace, count, flags (4 bytes)
 typedef struct {
+    uint32_t chars[64];  // UTF-32 codepoints
     uint8_t action;      // 0=None, 1=Send, 2=Restore
-    uint8_t backspace;
-    uint32_t chars[64];
-    uint8_t count;
+    uint8_t backspace;   // Number of backspaces
+    uint8_t count;       // Number of valid chars
+    uint8_t flags;       // Flags (bit 0 = key_consumed)
 } ImeResult;
 
 ImeResult* ime_key(uint16_t key, bool caps, bool ctrl);
