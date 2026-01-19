@@ -8,33 +8,84 @@ import (
 	"time"
 )
 
+// InjectionMethod determines how text is injected
+type InjectionMethod int
+
+const (
+	MethodUInput  InjectionMethod = iota // Direct uinput (fastest, no process spawn)
+	MethodXdotool                        // xdotool fallback (reliable Unicode)
+)
+
 // TextSender handles Unicode text injection on Linux
-// Uses xdotool as fallback for reliable Unicode support
+// Uses uinput for speed, falls back to xdotool for reliability
 type TextSender struct {
-	useXdotool bool
+	method       InjectionMethod
+	uinputDevice *UInputDevice
+	useXdotool   bool
 }
 
-// NewTextSender creates a text sender
+// NewTextSender creates a text sender with best available method
 func NewTextSender() *TextSender {
-	// Check if xdotool is available
-	_, err := exec.LookPath("xdotool")
-	useXdotool := err == nil
+	ts := &TextSender{}
 
-	if useXdotool {
-		log.Println("Using xdotool for text injection")
-	} else {
-		log.Println("xdotool not found, using XTest (limited Unicode)")
+	// Try uinput first (fastest)
+	if IsUInputAvailable() {
+		device, err := GetUInputDevice()
+		if err == nil {
+			ts.uinputDevice = device
+			ts.method = MethodUInput
+			log.Println("Using uinput for text injection (fastest)")
+			return ts
+		}
+		log.Printf("uinput init failed: %v, falling back to xdotool", err)
 	}
 
-	return &TextSender{useXdotool: useXdotool}
+	// Fall back to xdotool
+	_, err := exec.LookPath("xdotool")
+	if err == nil {
+		ts.useXdotool = true
+		ts.method = MethodXdotool
+		log.Println("Using xdotool for text injection (fallback)")
+		return ts
+	}
+
+	log.Println("WARNING: No text injection method available (need uinput access or xdotool)")
+	return ts
 }
 
 // SendText sends replacement text with backspaces
 func (s *TextSender) SendText(text string, backspaces int) error {
-	if s.useXdotool {
+	switch s.method {
+	case MethodUInput:
+		return s.sendWithUInput(text, backspaces)
+	case MethodXdotool:
+		return s.sendWithXdotool(text, backspaces)
+	default:
+		log.Printf("No injection method available for: %s", text)
+		return nil
+	}
+}
+
+func (s *TextSender) sendWithUInput(text string, backspaces int) error {
+	log.Printf("[DEBUG TextSender] uinput: backspaces=%d, text=%q", backspaces, text)
+
+	if s.uinputDevice == nil {
+		// Try to reinitialize
+		device, err := GetUInputDevice()
+		if err != nil {
+			log.Printf("uinput unavailable, falling back to xdotool: %v", err)
+			return s.sendWithXdotool(text, backspaces)
+		}
+		s.uinputDevice = device
+	}
+
+	err := s.uinputDevice.SendText(text, backspaces)
+	if err != nil {
+		log.Printf("uinput failed, falling back to xdotool: %v", err)
 		return s.sendWithXdotool(text, backspaces)
 	}
-	return s.sendWithXTest(text, backspaces)
+
+	return nil
 }
 
 func (s *TextSender) sendWithXdotool(text string, backspaces int) error {
@@ -69,23 +120,24 @@ func (s *TextSender) sendWithXdotool(text string, backspaces int) error {
 	return nil
 }
 
-func (s *TextSender) sendWithXTest(text string, backspaces int) error {
-	// Fallback: use XTest for basic keys only
-	// This won't work well for Vietnamese characters
-	log.Printf("XTest injection not fully implemented for: %s", text)
-	return nil
-}
-
 // SendBackspaces sends only backspace keys
 func (s *TextSender) SendBackspaces(count int) error {
 	if count <= 0 {
 		return nil
 	}
 
-	if s.useXdotool {
-		bsKeys := strings.Repeat("BackSpace ", count)
-		cmd := exec.Command("xdotool", "key", "--clearmodifiers", strings.TrimSpace(bsKeys))
-		return cmd.Run()
+	switch s.method {
+	case MethodUInput:
+		if s.uinputDevice != nil {
+			return s.uinputDevice.SendBackspaces(count)
+		}
+		fallthrough
+	case MethodXdotool:
+		if s.useXdotool {
+			bsKeys := strings.Repeat("BackSpace ", count)
+			cmd := exec.Command("xdotool", "key", "--clearmodifiers", strings.TrimSpace(bsKeys))
+			return cmd.Run()
+		}
 	}
 
 	return nil
@@ -93,8 +145,46 @@ func (s *TextSender) SendBackspaces(count int) error {
 
 // SendUnicode sends a single Unicode codepoint
 func (s *TextSender) SendUnicode(codepoint rune) error {
+	return s.SendText(string(codepoint), 0)
+}
+
+// GetMethod returns the current injection method
+func (s *TextSender) GetMethod() InjectionMethod {
+	return s.method
+}
+
+// GetMethodName returns a human-readable name for the current method
+func (s *TextSender) GetMethodName() string {
+	switch s.method {
+	case MethodUInput:
+		return "uinput"
+	case MethodXdotool:
+		return "xdotool"
+	default:
+		return "none"
+	}
+}
+
+// ForceMethod forces a specific injection method (for testing)
+func (s *TextSender) ForceMethod(method InjectionMethod) {
+	s.method = method
+	log.Printf("Forced injection method to: %s", s.GetMethodName())
+}
+
+// Close cleans up resources
+func (s *TextSender) Close() {
+	// uinput device is managed globally, don't close here
+}
+
+// sendWithXTest is a placeholder for XTest extension (not implemented)
+func (s *TextSender) sendWithXTest(text string, backspaces int) error {
+	log.Printf("XTest injection not fully implemented for: %s", text)
+	return nil
+}
+
+// unused but kept for API compatibility
+func (s *TextSender) sendUnicodeLegacy(codepoint rune) error {
 	if s.useXdotool {
-		// xdotool type handles Unicode
 		cmd := exec.Command("xdotool", "type", "--clearmodifiers", "--", string(codepoint))
 		return cmd.Run()
 	}
@@ -102,6 +192,5 @@ func (s *TextSender) SendUnicode(codepoint rune) error {
 	// Fallback: Try Ctrl+Shift+U + hex code (works in GTK apps)
 	hex := strconv.FormatInt(int64(codepoint), 16)
 	log.Printf("Trying Ctrl+Shift+U method for: U+%s", hex)
-
 	return nil
 }
