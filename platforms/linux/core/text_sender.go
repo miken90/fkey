@@ -41,23 +41,21 @@ func (s *TextSender) sendWithXdotool(text string, backspaces int) error {
 	log.Printf("[DEBUG TextSender] xdotool: backspaces=%d, text=%q", backspaces, text)
 
 	// Small delay to ensure original key has been processed
-	// This helps with race condition between gohook event and xdotool injection
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 
-	// Send backspaces
-	if backspaces > 0 {
-		bsKeys := strings.Repeat("BackSpace ", backspaces)
-		log.Printf("[DEBUG TextSender] Sending backspaces: %s", strings.TrimSpace(bsKeys))
-		cmd := exec.Command("xdotool", "key", "--delay", "0", "--clearmodifiers", strings.TrimSpace(bsKeys))
+	// Send backspaces one at a time (more reliable than multiple keys in one command)
+	for i := 0; i < backspaces; i++ {
+		cmd := exec.Command("xdotool", "key", "BackSpace")
 		if err := cmd.Run(); err != nil {
 			log.Printf("xdotool backspace error: %v", err)
 		}
+		time.Sleep(5 * time.Millisecond)
 	}
 
 	// Send text using type (handles Unicode)
 	if text != "" {
 		log.Printf("[DEBUG TextSender] Typing text: %q", text)
-		cmd := exec.Command("xdotool", "type", "--delay", "0", "--clearmodifiers", "--", text)
+		cmd := exec.Command("xdotool", "type", "--delay", "0", "--", text)
 		if err := cmd.Run(); err != nil {
 			log.Printf("[DEBUG TextSender] xdotool type error: %v", err)
 			return err
