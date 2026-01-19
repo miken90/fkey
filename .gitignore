@@ -49,6 +49,7 @@ obj/
 !.claude/commands/
 .claude/skills/*
 !.claude/skills/github-assistant/
+!.claude/skills/release-github/
 .claude/commands/*
 !.claude/commands/github.md
 .claude/.env*

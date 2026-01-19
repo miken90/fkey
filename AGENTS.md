@@ -57,6 +57,62 @@ fkey/
 
 ---
 
+## Commit Message Conventions
+
+### Platform Prefixes
+
+All commits MUST include a platform prefix:
+
+| Prefix | Platform | Example |
+|--------|----------|---------|
+| `[win]` | Windows only | `[win] fix: auto-update batch file path` |
+| `[linux]` | Linux only | `[linux] feat: add system tray icon` |
+| `[core]` | Rust core (both platforms) | `[core] fix: tone placement algorithm` |
+| `[all]` | All platforms | `[all] docs: update README` |
+
+### Commit Type Prefixes
+
+After platform prefix, use conventional commit type:
+
+| Type | Description | Version Bump |
+|------|-------------|--------------|
+| `feat:` | New feature | Minor (x.Y.0) |
+| `fix:` | Bug fix | Patch (x.y.Z) |
+| `refactor:` | Code refactoring | Patch |
+| `docs:` | Documentation | None |
+| `test:` | Tests | None |
+| `chore:` | Maintenance | None |
+
+### Examples
+
+```bash
+# Windows bug fix → v2.2.2 (patch bump)
+git commit -m "[win] fix: Smart Paste hotkey detection order"
+
+# Windows new feature → v2.3.0 (minor bump)
+git commit -m "[win] feat: add Smart Paste for mojibake fix"
+
+# Linux feature → v0.2.0-linux
+git commit -m "[linux] feat: GTK3 system tray"
+
+# Core fix (affects both) → bump both platforms
+git commit -m "[core] fix: tone placement for 'oa' vowels"
+```
+
+### Versioning Rules
+
+| Change Type | Version Bump | Example |
+|-------------|--------------|---------|
+| New feature | `x.Y+1.0` | 2.2.0 → 2.3.0 |
+| Bug fix | `x.y.Z+1` | 2.2.0 → 2.2.1 |
+| Breaking change | `X+1.0.0` | 2.2.0 → 3.0.0 |
+
+**Platform-specific versions:**
+- Windows: `v2.3.0` (no suffix)
+- Linux: `v0.2.0-linux` (with `-linux` suffix)
+
+---
+
 ## Rust Core Commands
 
 ```bash

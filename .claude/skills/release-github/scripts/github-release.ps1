@@ -163,6 +163,13 @@ try {
             # Skip merge commits and version-only commits
             if ($subject -match "^Merge" -or $subject -match "^v\d+\.\d+\.\d+$") { continue }
             
+            # Filter by platform prefix: only include [win], [core], [all] for Windows releases
+            # Skip [linux] commits
+            if ($subject -match "^\[linux\]") { continue }
+            
+            # Remove platform prefix for display
+            $subject = $subject -replace "^\[(win|core|all)\]\s*", ""
+            
             # Determine default category from subject
             $defaultCategory = "improvements"
             if ($subject -match "^feat(\(.+\))?:|^feature:|^add:|^new:") {

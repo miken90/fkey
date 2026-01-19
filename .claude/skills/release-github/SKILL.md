@@ -143,12 +143,31 @@ Auto-categorizes commits using conventional commit prefixes:
 
 ### Commit Prefixes
 
+**Platform prefixes** (required for multi-platform projects):
+
+| Prefix | Included in Windows Release |
+|--------|----------------------------|
+| `[win]` | ✅ Yes |
+| `[core]` | ✅ Yes |
+| `[all]` | ✅ Yes |
+| `[linux]` | ❌ No (filtered out) |
+
+**Type prefixes** (after platform prefix):
+
 | Prefix | Section |
 |--------|---------|
 | `feat:`, `feature:`, `add:`, `new:` | ✨ New Features |
 | `fix:`, `bug:`, `hotfix:` | 🐛 Bug Fixes |
 | `refactor:`, `perf:`, `chore:`, `docs:`, `test:`, `ci:`, `build:` | ⚡ Improvements |
 | (other) | ⚡ Improvements |
+
+**Example commits:**
+```bash
+[win] feat: add Smart Paste for mojibake fix
+[win] fix: auto-update batch file path
+[core] fix: tone placement algorithm
+[linux] feat: GTK3 system tray  # ← filtered out for Windows releases
+```
 
 ## Manual Execution
 
