@@ -34,7 +34,7 @@ jobs:
           xdotool
 
     - name: Setup Rust
-      uses: dtolnay/rust-action@stable
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Setup Go
       uses: actions/setup-go@v5
