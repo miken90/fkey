@@ -3,8 +3,10 @@
 BINARY_NAME=fkey
 VERSION?=0.1.0
 RUST_TARGET=../../../core/target/release
+DIST_DIR=dist
+PACKAGE_NAME=FKey-$(VERSION)-linux-x86_64
 
-.PHONY: all build clean deps rust-core run install uninstall
+.PHONY: all build clean deps rust-core run install uninstall package
 
 all: deps rust-core build
 
@@ -43,9 +45,23 @@ uninstall:
 	rm -f ~/.local/share/applications/fkey.desktop
 	sudo ldconfig
 
+# Create distribution package
+package: rust-core build
+	@echo "Creating distribution package..."
+	rm -rf $(DIST_DIR)
+	mkdir -p $(DIST_DIR)/$(PACKAGE_NAME)
+	cp $(BINARY_NAME) $(DIST_DIR)/$(PACKAGE_NAME)/
+	cp $(RUST_TARGET)/libgonhanh_core.so $(DIST_DIR)/$(PACKAGE_NAME)/
+	cp fkey.desktop $(DIST_DIR)/$(PACKAGE_NAME)/
+	cp install.sh $(DIST_DIR)/$(PACKAGE_NAME)/
+	cp README.md $(DIST_DIR)/$(PACKAGE_NAME)/
+	cd $(DIST_DIR) && tar -czvf $(PACKAGE_NAME).tar.gz $(PACKAGE_NAME)
+	@echo "Package created: $(DIST_DIR)/$(PACKAGE_NAME).tar.gz"
+
 # Clean build artifacts
 clean:
 	rm -f $(BINARY_NAME)
+	rm -rf $(DIST_DIR)
 	cd ../../../core && cargo clean
 
 # Development: rebuild and run

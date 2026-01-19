@@ -27,6 +27,7 @@ ImeResult* ime_key_ext(uint16_t key, bool caps, bool ctrl, bool shift);
 */
 import "C"
 import (
+	"log"
 	"sync"
 	"unsafe"
 )
@@ -73,7 +74,11 @@ func (b *Bridge) ProcessKey(keycode uint16, capsLock, ctrl, shift bool) *Result 
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	log.Printf("[DEBUG Bridge] ProcessKey: keycode=%d, caps=%v, ctrl=%v, shift=%v, enabled=%v",
+		keycode, capsLock, ctrl, shift, b.enabled)
+
 	if !b.enabled {
+		log.Printf("[DEBUG Bridge] IME disabled, returning nil")
 		return nil
 	}
 
