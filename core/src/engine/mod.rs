@@ -3833,8 +3833,11 @@ impl Engine {
 
                 // Simple logic: buffer invalid VN + raw in English dict → restore
                 // Special case: W at end + in dict → restore (foreign word pattern)
-                if has_stroke && !raw_in_english_dict {
-                    // Skip restore - Vietnamese abbreviation like đc, đt
+                // Issue #247: Standalone "đ" (buffer len 1 with stroke) should NOT restore
+                // This is intentional Vietnamese typing, not English "dd"
+                let is_standalone_stroke = self.buf.len() == 1 && has_stroke;
+                if has_stroke && (!raw_in_english_dict || is_standalone_stroke) {
+                    // Skip restore - Vietnamese abbreviation like đc, đt, or standalone đ
                 } else if w_at_end && raw_in_english_dict {
                     // W at end + in dict → restore foreign words (moscow, warsaw, saw)
                     return self.build_raw_chars_exact();
