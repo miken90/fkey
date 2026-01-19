@@ -1,11 +1,12 @@
 [Desktop Entry]
 Name=FKey
 Comment=Vietnamese Input Method
-Exec=/usr/local/bin/fkey
-Icon=input-keyboard
+GenericName=Vietnamese IME
+Exec=fkey
+Icon=fkey
 Terminal=false
 Type=Application
-Categories=Utility;
+Categories=Utility;TextTools;
 Keywords=vietnamese;ime;telex;vni;input;
 StartupNotify=false
-X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-enabled=false
