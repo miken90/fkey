@@ -2,6 +2,7 @@ package core
 
 import (
 	"log"
+	"time"
 
 	hook "github.com/robotn/gohook"
 )
@@ -209,6 +210,8 @@ func (h *KeyboardHandler) handleKeyEvent(ev hook.Event) {
 		// Set injecting flag to ignore feedback events
 		h.injecting = true
 		h.sendText(result.Text, totalBackspace)
+		// Keep flag set briefly to catch xdotool-generated events in the queue
+		time.Sleep(50 * time.Millisecond)
 		h.injecting = false
 	}
 }
