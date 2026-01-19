@@ -44,6 +44,9 @@ func (t *Tray) SetEnabled(enabled bool) {
 }
 
 func (t *Tray) onReady() {
+	if icon := GetIconBytes(); len(icon) > 0 {
+		systray.SetIcon(icon)
+	}
 	systray.SetTitle("FKey")
 	systray.SetTooltip(t.getTooltip())
 
