@@ -5,69 +5,167 @@ import (
 
 	"fkey-linux/config"
 
-	"github.com/gotk3/gotk3/glib"
-	"github.com/gotk3/gotk3/gtk"
+	"github.com/getlantern/systray"
 )
 
 // Tray manages the system tray icon and menu
 type Tray struct {
-	app          *gtk.Application
-	statusIcon   *gtk.StatusIcon
-	config       *config.Config
-	onToggle     func(bool)
-	settingsWin  *gtk.Window
+	config     *config.Config
+	onToggle   func(bool)
+	toggleItem *systray.MenuItem
+	telexItem  *systray.MenuItem
+	vniItem    *systray.MenuItem
+	quitChan   chan struct{}
 }
 
-// NewTray creates a system tray icon
+// NewTray creates a system tray manager
 func NewTray(cfg *config.Config, onToggle func(bool)) (*Tray, error) {
-	gtk.Init(nil)
-
-	app, err := gtk.ApplicationNew("org.gonhanh.fkey", glib.APPLICATION_FLAGS_NONE)
-	if err != nil {
-		return nil, err
-	}
-
-	t := &Tray{
-		app:      app,
+	return &Tray{
 		config:   cfg,
 		onToggle: onToggle,
-	}
-
-	app.Connect("activate", func() {
-		t.setupTray()
-	})
-
-	return t, nil
+		quitChan: make(chan struct{}),
+	}, nil
 }
 
-func (t *Tray) setupTray() {
-	// Create status icon
-	icon, err := gtk.StatusIconNewFromIconName(t.getIconName())
-	if err != nil {
-		log.Printf("Failed to create status icon: %v", err)
+// Run starts the systray (blocks until quit)
+func (t *Tray) Run() {
+	systray.Run(t.onReady, t.onExit)
+}
+
+// Quit exits the tray application
+func (t *Tray) Quit() {
+	systray.Quit()
+}
+
+// SetEnabled updates enabled state and refreshes UI
+func (t *Tray) SetEnabled(enabled bool) {
+	t.config.Enabled = enabled
+	t.updateToggleItem()
+}
+
+func (t *Tray) onReady() {
+	systray.SetTitle("FKey")
+	systray.SetTooltip(t.getTooltip())
+
+	// Toggle item
+	t.toggleItem = systray.AddMenuItem(t.getToggleText(), "Bật/Tắt gõ tiếng Việt")
+
+	systray.AddSeparator()
+
+	// Input method submenu
+	methodMenu := systray.AddMenuItem("Kiểu gõ", "Chọn kiểu gõ")
+	t.telexItem = methodMenu.AddSubMenuItem("Telex", "Kiểu gõ Telex")
+	t.vniItem = methodMenu.AddSubMenuItem("VNI", "Kiểu gõ VNI")
+	t.updateMethodItems()
+
+	systray.AddSeparator()
+
+	// Settings items
+	modernItem := systray.AddMenuItemCheckbox("Bỏ dấu kiểu mới", "hoà thay vì hòa", t.config.ModernTone)
+	escItem := systray.AddMenuItemCheckbox("ESC khôi phục ký tự gốc", "", t.config.EscRestore)
+
+	systray.AddSeparator()
+
+	// About
+	aboutItem := systray.AddMenuItem("Về FKey", "Thông tin phần mềm")
+
+	systray.AddSeparator()
+
+	// Quit
+	quitItem := systray.AddMenuItem("Thoát", "Đóng FKey")
+
+	// Handle menu clicks in goroutine
+	go func() {
+		for {
+			select {
+			case <-t.toggleItem.ClickedCh:
+				t.toggle()
+
+			case <-t.telexItem.ClickedCh:
+				t.config.InputMethod = 0
+				t.updateMethodItems()
+				config.Save(t.config)
+
+			case <-t.vniItem.ClickedCh:
+				t.config.InputMethod = 1
+				t.updateMethodItems()
+				config.Save(t.config)
+
+			case <-modernItem.ClickedCh:
+				t.config.ModernTone = !t.config.ModernTone
+				if t.config.ModernTone {
+					modernItem.Check()
+				} else {
+					modernItem.Uncheck()
+				}
+				config.Save(t.config)
+
+			case <-escItem.ClickedCh:
+				t.config.EscRestore = !t.config.EscRestore
+				if t.config.EscRestore {
+					escItem.Check()
+				} else {
+					escItem.Uncheck()
+				}
+				config.Save(t.config)
+
+			case <-aboutItem.ClickedCh:
+				log.Println("FKey - Bộ gõ Tiếng Việt cho Linux")
+				log.Println("https://github.com/miken90/fkey")
+
+			case <-quitItem.ClickedCh:
+				systray.Quit()
+				return
+
+			case <-t.quitChan:
+				return
+			}
+		}
+	}()
+
+	log.Println("System tray ready")
+}
+
+func (t *Tray) onExit() {
+	close(t.quitChan)
+	log.Println("System tray exiting")
+}
+
+func (t *Tray) toggle() {
+	t.config.Enabled = !t.config.Enabled
+	if t.onToggle != nil {
+		t.onToggle(t.config.Enabled)
+	}
+	t.updateToggleItem()
+	config.Save(t.config)
+}
+
+func (t *Tray) updateToggleItem() {
+	if t.toggleItem == nil {
 		return
 	}
-	t.statusIcon = icon
-
-	t.statusIcon.SetTooltipText(t.getTooltip())
-	t.statusIcon.SetVisible(true)
-
-	// Left click - toggle
-	t.statusIcon.Connect("activate", func() {
-		t.toggle()
-	})
-
-	// Right click - menu
-	t.statusIcon.Connect("popup-menu", func(icon *gtk.StatusIcon, button, activateTime uint) {
-		t.showMenu(button, activateTime)
-	})
+	t.toggleItem.SetTitle(t.getToggleText())
+	systray.SetTooltip(t.getTooltip())
 }
 
-func (t *Tray) getIconName() string {
-	if t.config.Enabled {
-		return "input-keyboard" // Standard icon, replace with custom
+func (t *Tray) updateMethodItems() {
+	if t.telexItem == nil || t.vniItem == nil {
+		return
 	}
-	return "input-keyboard-symbolic"
+	if t.config.InputMethod == 0 {
+		t.telexItem.Check()
+		t.vniItem.Uncheck()
+	} else {
+		t.telexItem.Uncheck()
+		t.vniItem.Check()
+	}
+}
+
+func (t *Tray) getToggleText() string {
+	if t.config.Enabled {
+		return "✓ Tiếng Việt"
+	}
+	return "Bật Tiếng Việt"
 }
 
 func (t *Tray) getTooltip() string {
@@ -82,177 +180,4 @@ func (t *Tray) getTooltip() string {
 	}
 
 	return "FKey - Tiếng Việt (" + status + ") - " + method
-}
-
-func (t *Tray) toggle() {
-	t.config.Enabled = !t.config.Enabled
-	if t.onToggle != nil {
-		t.onToggle(t.config.Enabled)
-	}
-	t.updateIcon()
-}
-
-func (t *Tray) updateIcon() {
-	if t.statusIcon == nil {
-		return
-	}
-	t.statusIcon.SetFromIconName(t.getIconName())
-	t.statusIcon.SetTooltipText(t.getTooltip())
-}
-
-func (t *Tray) showMenu(button, activateTime uint) {
-	menu, _ := gtk.MenuNew()
-
-	// Toggle item
-	toggleText := "Bật Tiếng Việt"
-	if t.config.Enabled {
-		toggleText = "✓ Tiếng Việt"
-	}
-	toggleItem, _ := gtk.MenuItemNewWithLabel(toggleText)
-	toggleItem.Connect("activate", func() {
-		t.toggle()
-	})
-	menu.Append(toggleItem)
-
-	menu.Append(t.createSeparator())
-
-	// Input method submenu
-	methodMenu, _ := gtk.MenuNew()
-	methodItem, _ := gtk.MenuItemNewWithLabel("Kiểu gõ")
-	methodItem.SetSubmenu(methodMenu)
-
-	telexItem, _ := gtk.CheckMenuItemNewWithLabel("Telex")
-	telexItem.SetActive(t.config.InputMethod == 0)
-	telexItem.Connect("activate", func() {
-		t.config.InputMethod = 0
-		config.Save(t.config)
-	})
-	methodMenu.Append(telexItem)
-
-	vniItem, _ := gtk.CheckMenuItemNewWithLabel("VNI")
-	vniItem.SetActive(t.config.InputMethod == 1)
-	vniItem.Connect("activate", func() {
-		t.config.InputMethod = 1
-		config.Save(t.config)
-	})
-	methodMenu.Append(vniItem)
-
-	menu.Append(methodItem)
-
-	menu.Append(t.createSeparator())
-
-	// Settings
-	settingsItem, _ := gtk.MenuItemNewWithLabel("Cài đặt...")
-	settingsItem.Connect("activate", func() {
-		t.showSettings()
-	})
-	menu.Append(settingsItem)
-
-	menu.Append(t.createSeparator())
-
-	// About
-	aboutItem, _ := gtk.MenuItemNewWithLabel("Về FKey")
-	aboutItem.Connect("activate", func() {
-		t.showAbout()
-	})
-	menu.Append(aboutItem)
-
-	menu.Append(t.createSeparator())
-
-	// Quit
-	quitItem, _ := gtk.MenuItemNewWithLabel("Thoát")
-	quitItem.Connect("activate", func() {
-		t.Quit()
-	})
-	menu.Append(quitItem)
-
-	menu.ShowAll()
-	menu.PopupAtStatusIcon(t.statusIcon, button, activateTime)
-}
-
-func (t *Tray) createSeparator() *gtk.SeparatorMenuItem {
-	sep, _ := gtk.SeparatorMenuItemNew()
-	return sep
-}
-
-func (t *Tray) showSettings() {
-	if t.settingsWin != nil {
-		t.settingsWin.Present()
-		return
-	}
-
-	win, _ := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
-	win.SetTitle("FKey - Cài đặt")
-	win.SetDefaultSize(350, 300)
-	win.SetPosition(gtk.WIN_POS_CENTER)
-
-	t.settingsWin = win
-
-	box, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 10)
-	box.SetMarginTop(20)
-	box.SetMarginBottom(20)
-	box.SetMarginStart(20)
-	box.SetMarginEnd(20)
-
-	// Modern tone checkbox
-	modernCheck, _ := gtk.CheckButtonNewWithLabel("Bỏ dấu kiểu mới (hoà thay vì hòa)")
-	modernCheck.SetActive(t.config.ModernTone)
-	modernCheck.Connect("toggled", func() {
-		t.config.ModernTone = modernCheck.GetActive()
-		config.Save(t.config)
-	})
-	box.Add(modernCheck)
-
-	// ESC restore checkbox
-	escCheck, _ := gtk.CheckButtonNewWithLabel("ESC khôi phục ký tự gốc")
-	escCheck.SetActive(t.config.EscRestore)
-	escCheck.Connect("toggled", func() {
-		t.config.EscRestore = escCheck.GetActive()
-		config.Save(t.config)
-	})
-	box.Add(escCheck)
-
-	// Autostart checkbox
-	autoCheck, _ := gtk.CheckButtonNewWithLabel("Khởi động cùng hệ thống")
-	autoCheck.SetActive(t.config.AutoStart)
-	autoCheck.Connect("toggled", func() {
-		t.config.AutoStart = autoCheck.GetActive()
-		config.Save(t.config)
-		// TODO: Create/remove autostart desktop file
-	})
-	box.Add(autoCheck)
-
-	win.Add(box)
-	win.Connect("destroy", func() {
-		t.settingsWin = nil
-	})
-	win.ShowAll()
-}
-
-func (t *Tray) showAbout() {
-	dialog, _ := gtk.AboutDialogNew()
-	dialog.SetProgramName("FKey")
-	dialog.SetVersion("0.1.0")
-	dialog.SetComments("Bộ gõ Tiếng Việt cho Linux")
-	dialog.SetWebsite("https://github.com/miken90/fkey")
-	dialog.SetCopyright("© 2025-2026 GoNhanh.org")
-	dialog.SetLicense("MIT License")
-	dialog.Run()
-	dialog.Destroy()
-}
-
-// Run starts the GTK main loop
-func (t *Tray) Run() {
-	t.app.Run(nil)
-}
-
-// Quit exits the application
-func (t *Tray) Quit() {
-	t.app.Quit()
-}
-
-// SetEnabled updates enabled state and refreshes UI
-func (t *Tray) SetEnabled(enabled bool) {
-	t.config.Enabled = enabled
-	t.updateIcon()
 }

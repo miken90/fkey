@@ -41,7 +41,7 @@ func main() {
 		log.Fatalf("Failed to init keyboard handler: %v", err)
 	}
 
-	// Initialize GTK UI (system tray)
+	// Initialize system tray
 	tray, err := ui.NewTray(cfg, func(enabled bool) {
 		bridge.SetEnabled(enabled)
 		cfg.Enabled = enabled
@@ -65,7 +65,7 @@ func main() {
 	// Start keyboard hook
 	go kbd.Start()
 
-	// Run GTK main loop (blocks)
+	// Run systray main loop (blocks)
 	tray.Run()
 
 	log.Println("FKey Linux stopped")
