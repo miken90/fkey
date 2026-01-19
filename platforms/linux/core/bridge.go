@@ -16,10 +16,10 @@ void ime_clear(void);
 void ime_free(void* ptr);
 
 // Result struct must match Rust's #[repr(C)] layout exactly:
-// - chars[64] comes FIRST (256 bytes)
+// - chars[256] comes FIRST (256 * 4 = 1024 bytes) - MAX = 256 in Rust
 // - then action, backspace, count, flags (4 bytes)
 typedef struct {
-    uint32_t chars[64];  // UTF-32 codepoints
+    uint32_t chars[256]; // UTF-32 codepoints - MUST match Rust MAX=256
     uint8_t action;      // 0=None, 1=Send, 2=Restore
     uint8_t backspace;   // Number of backspaces
     uint8_t count;       // Number of valid chars

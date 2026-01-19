@@ -1,332 +1,733 @@
-2026/01/19 15:03:11 FKey Linux v0.1.2 starting...
-2026/01/19 15:03:11 Using xdotool for text injection
-2026/01/19 15:03:11 Global keyboard hook starting...
-2026/01/19 15:03:11 System tray ready
+2026/01/19 15:16:12 FKey Linux v0.1.3 starting...
+2026/01/19 15:16:12 Using xdotool for text injection
+2026/01/19 15:16:12 Global keyboard hook starting...
+2026/01/19 15:16:12 System tray ready
 
-(fkey:278190): libayatana-appindicator-WARNING **: 15:03:11.121: Unable to get the session bus: Failed to execute child process “dbus-launch” (No such file or directory)
+(fkey:291306): libayatana-appindicator-WARNING **: 15:16:12.165: Unable to get the session bus: Failed to execute child process “dbus-launch” (No such file or directory)
 
-(fkey:278190): LIBDBUSMENU-GLIB-WARNING **: 15:03:11.121: Unable to get session bus: Failed to execute child process “dbus-launch” (No such file or directory)
-2026/01/19 15:03:14 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:14 [DEBUG] Mapped to internal code: 5
-2026/01/19 15:03:14 [DEBUG] Processing key: code=5, shift=false, caps=false
-2026/01/19 15:03:14 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:03:15 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=120, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 7
-2026/01/19 15:03:15 [DEBUG] Processing key: code=7, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=7, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME result: action=245, backspace=0, text=""
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:15 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 45
-2026/01/19 15:03:15 [DEBUG] Processing key: code=45, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 4
-2026/01/19 15:03:15 [DEBUG] Processing key: code=4, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=105, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 34
-2026/01/19 15:03:15 [DEBUG] Processing key: code=34, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=34, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 14
-2026/01/19 15:03:15 [DEBUG] Processing key: code=14, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 32
-2026/01/19 15:03:15 [DEBUG] Processing key: code=32, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:15 [DEBUG] Key event: rawcode=102, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:15 [DEBUG] Mapped to internal code: 3
-2026/01/19 15:03:15 [DEBUG] Processing key: code=3, shift=false, caps=false
-2026/01/19 15:03:15 [DEBUG Bridge] ProcessKey: keycode=3, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:15 [DEBUG] IME result: action=232, backspace=0, text=""
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:16 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=122, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 6
-2026/01/19 15:03:16 [DEBUG] Processing key: code=6, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=6, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=105, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 34
-2026/01/19 15:03:16 [DEBUG] Processing key: code=34, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=34, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=106, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 38
-2026/01/19 15:03:16 [DEBUG] Processing key: code=38, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=38, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:16 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=109, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 46
-2026/01/19 15:03:16 [DEBUG] Processing key: code=46, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=46, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 0
-2026/01/19 15:03:16 [DEBUG] Processing key: code=0, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=102, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 3
-2026/01/19 15:03:16 [DEBUG] Processing key: code=3, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=3, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME result: action=224, backspace=0, text=""
-2026/01/19 15:03:16 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:16 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:16 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:16 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:16 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:17 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:17 [DEBUG] Mapped to internal code: 8
-2026/01/19 15:03:17 [DEBUG] Processing key: code=8, shift=false, caps=false
-2026/01/19 15:03:17 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:17 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:17 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:17 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:03:17 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:03:17 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:17 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:17 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:17 [DEBUG] Mapped to internal code: 45
-2026/01/19 15:03:17 [DEBUG] Processing key: code=45, shift=false, caps=false
-2026/01/19 15:03:17 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:17 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:17 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:17 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:17 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:17 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:17 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:17 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:17 [DEBUG] Unmapped rawcode: 65288
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=102, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 3
-2026/01/19 15:03:18 [DEBUG] Processing key: code=3, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=3, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:18 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=107, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 40
-2026/01/19 15:03:18 [DEBUG] Processing key: code=40, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=40, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 4
-2026/01/19 15:03:18 [DEBUG] Processing key: code=4, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:03:18 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 45
-2026/01/19 15:03:18 [DEBUG] Processing key: code=45, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:18 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:18 [DEBUG] Mapped to internal code: 5
-2026/01/19 15:03:18 [DEBUG] Processing key: code=5, shift=false, caps=false
-2026/01/19 15:03:18 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:18 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:19 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 4
-2026/01/19 15:03:19 [DEBUG] Processing key: code=4, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:03:19 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 0
-2026/01/19 15:03:19 [DEBUG] Processing key: code=0, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=116, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 17
-2026/01/19 15:03:19 [DEBUG] Processing key: code=17, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=17, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:19 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 2
-2026/01/19 15:03:19 [DEBUG] Processing key: code=2, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:03:19 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 45
-2026/01/19 15:03:19 [DEBUG] Processing key: code=45, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:19 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:19 [DEBUG] Mapped to internal code: 5
-2026/01/19 15:03:19 [DEBUG] Processing key: code=5, shift=false, caps=false
-2026/01/19 15:03:19 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:19 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:20 [DEBUG] Key event: rawcode=106, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:20 [DEBUG] Mapped to internal code: 38
-2026/01/19 15:03:20 [DEBUG] Processing key: code=38, shift=false, caps=false
-2026/01/19 15:03:20 [DEBUG Bridge] ProcessKey: keycode=38, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:20 [DEBUG] IME result: action=205, backspace=30, text=""
-2026/01/19 15:03:20 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:20 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:03:20 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:03:20 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:20 [DEBUG] IME result: action=217, backspace=30, text=""
-2026/01/19 15:03:21 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:21 [DEBUG] Mapped to internal code: 49
-2026/01/19 15:03:21 [DEBUG] Processing key: code=49, shift=false, caps=false
-2026/01/19 15:03:21 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:21 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:21 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:21 [DEBUG] Mapped to internal code: 45
-2026/01/19 15:03:21 [DEBUG] Processing key: code=45, shift=false, caps=false
-2026/01/19 15:03:21 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:21 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:21 [DEBUG] Key event: rawcode=119, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:21 [DEBUG] Mapped to internal code: 13
-2026/01/19 15:03:21 [DEBUG] Processing key: code=13, shift=false, caps=false
-2026/01/19 15:03:21 [DEBUG Bridge] ProcessKey: keycode=13, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:21 [DEBUG] IME result: action=176, backspace=1, text=""
-2026/01/19 15:03:21 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:21 [DEBUG] Mapped to internal code: 0
-2026/01/19 15:03:21 [DEBUG] Processing key: code=0, shift=false, caps=false
-2026/01/19 15:03:21 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:21 [DEBUG] IME returned nil (no action)
-2026/01/19 15:03:21 [DEBUG] Key event: rawcode=120, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:21 [DEBUG] Mapped to internal code: 7
-2026/01/19 15:03:21 [DEBUG] Processing key: code=7, shift=false, caps=false
-2026/01/19 15:03:21 [DEBUG Bridge] ProcessKey: keycode=7, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:03:21 [DEBUG] IME result: action=239, backspace=30, text=""
-2026/01/19 15:03:22 [DEBUG] Key event: rawcode=65293, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:22 [DEBUG] Unmapped rawcode: 65293
-2026/01/19 15:03:30 [DEBUG] Key event: rawcode=65293, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:30 [DEBUG] Unmapped rawcode: 65293
-2026/01/19 15:03:43 [DEBUG] Key event: rawcode=65293, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:03:43 [DEBUG] Unmapped rawcode: 65293
-2026/01/19 15:04:00 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:00 [DEBUG] Mapped to internal code: 2
-2026/01/19 15:04:00 [DEBUG] Processing key: code=2, shift=false, caps=false
-2026/01/19 15:04:00 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:00 [DEBUG] IME result: action=176, backspace=1, text=""
-2026/01/19 15:04:00 [DEBUG] Key event: rawcode=105, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:00 [DEBUG] Mapped to internal code: 34
-2026/01/19 15:04:00 [DEBUG] Processing key: code=34, shift=false, caps=false
-2026/01/19 15:04:00 [DEBUG Bridge] ProcessKey: keycode=34, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:00 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:01 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:01 [DEBUG] Mapped to internal code: 1
-2026/01/19 15:04:01 [DEBUG] Processing key: code=1, shift=false, caps=false
-2026/01/19 15:04:01 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:01 [DEBUG] IME result: action=233, backspace=30, text=""
-2026/01/19 15:04:02 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:02 [DEBUG] Mapped to internal code: 8
-2026/01/19 15:04:02 [DEBUG] Processing key: code=8, shift=false, caps=false
-2026/01/19 15:04:02 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:02 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:02 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:02 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:04:02 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:04:02 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:02 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:02 [DEBUG] Key event: rawcode=114, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:02 [DEBUG] Mapped to internal code: 15
-2026/01/19 15:04:02 [DEBUG] Processing key: code=15, shift=false, caps=false
-2026/01/19 15:04:02 [DEBUG Bridge] ProcessKey: keycode=15, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:02 [DEBUG] IME result: action=237, backspace=30, text=""
-2026/01/19 15:04:02 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:02 [DEBUG] Mapped to internal code: 2
-2026/01/19 15:04:02 [DEBUG] Processing key: code=2, shift=false, caps=false
-2026/01/19 15:04:02 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:02 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:03 [DEBUG] Key event: rawcode=65507, keychar=￿ (65535), mask=0x2002
-2026/01/19 15:04:03 [DEBUG] Unmapped rawcode: 65507
-2026/01/19 15:04:03 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2002
-2026/01/19 15:04:03 [DEBUG] Mapped to internal code: 0
-2026/01/19 15:04:03 [DEBUG] Processing key: code=0, shift=false, caps=false
-2026/01/19 15:04:03 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:03 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 2
-2026/01/19 15:04:09 [DEBUG] Processing key: code=2, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=105, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 34
-2026/01/19 15:04:09 [DEBUG] Processing key: code=34, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=34, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 1
-2026/01/19 15:04:09 [DEBUG] Processing key: code=1, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME result: action=233, backspace=30, text=""
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 8
-2026/01/19 15:04:09 [DEBUG] Processing key: code=8, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 31
-2026/01/19 15:04:09 [DEBUG] Processing key: code=31, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=114, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 15
-2026/01/19 15:04:09 [DEBUG] Processing key: code=15, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=15, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME result: action=237, backspace=30, text=""
-2026/01/19 15:04:09 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:09 [DEBUG] Mapped to internal code: 2
-2026/01/19 15:04:09 [DEBUG] Processing key: code=2, shift=false, caps=false
-2026/01/19 15:04:09 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
-2026/01/19 15:04:09 [DEBUG] IME returned nil (no action)
-2026/01/19 15:04:10 [DEBUG] Key event: rawcode=65363, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:10 [DEBUG] Unmapped rawcode: 65363
-2026/01/19 15:04:10 [DEBUG] Key event: rawcode=65293, keychar=￿ (65535), mask=0x2000
-2026/01/19 15:04:10 [DEBUG] Unmapped rawcode: 65293
+(fkey:291306): LIBDBUSMENU-GLIB-WARNING **: 15:16:12.165: Unable to get session bus: Failed to execute child process “dbus-launch” (No such file or directory)
+2026/01/19 15:16:18 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:18 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:18 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:18 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:18 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:19 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:19 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:19 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:19 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:19 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:19 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:19 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:19 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:19 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:19 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:19 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:19 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:19 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:19 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:19 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:19 [DEBUG] Key event: rawcode=114, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:19 [DEBUG] Mapped to internal code: 15
+2026/01/19 15:16:19 [DEBUG] Processing key: code=15, shift=false, caps=false
+2026/01/19 15:16:19 [DEBUG Bridge] ProcessKey: keycode=15, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:19 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:19 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:19 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:19 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:19 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:19 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:19 [DEBUG] Key event: rawcode=116, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:19 [DEBUG] Mapped to internal code: 17
+2026/01/19 15:16:19 [DEBUG] Processing key: code=17, shift=false, caps=false
+2026/01/19 15:16:19 [DEBUG Bridge] ProcessKey: keycode=17, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:19 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:20 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:20 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:20 [DEBUG] Key event: rawcode=120, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:20 [DEBUG] Mapped to internal code: 7
+2026/01/19 15:16:20 [DEBUG] Processing key: code=7, shift=false, caps=false
+2026/01/19 15:16:20 [DEBUG Bridge] ProcessKey: keycode=7, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:20 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:20 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:20 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:20 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:20 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:20 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:21 [DEBUG] Key event: rawcode=109, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:21 [DEBUG] Mapped to internal code: 46
+2026/01/19 15:16:21 [DEBUG] Processing key: code=46, shift=false, caps=false
+2026/01/19 15:16:21 [DEBUG Bridge] ProcessKey: keycode=46, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:21 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:21 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:21 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:21 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:21 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:21 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:21 [DEBUG] Key event: rawcode=116, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:21 [DEBUG] Mapped to internal code: 17
+2026/01/19 15:16:21 [DEBUG] Processing key: code=17, shift=false, caps=false
+2026/01/19 15:16:21 [DEBUG Bridge] ProcessKey: keycode=17, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:21 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:21 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:21 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:21 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:21 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:21 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:22 [DEBUG] Key event: rawcode=105, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:22 [DEBUG] Mapped to internal code: 34
+2026/01/19 15:16:22 [DEBUG] Processing key: code=34, shift=false, caps=false
+2026/01/19 15:16:22 [DEBUG Bridge] ProcessKey: keycode=34, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:22 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:22 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:22 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:22 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:22 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:22 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:22 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:22 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:22 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:22 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:23 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:23 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:23 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:23 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:23 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:23 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:23 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:23 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:23 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:23 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:23 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:23 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:23 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:23 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:23 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:23 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:23 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:23 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:23 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:23 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:24 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:24 [DEBUG] Mapped to internal code: 1
+2026/01/19 15:16:24 [DEBUG] Processing key: code=1, shift=false, caps=false
+2026/01/19 15:16:24 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:24 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:24 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:24 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:24 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:24 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:24 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:24 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:24 [DEBUG] Mapped to internal code: 8
+2026/01/19 15:16:24 [DEBUG] Processing key: code=8, shift=false, caps=false
+2026/01/19 15:16:24 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:24 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:24 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:24 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:24 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:24 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:24 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:24 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:24 [DEBUG] Mapped to internal code: 1
+2026/01/19 15:16:24 [DEBUG] Processing key: code=1, shift=false, caps=false
+2026/01/19 15:16:24 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:24 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:24 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:24 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:24 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:24 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:24 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:25 [DEBUG] Key event: rawcode=119, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:25 [DEBUG] Mapped to internal code: 13
+2026/01/19 15:16:25 [DEBUG] Processing key: code=13, shift=false, caps=false
+2026/01/19 15:16:25 [DEBUG Bridge] ProcessKey: keycode=13, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:25 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:25 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:25 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:25 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:25 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:25 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:25 [DEBUG] Key event: rawcode=114, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:25 [DEBUG] Mapped to internal code: 15
+2026/01/19 15:16:25 [DEBUG] Processing key: code=15, shift=false, caps=false
+2026/01/19 15:16:25 [DEBUG Bridge] ProcessKey: keycode=15, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:25 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:25 [DEBUG] Key event: rawcode=107, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:25 [DEBUG] Mapped to internal code: 40
+2026/01/19 15:16:25 [DEBUG] Processing key: code=40, shift=false, caps=false
+2026/01/19 15:16:25 [DEBUG Bridge] ProcessKey: keycode=40, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:25 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:25 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:25 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:25 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:25 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:25 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=107, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 40
+2026/01/19 15:16:26 [DEBUG] Processing key: code=40, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=40, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:26 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:26 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:26 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 5
+2026/01/19 15:16:26 [DEBUG] Processing key: code=5, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:26 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 8
+2026/01/19 15:16:26 [DEBUG] Processing key: code=8, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:26 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:26 [DEBUG] Key event: rawcode=121, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:26 [DEBUG] Mapped to internal code: 16
+2026/01/19 15:16:26 [DEBUG] Processing key: code=16, shift=false, caps=false
+2026/01/19 15:16:26 [DEBUG Bridge] ProcessKey: keycode=16, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:26 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:27 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:27 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:27 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:27 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:27 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:27 [DEBUG] Key event: rawcode=116, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:27 [DEBUG] Mapped to internal code: 17
+2026/01/19 15:16:27 [DEBUG] Processing key: code=17, shift=false, caps=false
+2026/01/19 15:16:27 [DEBUG Bridge] ProcessKey: keycode=17, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:27 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:27 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:27 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:27 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:27 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:27 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:27 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:27 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:27 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:27 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:27 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:28 [DEBUG] Key event: rawcode=65507, keychar=￿ (65535), mask=0x2002
+2026/01/19 15:16:28 [DEBUG] Unmapped rawcode: 65507
+2026/01/19 15:16:28 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2002
+2026/01/19 15:16:28 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:28 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2002
+2026/01/19 15:16:28 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:29 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:29 [DEBUG] Mapped to internal code: 8
+2026/01/19 15:16:29 [DEBUG] Processing key: code=8, shift=false, caps=false
+2026/01/19 15:16:29 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:29 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:29 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:29 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:29 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:29 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:29 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:29 [DEBUG] Key event: rawcode=119, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:29 [DEBUG] Mapped to internal code: 13
+2026/01/19 15:16:29 [DEBUG] Processing key: code=13, shift=false, caps=false
+2026/01/19 15:16:29 [DEBUG Bridge] ProcessKey: keycode=13, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:29 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:29 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:29 [DEBUG] Mapped to internal code: 1
+2026/01/19 15:16:29 [DEBUG] Processing key: code=1, shift=false, caps=false
+2026/01/19 15:16:29 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:29 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:30 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:30 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:30 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:30 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:30 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:30 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:30 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:30 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:30 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:30 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=109, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 46
+2026/01/19 15:16:31 [DEBUG] Processing key: code=46, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=46, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:31 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=116, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 17
+2026/01/19 15:16:31 [DEBUG] Processing key: code=17, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=17, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:31 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:31 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=121, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 16
+2026/01/19 15:16:31 [DEBUG] Processing key: code=16, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=16, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:31 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:31 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:31 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:31 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:31 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:31 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:32 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:32 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 1
+2026/01/19 15:16:32 [DEBUG] Processing key: code=1, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:32 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 8
+2026/01/19 15:16:32 [DEBUG] Processing key: code=8, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:32 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:32 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 5
+2026/01/19 15:16:32 [DEBUG] Processing key: code=5, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=120, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 7
+2026/01/19 15:16:32 [DEBUG] Processing key: code=7, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=7, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:32 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:32 [DEBUG] Key event: rawcode=107, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:32 [DEBUG] Mapped to internal code: 40
+2026/01/19 15:16:32 [DEBUG] Processing key: code=40, shift=false, caps=false
+2026/01/19 15:16:32 [DEBUG Bridge] ProcessKey: keycode=40, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:32 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:33 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:33 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:33 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 5
+2026/01/19 15:16:33 [DEBUG] Processing key: code=5, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:33 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=113, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 12
+2026/01/19 15:16:33 [DEBUG] Processing key: code=12, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=12, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:33 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:33 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:33 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:33 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:33 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:33 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:34 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:34 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:34 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:34 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=107, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Mapped to internal code: 40
+2026/01/19 15:16:35 [DEBUG] Processing key: code=40, shift=false, caps=false
+2026/01/19 15:16:35 [DEBUG Bridge] ProcessKey: keycode=40, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:35 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=104, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Mapped to internal code: 4
+2026/01/19 15:16:35 [DEBUG] Processing key: code=4, shift=false, caps=false
+2026/01/19 15:16:35 [DEBUG Bridge] ProcessKey: keycode=4, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:35 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:35 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:35 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:35 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:35 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:35 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:35 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=113, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Mapped to internal code: 12
+2026/01/19 15:16:35 [DEBUG] Processing key: code=12, shift=false, caps=false
+2026/01/19 15:16:35 [DEBUG Bridge] ProcessKey: keycode=12, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:35 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:35 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:35 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:35 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:35 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:35 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:36 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:36 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:36 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:36 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:36 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:36 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:36 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:36 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:36 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:36 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:36 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:36 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:36 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:36 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:36 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:36 [DEBUG] Key event: rawcode=108, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:36 [DEBUG] Mapped to internal code: 37
+2026/01/19 15:16:36 [DEBUG] Processing key: code=37, shift=false, caps=false
+2026/01/19 15:16:36 [DEBUG Bridge] ProcessKey: keycode=37, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:36 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:36 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:36 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:36 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:36 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:36 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:36 [DEBUG] Key event: rawcode=109, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:36 [DEBUG] Mapped to internal code: 46
+2026/01/19 15:16:36 [DEBUG] Processing key: code=46, shift=false, caps=false
+2026/01/19 15:16:36 [DEBUG Bridge] ProcessKey: keycode=46, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:36 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:37 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:37 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:37 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:37 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:37 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:37 [DEBUG] Key event: rawcode=109, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:37 [DEBUG] Mapped to internal code: 46
+2026/01/19 15:16:37 [DEBUG] Processing key: code=46, shift=false, caps=false
+2026/01/19 15:16:37 [DEBUG Bridge] ProcessKey: keycode=46, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:37 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:37 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:37 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:37 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:37 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:37 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:37 [DEBUG] Key event: rawcode=119, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:37 [DEBUG] Mapped to internal code: 13
+2026/01/19 15:16:37 [DEBUG] Processing key: code=13, shift=false, caps=false
+2026/01/19 15:16:37 [DEBUG Bridge] ProcessKey: keycode=13, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:37 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:37 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:37 [DEBUG] Mapped to internal code: 8
+2026/01/19 15:16:37 [DEBUG] Processing key: code=8, shift=false, caps=false
+2026/01/19 15:16:37 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:37 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:37 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:37 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:37 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:37 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:37 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:38 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:38 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:38 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:38 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:38 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:38 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:38 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:38 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:38 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:38 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:39 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:39 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:39 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:39 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:39 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:39 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:40 [DEBUG] Key event: rawcode=106, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:40 [DEBUG] Mapped to internal code: 38
+2026/01/19 15:16:40 [DEBUG] Processing key: code=38, shift=false, caps=false
+2026/01/19 15:16:40 [DEBUG Bridge] ProcessKey: keycode=38, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:40 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:40 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:40 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:40 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:40 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:40 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:40 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:40 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:40 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:40 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:40 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:41 [DEBUG] Key event: rawcode=117, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:41 [DEBUG] Mapped to internal code: 32
+2026/01/19 15:16:41 [DEBUG] Processing key: code=32, shift=false, caps=false
+2026/01/19 15:16:41 [DEBUG Bridge] ProcessKey: keycode=32, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:41 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:41 [DEBUG] Key event: rawcode=102, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:41 [DEBUG] Mapped to internal code: 3
+2026/01/19 15:16:41 [DEBUG] Processing key: code=3, shift=false, caps=false
+2026/01/19 15:16:41 [DEBUG Bridge] ProcessKey: keycode=3, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:41 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:41 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:41 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:41 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:41 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:41 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:41 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:41 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:41 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:41 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:41 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:41 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:41 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:41 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:41 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:41 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:42 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:42 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:42 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:42 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:42 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:42 [DEBUG] Key event: rawcode=108, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:42 [DEBUG] Mapped to internal code: 37
+2026/01/19 15:16:42 [DEBUG] Processing key: code=37, shift=false, caps=false
+2026/01/19 15:16:42 [DEBUG Bridge] ProcessKey: keycode=37, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:42 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:43 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:43 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:43 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:43 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:43 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:43 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:43 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:43 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:43 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=103, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Mapped to internal code: 5
+2026/01/19 15:16:43 [DEBUG] Processing key: code=5, shift=false, caps=false
+2026/01/19 15:16:43 [DEBUG Bridge] ProcessKey: keycode=5, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:43 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:43 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:43 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:43 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:43 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:43 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:43 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:43 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:43 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:44 [DEBUG] Key event: rawcode=65288, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:44 [DEBUG] Unmapped rawcode: 65288
+2026/01/19 15:16:44 [DEBUG] Key event: rawcode=99, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:44 [DEBUG] Mapped to internal code: 8
+2026/01/19 15:16:44 [DEBUG] Processing key: code=8, shift=false, caps=false
+2026/01/19 15:16:44 [DEBUG Bridge] ProcessKey: keycode=8, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:44 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:44 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:44 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:44 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:44 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:44 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:45 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:45 [DEBUG] Mapped to internal code: 1
+2026/01/19 15:16:45 [DEBUG] Processing key: code=1, shift=false, caps=false
+2026/01/19 15:16:45 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:45 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:45 [DEBUG] Key event: rawcode=112, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:45 [DEBUG] Mapped to internal code: 35
+2026/01/19 15:16:45 [DEBUG] Processing key: code=35, shift=false, caps=false
+2026/01/19 15:16:45 [DEBUG Bridge] ProcessKey: keycode=35, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:45 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:46 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:46 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:46 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:46 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:46 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:46 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:46 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:46 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:46 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:46 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:46 [DEBUG] Key event: rawcode=108, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:46 [DEBUG] Mapped to internal code: 37
+2026/01/19 15:16:46 [DEBUG] Processing key: code=37, shift=false, caps=false
+2026/01/19 15:16:46 [DEBUG Bridge] ProcessKey: keycode=37, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:46 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:46 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:46 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:46 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:46 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:46 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:46 [DEBUG] Key event: rawcode=101, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:46 [DEBUG] Mapped to internal code: 14
+2026/01/19 15:16:46 [DEBUG] Processing key: code=14, shift=false, caps=false
+2026/01/19 15:16:46 [DEBUG Bridge] ProcessKey: keycode=14, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:46 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:46 [DEBUG] Key event: rawcode=110, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:46 [DEBUG] Mapped to internal code: 45
+2026/01/19 15:16:46 [DEBUG] Processing key: code=45, shift=false, caps=false
+2026/01/19 15:16:46 [DEBUG Bridge] ProcessKey: keycode=45, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:46 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:47 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:47 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:47 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:47 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:47 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:48 [DEBUG] Key event: rawcode=49, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:48 [DEBUG] Mapped to internal code: 18
+2026/01/19 15:16:48 [DEBUG] Processing key: code=18, shift=false, caps=false
+2026/01/19 15:16:48 [DEBUG Bridge] ProcessKey: keycode=18, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:48 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:48 [DEBUG] Key event: rawcode=46, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:48 [DEBUG] Mapped to internal code: 47
+2026/01/19 15:16:48 [DEBUG] Processing key: code=47, shift=false, caps=false
+2026/01/19 15:16:48 [DEBUG Bridge] ProcessKey: keycode=47, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:48 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:48 [DEBUG] Key event: rawcode=51, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:48 [DEBUG] Mapped to internal code: 20
+2026/01/19 15:16:48 [DEBUG] Processing key: code=20, shift=false, caps=false
+2026/01/19 15:16:48 [DEBUG Bridge] ProcessKey: keycode=20, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:48 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:49 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:49 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:49 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:49 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:49 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:49 [DEBUG] Key event: rawcode=114, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:49 [DEBUG] Mapped to internal code: 15
+2026/01/19 15:16:49 [DEBUG] Processing key: code=15, shift=false, caps=false
+2026/01/19 15:16:49 [DEBUG Bridge] ProcessKey: keycode=15, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:49 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:49 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:49 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:49 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:49 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:49 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:49 [DEBUG] Key event: rawcode=105, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:49 [DEBUG] Mapped to internal code: 34
+2026/01/19 15:16:49 [DEBUG] Processing key: code=34, shift=false, caps=false
+2026/01/19 15:16:49 [DEBUG Bridge] ProcessKey: keycode=34, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:49 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:50 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=102, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 3
+2026/01/19 15:16:50 [DEBUG] Processing key: code=3, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=3, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:50 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:50 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=111, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 31
+2026/01/19 15:16:50 [DEBUG] Processing key: code=31, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=31, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=100, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 2
+2026/01/19 15:16:50 [DEBUG] Processing key: code=2, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=2, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:50 [DEBUG] Key event: rawcode=115, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:50 [DEBUG] Mapped to internal code: 1
+2026/01/19 15:16:50 [DEBUG] Processing key: code=1, shift=false, caps=false
+2026/01/19 15:16:50 [DEBUG Bridge] ProcessKey: keycode=1, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:50 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:51 [DEBUG] Key event: rawcode=32, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:51 [DEBUG] Mapped to internal code: 49
+2026/01/19 15:16:51 [DEBUG] Processing key: code=49, shift=false, caps=false
+2026/01/19 15:16:51 [DEBUG Bridge] ProcessKey: keycode=49, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:51 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:51 [DEBUG] Key event: rawcode=97, keychar=￿ (65535), mask=0x2000
+2026/01/19 15:16:51 [DEBUG] Mapped to internal code: 0
+2026/01/19 15:16:51 [DEBUG] Processing key: code=0, shift=false, caps=false
+2026/01/19 15:16:51 [DEBUG Bridge] ProcessKey: keycode=0, caps=false, ctrl=false, shift=false, enabled=true
+2026/01/19 15:16:51 [DEBUG] IME returned nil (no action)
+2026/01/19 15:16:55 [DEBUG] Key event: rawcode=65507, keychar=￿ (65535), mask=0x2002
+2026/01/19 15:16:55 [DEBUG] Unmapped rawcode: 65507
