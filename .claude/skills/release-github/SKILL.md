@@ -79,6 +79,22 @@ Example:
 ## Build Process
 
 Uses `platforms/windows-wails/build.ps1`:
+
+### ⚠️ Pre-Build Checklist (IMPORTANT)
+
+**Before building, ALWAYS verify version:**
+
+1. **Check git tag**: `git describe --tags --abbrev=0`
+2. **Verify `winres.json`** matches tag version:
+   - `RT_MANIFEST.#1.0409.identity.version` → "X.Y.Z.0"
+   - `RT_VERSION.#1.0409.fixed.file_version` → "X.Y.Z.0"
+   - `RT_VERSION.#1.0409.fixed.product_version` → "X.Y.Z.0"
+   - `RT_VERSION.#1.0409.info.0409.FileVersion` → "X.Y.Z"
+   - `RT_VERSION.#1.0409.info.0409.ProductVersion` → "X.Y.Z"
+3. **Update `winres.json`** if mismatched before building
+
+### Build Steps
+
 1. Build Rust core DLL (`cargo build --release`) if needed
 2. Build Go executable with ldflags:
    - `-s -w` - Strip symbols

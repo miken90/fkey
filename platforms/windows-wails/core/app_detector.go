@@ -36,8 +36,8 @@ var (
 	ProfileFast   = AppProfile{Method: MethodFast, Coalesce: false}
 	ProfileSlow   = AppProfile{Method: MethodSlow, Coalesce: false}
 	ProfileAtomic = AppProfile{Method: MethodAtomic, Coalesce: false}
-	// Discord profile: atomic + coalescing with short timer for smooth typing
-	ProfileDiscord = AppProfile{Method: MethodAtomic, Coalesce: true, CoalesceMs: 15}
+	// Discord profile: use slow mode like other Electron apps (atomic+coalesce caused lag)
+	ProfileDiscord = AppProfile{Method: MethodSlow, Coalesce: false}
 )
 
 // appProfiles maps process names to their injection profiles
