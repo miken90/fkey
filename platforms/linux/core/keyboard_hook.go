@@ -79,20 +79,18 @@ var rawcodeToInternal = map[uint16]uint16{
 	// Numbers (ASCII)
 	'0': KEY_N0, '1': KEY_N1, '2': KEY_N2, '3': KEY_N3, '4': KEY_N4,
 	'5': KEY_N5, '6': KEY_N6, '7': KEY_N7, '8': KEY_N8, '9': KEY_N9,
-	// Special keys (these use X11 keycodes, not ASCII)
-	65: KEY_SPACE,  // XK_space
-	22: KEY_DELETE, // Backspace (X11)
-	36: KEY_RETURN, // Return (X11)
-	9:  KEY_ESC,    // Escape (X11)
-	23: KEY_TAB,    // Tab (X11)
+	// Special keys - use ASCII values
+	' ': KEY_SPACE, // Space = 32
+	8:  KEY_DELETE, // Backspace = ASCII 8
+	13: KEY_RETURN, // Enter/Return = ASCII 13
+	27: KEY_ESC,    // Escape = ASCII 27
+	9:  KEY_TAB,    // Tab = ASCII 9
 	// Punctuation (ASCII)
 	'.': KEY_DOT, ',': KEY_COMMA, '/': KEY_SLASH,
 	';': KEY_SEMICOLON, '\'': KEY_QUOTE,
 	'[': KEY_LBRACKET, ']': KEY_RBRACKET,
 	'-': KEY_MINUS, '=': KEY_EQUAL,
 	'`': KEY_BACKQUOTE,
-	// Also map space by ASCII
-	' ': KEY_SPACE,
 }
 
 // KeyboardHandler manages global keyboard hook using gohook
