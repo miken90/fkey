@@ -36,6 +36,11 @@ jobs:
           build-essential \
           libayatana-appindicator3-dev \
           libx11-dev \
+          libx11-xcb-dev \
+          libxtst-dev \
+          libxinerama-dev \
+          libxkbcommon-dev \
+          libxkbcommon-x11-dev \
           xdotool
 
     - name: Setup Rust
