@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=FKey
+Comment=Vietnamese Input Method
+GenericName=Vietnamese IME
+Exec=fkey
+Icon=fkey
+Terminal=false
+Type=Application
+Categories=Utility;TextTools;
+Keywords=vietnamese;ime;telex;vni;input;
+StartupNotify=false
+X-GNOME-Autostart-enabled=false

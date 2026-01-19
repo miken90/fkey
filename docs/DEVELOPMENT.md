@@ -1,8 +1,19 @@
 # FKey Developer Setup Guide
 
-This guide helps you set up the development environment for FKey Vietnamese IME on Windows.
+This guide helps you set up the development environment for FKey Vietnamese IME.
 
-## Prerequisites
+## Platforms
+
+| Platform | Build Environment | Tech Stack |
+|----------|-------------------|------------|
+| **Windows** | Windows/PowerShell | Go + Wails v3 + WebView2 |
+| **Linux** | Linux/WSL | Go + GTK3 + X11 |
+
+---
+
+## Windows Development
+
+### Prerequisites
 
 - Windows 10/11 (64-bit)
 - PowerShell 5.1+ or PowerShell Core 7+
@@ -319,3 +330,116 @@ cd core; cargo clippy
 # Lint Go
 cd platforms\windows-wails; go vet ./...
 ```
+
+---
+
+## Linux Development
+
+### Prerequisites
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update && sudo apt install -y \
+  build-essential \
+  libgtk-3-dev \
+  libx11-dev \
+  xdotool
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install Go (1.22+)
+wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+```
+
+**Fedora:**
+```bash
+sudo dnf install gtk3-devel libX11-devel xdotool
+```
+
+**Arch:**
+```bash
+sudo pacman -S gtk3 libx11 xdotool
+```
+
+### Project Structure (Linux)
+
+```
+platforms/linux/
+├── main.go           # Entry point
+├── core/
+│   ├── bridge.go     # FFI to Rust core
+│   ├── keyboard_x11.go  # X11 keyboard hook
+│   └── text_sender.go   # xdotool injection
+├── config/
+│   └── config.go     # TOML config (~/.config/fkey/)
+├── ui/
+│   └── tray.go       # GTK3 system tray
+├── Makefile
+└── go.mod
+```
+
+### Building
+
+```bash
+cd /path/to/fkey
+
+# Build Rust core
+cd core && cargo build --release
+
+# Build Linux app
+cd platforms/linux
+make deps    # Install Go dependencies
+make build   # Build binary
+
+# Run
+make run
+```
+
+### Development Workflow (WSL)
+
+If developing on WSL:
+
+```bash
+# Edit code in WSL
+cd /mnt/c/path/to/fkey
+
+# Build for Linux
+cd platforms/linux && make build
+
+# Test requires real Linux or WSLg
+# WSL cannot test keyboard hooks properly
+```
+
+### Linux Release
+
+Linux releases are built via GitHub Actions:
+
+1. Push code to GitHub
+2. Go to **Actions** → **Release Linux** → **Run workflow**
+3. Enter version (e.g., `0.1.0`)
+4. Workflow builds and creates release automatically
+
+**Release artifacts:**
+- `FKey-{version}-linux-x86_64.tar.gz`
+- Tag: `v{version}-linux`
+
+### Config File
+
+Linux uses TOML config at `~/.config/fkey/config.toml`:
+
+```toml
+enabled = true
+input_method = 0  # 0=Telex, 1=VNI
+modern_tone = true
+esc_restore = true
+toggle_hotkey = "Ctrl+Space"
+```
+
+### Known Limitations
+
+- **X11 only** - Wayland not yet supported
+- **xdotool required** - For Unicode text injection
+- **No app-specific profiles** - Coming in future releases

@@ -4,14 +4,15 @@
 </h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" alt="Platform" />
+  <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" alt="Windows" />
+  <img src="https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black" alt="Linux" />
   <img src="https://img.shields.io/github/v/release/miken90/fkey?color=green" alt="Release" />
   <img src="https://img.shields.io/github/downloads/miken90/fkey/total?color=blue" alt="Downloads" />
   <img src="https://img.shields.io/badge/License-BSD--3--Clause-blue.svg" alt="License" />
 </p>
 
 <p align="center">
-  <strong>Bộ gõ tiếng Việt miễn phí, nhanh, nhẹ cho Windows</strong><br>
+  <strong>Bộ gõ tiếng Việt miễn phí, nhanh, nhẹ cho Windows & Linux</strong><br>
   ~5MB · Không cần cài đặt · Không quảng cáo · Không thu thập dữ liệu
 </p>
 
@@ -65,15 +66,35 @@
 
 ## 📥 Tải về & Cài đặt
 
-### Yêu cầu hệ thống
-- Windows 10/11 (64-bit)
-- WebView2 Runtime (thường có sẵn trên Windows 10/11)
+### Windows
 
-### Cài đặt
+**Yêu cầu:** Windows 10/11 (64-bit), WebView2 Runtime
+
 1. Tải <a href="https://github.com/miken90/fkey/releases/latest" target="_blank"><code>FKey-vX.X.X-portable.zip</code></a> từ GitHub Releases
 2. Giải nén vào thư mục bất kỳ
 3. Chạy `FKey.exe`
 4. App chạy trong system tray (khay hệ thống)
+
+### Linux (Beta)
+
+**Yêu cầu:** Linux với X11 (Ubuntu, Fedora, Arch...), xdotool
+
+```bash
+# 1. Tải về
+wget https://github.com/miken90/fkey/releases/download/vX.X.X-linux/FKey-X.X.X-linux-x86_64.tar.gz
+
+# 2. Giải nén
+tar -xzvf FKey-X.X.X-linux-x86_64.tar.gz
+cd FKey-X.X.X-linux-x86_64
+
+# 3. Cài đặt
+./install.sh
+
+# 4. Chạy
+fkey
+```
+
+> ⚠️ **Lưu ý:** Bản Linux đang ở giai đoạn beta, chỉ hỗ trợ X11 (chưa hỗ trợ Wayland)
 
 ---
 
@@ -86,45 +107,30 @@
 ---
 
 ## 🔧 Dành cho Developer
-Kiểm tra guide [DEVELOPMENT.md](docs/DEVELOPMENT.md) để biết thêm thông tin.
 
-### Yêu cầu
-
-- Rust
-- Go
-- Wails v3
-- WebView2 Runtime
+Xem chi tiết tại [DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ### Tech Stack
 
-| Layer | Công nghệ |
-|-------|-----------|
-| **Core Engine** | Rust (zero dependencies) |
-| **Windows App** | Go + Wails v3 + WebView2 |
-| **Testing** | 700+ tests |
+| Layer | Windows | Linux |
+|-------|---------|-------|
+| **Core Engine** | Rust (shared) | Rust (shared) |
+| **App** | Go + Wails v3 + WebView2 | Go + GTK3 + X11 |
+| **Keyboard** | Win32 Hook | X11 + xdotool |
+| **Config** | Registry | TOML file |
 
 ### Build từ source
 
+**Windows:**
 ```powershell
-# Build Rust core
-cd core
-cargo build --release
-
-# Build Windows app
-cd platforms/windows-wails
-.\build.ps1 -Release -Version "2.0.7"
+cd core && cargo build --release
+cd platforms/windows-wails && .\build.ps1 -Release
 ```
 
-### Chạy tests
-
-```powershell
-# Rust tests
-cd core
-cargo test
-
-# Go tests
-cd platforms/windows-wails
-go test ./...
+**Linux:**
+```bash
+cd core && cargo build --release
+cd platforms/linux && make build
 ```
 
 ---
