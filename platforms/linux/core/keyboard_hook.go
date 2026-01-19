@@ -62,28 +62,37 @@ const (
 )
 
 // gohook rawcode to internal keycode mapping
+// On Linux, gohook returns ASCII codes as rawcodes
 var rawcodeToInternal = map[uint16]uint16{
-	// Letters (gohook rawcodes for Linux)
-	38: KEY_A, 56: KEY_B, 54: KEY_C, 40: KEY_D, 26: KEY_E, 41: KEY_F,
-	42: KEY_G, 43: KEY_H, 31: KEY_I, 44: KEY_J, 45: KEY_K, 46: KEY_L,
-	58: KEY_M, 57: KEY_N, 32: KEY_O, 33: KEY_P, 24: KEY_Q, 27: KEY_R,
-	39: KEY_S, 28: KEY_T, 30: KEY_U, 55: KEY_V, 25: KEY_W, 53: KEY_X,
-	29: KEY_Y, 52: KEY_Z,
-	// Numbers
-	10: KEY_N1, 11: KEY_N2, 12: KEY_N3, 13: KEY_N4, 14: KEY_N5,
-	15: KEY_N6, 16: KEY_N7, 17: KEY_N8, 18: KEY_N9, 19: KEY_N0,
-	// Special keys
-	65: KEY_SPACE,
-	22: KEY_DELETE, // Backspace
-	36: KEY_RETURN,
-	9:  KEY_ESC,
-	23: KEY_TAB,
-	// Punctuation
-	34: KEY_LBRACKET, 35: KEY_RBRACKET,
-	60: KEY_DOT, 59: KEY_COMMA, 61: KEY_SLASH,
-	47: KEY_SEMICOLON, 48: KEY_QUOTE,
-	20: KEY_MINUS, 21: KEY_EQUAL,
-	49: KEY_BACKQUOTE,
+	// Lowercase letters (ASCII)
+	'a': KEY_A, 'b': KEY_B, 'c': KEY_C, 'd': KEY_D, 'e': KEY_E, 'f': KEY_F,
+	'g': KEY_G, 'h': KEY_H, 'i': KEY_I, 'j': KEY_J, 'k': KEY_K, 'l': KEY_L,
+	'm': KEY_M, 'n': KEY_N, 'o': KEY_O, 'p': KEY_P, 'q': KEY_Q, 'r': KEY_R,
+	's': KEY_S, 't': KEY_T, 'u': KEY_U, 'v': KEY_V, 'w': KEY_W, 'x': KEY_X,
+	'y': KEY_Y, 'z': KEY_Z,
+	// Uppercase letters (ASCII)
+	'A': KEY_A, 'B': KEY_B, 'C': KEY_C, 'D': KEY_D, 'E': KEY_E, 'F': KEY_F,
+	'G': KEY_G, 'H': KEY_H, 'I': KEY_I, 'J': KEY_J, 'K': KEY_K, 'L': KEY_L,
+	'M': KEY_M, 'N': KEY_N, 'O': KEY_O, 'P': KEY_P, 'Q': KEY_Q, 'R': KEY_R,
+	'S': KEY_S, 'T': KEY_T, 'U': KEY_U, 'V': KEY_V, 'W': KEY_W, 'X': KEY_X,
+	'Y': KEY_Y, 'Z': KEY_Z,
+	// Numbers (ASCII)
+	'0': KEY_N0, '1': KEY_N1, '2': KEY_N2, '3': KEY_N3, '4': KEY_N4,
+	'5': KEY_N5, '6': KEY_N6, '7': KEY_N7, '8': KEY_N8, '9': KEY_N9,
+	// Special keys (these use X11 keycodes, not ASCII)
+	65: KEY_SPACE,  // XK_space
+	22: KEY_DELETE, // Backspace (X11)
+	36: KEY_RETURN, // Return (X11)
+	9:  KEY_ESC,    // Escape (X11)
+	23: KEY_TAB,    // Tab (X11)
+	// Punctuation (ASCII)
+	'.': KEY_DOT, ',': KEY_COMMA, '/': KEY_SLASH,
+	';': KEY_SEMICOLON, '\'': KEY_QUOTE,
+	'[': KEY_LBRACKET, ']': KEY_RBRACKET,
+	'-': KEY_MINUS, '=': KEY_EQUAL,
+	'`': KEY_BACKQUOTE,
+	// Also map space by ASCII
+	' ': KEY_SPACE,
 }
 
 // KeyboardHandler manages global keyboard hook using gohook
