@@ -35,6 +35,8 @@ obj/
 # Build artifacts
 *.o
 *.so
+platforms/linux/fkey
+platforms/linux/*.tar.gz
 
 # IDE
 .vscode/
@@ -62,7 +64,10 @@ CLAUDE.md
 
 repomix-output.*
 platforms/windows/publish/
-platforms/windows/GoNhanh/Releases/*.zip
+platforms/windows/GoNhanh/Releases/
+platforms/windows-wails/build/bin/
+
+
 nul
 
 # bv (beads viewer) local config and caches
