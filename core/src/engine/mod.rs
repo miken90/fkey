@@ -346,6 +346,12 @@ pub struct Engine {
     /// Only set pending_capitalize when space/Enter follows
     /// Issue #185: don't capitalize immediately after punctuation (e.g., google.com)
     saw_sentence_ending: bool,
+    /// Track the last break key for backspace handling
+    /// Used to reset auto-capitalize state when user deletes sentence-ending punctuation
+    last_break_key: Option<(u16, bool)>, // (keycode, shift)
+    /// Tracks if any content was typed after the last space (for auto-capitalize reset logic)
+    /// Set when typing letters after space, cleared on space/clear
+    typed_after_space: bool,
 }
 
 impl Default for Engine {
@@ -391,6 +397,8 @@ impl Engine {
             pending_capitalize: false,
             auto_capitalize_used: false,
             saw_sentence_ending: false,
+            last_break_key: None,
+            typed_after_space: false,
         }
     }
 
@@ -670,6 +678,7 @@ impl Engine {
             if !self.buf.is_empty() {
                 self.word_history.push(self.buf.clone());
                 self.spaces_after_commit = 1; // First space after word
+                self.typed_after_space = false; // Reset for new word
             } else if self.spaces_after_commit > 0 {
                 // Additional space after commit - increment counter
                 self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
@@ -756,10 +765,12 @@ impl Engine {
                     // pending_capitalize will be set when space follows
                     if self.auto_capitalize && is_sentence_ending_punctuation(key, shift) {
                         self.saw_sentence_ending = true;
+                        self.last_break_key = Some((key, shift)); // Track for backspace
                     } else if self.auto_capitalize && (key == keys::RETURN || key == keys::ENTER) {
                         // Enter = newline = immediate capitalize (no space needed)
                         self.pending_capitalize = true;
                         self.saw_sentence_ending = false;
+                        self.last_break_key = Some((key, shift));
                     }
                     return Result::none(); // Let the char pass through, keep accumulating
                 }
@@ -769,15 +780,20 @@ impl Engine {
             // pending_capitalize will be set when space follows
             if self.auto_capitalize && is_sentence_ending_punctuation(key, shift) {
                 self.saw_sentence_ending = true;
+                self.last_break_key = Some((key, shift)); // Track for backspace
             } else if self.auto_capitalize && (key == keys::RETURN || key == keys::ENTER) {
                 // Enter = newline = immediate capitalize (no space needed)
                 self.pending_capitalize = true;
                 self.saw_sentence_ending = false;
+                self.last_break_key = Some((key, shift));
             } else if self.auto_capitalize && should_reset_pending_capitalize(key, shift) {
                 // Reset pending for word-breaking keys (comma, semicolon, etc.)
                 // But preserve pending for neutral keys (quotes, parentheses, brackets)
                 self.pending_capitalize = false;
                 self.saw_sentence_ending = false;
+                self.last_break_key = Some((key, shift));
+            } else {
+                self.last_break_key = Some((key, shift));
             }
             self.auto_capitalize_used = false; // Reset on word boundary
 
@@ -842,6 +858,50 @@ impl Engine {
             // e.g., "đa" + SPACE + backspace×2 + "a" should NOT match shortcut "a"
             if self.buf.is_empty() {
                 self.has_non_letter_prefix = true;
+                
+                // Track backspaces on empty buffer to detect when user deletes past the dot
+                // 
+                // Scenarios:
+                // A. "ok." + space + "Ban" + delete all → pending=true, space was typed
+                //    - First backspace = delete space → consume last_break_key, keep pending
+                //    - Second backspace = delete dot → reset pending
+                // B. "ok." + backspace → pending=false, saw_sentence_ending=true, no space
+                //    - First backspace = delete dot → reset saw_sentence_ending
+                //
+                // Key insight: 
+                // - If pending_capitalize=true, space was typed, so first backspace = delete space
+                // - If pending_capitalize=false but saw_sentence_ending=true, no space, first backspace = delete dot
+                if let Some((last_key, last_shift)) = self.last_break_key {
+                    if is_sentence_ending_punctuation(last_key, last_shift) {
+                        if self.pending_capitalize {
+                            // Space was typed after dot
+                            // This is first backspace = delete space, keep pending_capitalize
+                            // Just consume the break key context
+                            self.last_break_key = None;
+                            self.typed_after_space = false;
+                        } else if self.saw_sentence_ending {
+                            // No space was typed, this backspace = delete dot
+                            // Reset saw_sentence_ending so next space won't set pending
+                            self.saw_sentence_ending = false;
+                            self.last_break_key = None;
+                            self.typed_after_space = false;
+                        } else {
+                            self.last_break_key = None;
+                        }
+                    } else {
+                        self.last_break_key = None;
+                    }
+                } else {
+                    // No last_break_key = user already consumed it with previous backspace
+                    // This backspace is deleting the dot or content before it
+                    // Reset pending_capitalize because the sentence-ending context is gone
+                    if self.pending_capitalize {
+                        self.pending_capitalize = false;
+                        self.saw_sentence_ending = false;
+                        self.auto_capitalize_used = false;
+                    }
+                    self.typed_after_space = false;
+                }
             }
             self.buf.pop();
             self.raw_input.pop();
@@ -3622,6 +3682,9 @@ impl Engine {
         self.restored_pending_clear = false;
         self.restored_is_ascii = false;
         self.shortcut_prefix.clear();
+        self.typed_after_space = false;
+        // Note: DO NOT clear last_break_key, saw_sentence_ending, or pending_capitalize here
+        // These need to persist across word boundaries for auto-capitalize to work correctly
     }
 
     /// Clear everything including word history

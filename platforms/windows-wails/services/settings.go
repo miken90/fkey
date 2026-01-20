@@ -37,6 +37,7 @@ const (
 	KeyAutoCapitalize     = "AutoCapitalize"
 	KeyToggleHotkey       = "ToggleHotkey"
 	KeyCoalescingApps     = "CoalescingApps"
+	KeyShowOSD            = "ShowOSD"
 )
 
 // Settings holds all application settings
@@ -53,6 +54,7 @@ type Settings struct {
 	AutoCapitalize     bool   // Auto-capitalize after punctuation
 	ToggleHotkey       string // Format: "keycode,modifiers"
 	CoalescingApps     string // Comma-separated list of apps
+	ShowOSD            bool   // Show OSD when switching language
 }
 
 // DefaultSettings returns settings with default values
@@ -70,6 +72,7 @@ func DefaultSettings() *Settings {
 		AutoCapitalize:     true,
 		ToggleHotkey:       "32,1", // Ctrl+Space
 		CoalescingApps:     "discord,discordcanary,discordptb",
+		ShowOSD:            false,  // Default: OFF
 	}
 }
 
@@ -117,6 +120,7 @@ func (s *SettingsService) Load() error {
 	s.settings.AutoCapitalize = readDWORD(key, KeyAutoCapitalize, 1) == 1
 	s.settings.ToggleHotkey = readString(key, KeyToggleHotkey, "32,1")
 	s.settings.CoalescingApps = readString(key, KeyCoalescingApps, "discord,discordcanary,discordptb")
+	s.settings.ShowOSD = readDWORD(key, KeyShowOSD, 0) == 1
 
 	return nil
 }
@@ -141,6 +145,7 @@ func (s *SettingsService) Save() error {
 	writeDWORD(key, KeyAutoCapitalize, boolToDWORD(s.settings.AutoCapitalize))
 	writeString(key, KeyToggleHotkey, s.settings.ToggleHotkey)
 	writeString(key, KeyCoalescingApps, s.settings.CoalescingApps)
+	writeDWORD(key, KeyShowOSD, boolToDWORD(s.settings.ShowOSD))
 
 	// Update auto-start registry
 	s.updateAutoStart()

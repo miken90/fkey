@@ -149,8 +149,8 @@ func main() {
 	globalSettingsWin = globalApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:                       "FKey Settings",
 		Title:                      "FKey - Cài đặt",
-		Width:                      400,
-		Height:                     500,
+		Width:                      520,
+		Height:                     560,
 		Hidden:                     true,
 		DisableResize:              false,
 		URL:                        "/",
@@ -180,6 +180,8 @@ func main() {
 	// Status callback - called when hotkey toggles IME
 	globalImeLoop.OnEnabledChanged = func(enabled bool) {
 		updateUI(enabled)
+		// Play beep sound when toggled via hotkey
+		core.PlayBeep(enabled)
 	}
 
 	// Start IME loop BEFORE app.Run() so keyboard hook is active
@@ -282,6 +284,45 @@ func toggleIME() {
 	settingsSvc.Settings().Enabled = enabled
 	settingsSvc.Save()
 	updateUI(enabled)
+	// Play beep sound to indicate toggle
+	core.PlayBeep(enabled)
+}
+
+// showOSDPopup displays a brief on-screen notification when switching language
+func showOSDPopup(isVietnamese bool) {
+	var title, message string
+	if isVietnamese {
+		title = "FKey"
+		message = "🇻🇳 Tiếng Việt"
+	} else {
+		title = "FKey"
+		message = "🇺🇸 English"
+	}
+	
+	// Use Windows MessageBox with auto-close via timer
+	// For non-blocking: spawn a goroutine that shows a quick tooltip-style message
+	time.Sleep(100 * time.Millisecond) // Brief delay to avoid UI race
+	
+	// Create a simple tooltip-style window using MessageBox with timeout
+	// Note: This is a temporary solution. Proper OSD would use layered windows.
+	showTooltipNotification(title, message)
+}
+
+// showTooltipNotification shows a brief tooltip notification
+func showTooltipNotification(title, message string) {
+	// Update the tooltip temporarily to show language change
+	// The tooltip will be shown when user hovers over the tray icon
+	globalTray.SetTooltip(message)
+	
+	// Restore normal tooltip after a delay
+	go func() {
+		time.Sleep(2 * time.Second)
+		if settingsSvc.Settings().Enabled {
+			globalTray.SetTooltip("FKey - Tiếng Việt (Bật)")
+		} else {
+			globalTray.SetTooltip("FKey - Tiếng Việt (Tắt)")
+		}
+	}()
 }
 
 func updateUI(enabled bool) {
@@ -292,6 +333,14 @@ func updateUI(enabled bool) {
 	} else {
 		globalTray.SetIcon(iconOff)
 		globalTray.SetTooltip("FKey - Tiếng Việt (Tắt)")
+	}
+
+	// Emit event to frontend so Settings UI can update status indicator
+	globalApp.Event.Emit("ime:status-changed", enabled)
+
+	// Show OSD popup if enabled
+	if settingsSvc.Settings().ShowOSD {
+		go showOSDPopup(enabled)
 	}
 
 	// Rebuild menu with new state

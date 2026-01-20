@@ -60,14 +60,15 @@ type KBDLLHOOKSTRUCT struct {
 
 // Win32 API
 var (
-	user32                = syscall.NewLazyDLL("user32.dll")
-	kernel32              = syscall.NewLazyDLL("kernel32.dll")
-	procSetWindowsHookEx  = user32.NewProc("SetWindowsHookExW")
+	user32                  = syscall.NewLazyDLL("user32.dll")
+	kernel32                = syscall.NewLazyDLL("kernel32.dll")
+	procSetWindowsHookEx    = user32.NewProc("SetWindowsHookExW")
 	procUnhookWindowsHookEx = user32.NewProc("UnhookWindowsHookEx")
-	procCallNextHookEx    = user32.NewProc("CallNextHookEx")
-	procGetModuleHandle   = kernel32.NewProc("GetModuleHandleW")
-	procGetKeyState       = user32.NewProc("GetKeyState")
-	procGetAsyncKeyState  = user32.NewProc("GetAsyncKeyState")
+	procCallNextHookEx      = user32.NewProc("CallNextHookEx")
+	procGetModuleHandle     = kernel32.NewProc("GetModuleHandleW")
+	procGetKeyState         = user32.NewProc("GetKeyState")
+	procGetAsyncKeyState    = user32.NewProc("GetAsyncKeyState")
+	procMessageBeep         = user32.NewProc("MessageBeep")
 )
 
 // InjectedKeyMarker identifies keys we injected (to skip processing)
@@ -92,14 +93,23 @@ type KeyboardHook struct {
 
 // KeyboardShortcut represents a keyboard shortcut
 type KeyboardShortcut struct {
-	KeyCode uint16
-	Ctrl    bool
-	Alt     bool
-	Shift   bool
+	KeyCode      uint16
+	Ctrl         bool
+	Alt          bool
+	Shift        bool
+	ModifierOnly bool // If true, trigger on modifier release (e.g., Ctrl+Shift)
 }
 
 // Matches checks if the shortcut matches current key state
 func (ks *KeyboardShortcut) Matches(keyCode uint16, ctrl, alt, shift bool) bool {
+	// For modifier-only shortcuts (e.g., Ctrl+Shift), we match when:
+	// - KeyCode is 0 (or a modifier VK like VK_SHIFT)
+	// - The required modifiers are pressed
+	if ks.ModifierOnly {
+		// Modifier-only: check modifiers match, ignore keyCode
+		return ks.Ctrl == ctrl && ks.Alt == alt && ks.Shift == shift
+	}
+	
 	return ks.KeyCode == keyCode &&
 		ks.Ctrl == ctrl &&
 		ks.Alt == alt &&
@@ -176,10 +186,27 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		keyCode := uint16(hookStruct.VkCode)
 
 		// Get modifier states
+		// Note: The key currently being pressed may not be reflected in GetAsyncKeyState yet
+		// So we need to account for it based on keyCode
 		shift := isKeyDown(VK_SHIFT)
 		ctrl := isKeyDown(VK_CONTROL)
 		alt := isKeyDown(VK_MENU)
 		capsLock := isCapsLockOn()
+		
+		// If the current keyCode IS a modifier, ensure it's counted as pressed
+		// GetAsyncKeyState may not have updated yet for the key being pressed
+		isShiftKey := keyCode == VK_SHIFT || keyCode == VK_LSHIFT || keyCode == VK_RSHIFT
+		isCtrlKey := keyCode == VK_CONTROL || keyCode == VK_LCONTROL || keyCode == VK_RCONTROL
+		isAltKey := keyCode == VK_MENU || keyCode == VK_LMENU || keyCode == VK_RMENU
+		if isShiftKey {
+			shift = true
+		}
+		if isCtrlKey {
+			ctrl = true
+		}
+		if isAltKey {
+			alt = true
+		}
 
 		// Check format hotkeys BEFORE toggle hotkey
 		// Need at least Ctrl or Alt modifier for format hotkeys
@@ -263,12 +290,26 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 				}
 				}
 
-		// Check for toggle hotkey FIRST
-		if h.HotkeyEnabled && h.Hotkey != nil && h.Hotkey.Matches(keyCode, ctrl, alt, shift) {
-			if h.OnHotkey != nil {
-				h.OnHotkey()
+		// Check for toggle hotkey
+		// For modifier-only shortcuts (like Ctrl+Shift), trigger when the last modifier is pressed
+		if h.HotkeyEnabled && h.Hotkey != nil {
+			if h.Hotkey.ModifierOnly {
+				// Modifier-only: trigger when pressing a modifier key while other required modifiers are held
+				// E.g., Ctrl+Shift triggers when pressing Shift while Ctrl is held (or vice versa)
+				if isShiftKey || isCtrlKey || isAltKey {
+					if h.Hotkey.Matches(keyCode, ctrl, alt, shift) {
+						if h.OnHotkey != nil {
+							h.OnHotkey()
+						}
+						return 1 // Consume the key
+					}
+				}
+			} else if h.Hotkey.Matches(keyCode, ctrl, alt, shift) {
+				if h.OnHotkey != nil {
+					h.OnHotkey()
+				}
+				return 1 // Consume the key
 			}
-			return 1 // Consume the key
 		}
 
 		// Only process relevant keys for Vietnamese input
@@ -355,4 +396,25 @@ func IsRelevantKey(vk uint16) bool {
 		return true
 	}
 	return false
+}
+
+// MessageBeep sound types
+const (
+	MB_OK          = 0x00000000 // Default beep
+	MB_ICONHAND    = 0x00000010 // Critical stop
+	MB_ICONQUESTION = 0x00000020 // Question
+	MB_ICONEXCLAMATION = 0x00000030 // Exclamation
+	MB_ICONASTERISK = 0x00000040 // Asterisk (info)
+)
+
+// PlayBeep plays a Windows system beep sound
+// soundType: true = Vietnamese on (higher pitch), false = English (lower pitch)
+func PlayBeep(isVietnamese bool) {
+	if isVietnamese {
+		// Higher pitch beep for Vietnamese
+		procMessageBeep.Call(uintptr(MB_ICONASTERISK))
+	} else {
+		// Lower pitch beep for English
+		procMessageBeep.Call(uintptr(MB_OK))
+	}
 }

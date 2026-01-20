@@ -136,11 +136,15 @@ func (l *ImeLoop) Toggle() bool {
 
 // SetHotkey sets the toggle hotkey
 func (l *ImeLoop) SetHotkey(keyCode uint16, ctrl, alt, shift bool) {
+	// Detect modifier-only shortcuts (keyCode = 0 means modifiers only)
+	modifierOnly := keyCode == 0
+	
 	l.hook.Hotkey = &KeyboardShortcut{
-		KeyCode: keyCode,
-		Ctrl:    ctrl,
-		Alt:     alt,
-		Shift:   shift,
+		KeyCode:      keyCode,
+		Ctrl:         ctrl,
+		Alt:          alt,
+		Shift:        shift,
+		ModifierOnly: modifierOnly,
 	}
 	l.hook.OnHotkey = func() {
 		l.Toggle()

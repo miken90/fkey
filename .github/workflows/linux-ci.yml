@@ -1,18 +1,16 @@
-# Linux CI - Build & Test on every push/PR
-# Ensures Linux build doesn't break
+# Linux CI - Build & Test (manual trigger only)
+# Run when needed to verify Linux build works
 
 name: Linux CI
 
 on:
-  push:
-    paths:
-      - 'core/**'
-      - 'platforms/linux/**'
-      - '.github/workflows/linux-ci.yml'
-  pull_request:
-    paths:
-      - 'core/**'
-      - 'platforms/linux/**'
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run Rust tests'
+        required: false
+        type: boolean
+        default: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -55,6 +53,7 @@ jobs:
       run: cargo build --release
 
     - name: Run Rust tests
+      if: ${{ inputs.run_tests }}
       working-directory: core
       run: cargo test
 

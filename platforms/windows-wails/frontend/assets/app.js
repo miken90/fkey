@@ -127,6 +127,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('Wails runtime ready');
     
+    // Listen for IME status changes from backend (hotkey toggle)
+    if (wails.Events && wails.Events.On) {
+        wails.Events.On('ime:status-changed', (event) => {
+            console.log('IME status changed event:', event);
+            // event.data contains the emitted data (could be array or direct value)
+            const enabled = Array.isArray(event.data) ? event.data[0] : event.data;
+            currentSettings.enabled = enabled;
+            updateStatusIndicator(enabled);
+        });
+    }
+    
     try {
         // Load settings from backend
         currentSettings = await App.GetSettings();
@@ -257,7 +268,8 @@ function applySettingsToUI(settings) {
         'freeTone': settings.freeTone,
         'englishRestore': settings.englishAutoRestore,
         'autoCapitalize': settings.autoCapitalize !== false,
-        'autoStart': settings.autoStart
+        'autoStart': settings.autoStart,
+        'showOSD': settings.showOSD
     };
     
     for (const [id, value] of Object.entries(checkboxes)) {
@@ -301,7 +313,10 @@ function updateHotkeyDisplay(hotkeyStr) {
     if (modifiers & 2) display.push('Alt');
     if (modifiers & 4) display.push('Shift');
     
-    display.push(getKeyName(keyCode));
+    // keyCode 0 means modifier-only combo
+    if (keyCode !== 0) {
+        display.push(getKeyName(keyCode));
+    }
     btn.textContent = display.join('+');
 }
 
@@ -386,6 +401,7 @@ function setupEventListeners() {
         'englishRestore': 'englishAutoRestore',
         'autoCapitalize': 'autoCapitalize',
         'autoStart': 'autoStart',
+        'showOSD': 'showOSD',
     };
     
     Object.entries(checkboxMapping).forEach(([elemId, settingKey]) => {
@@ -402,21 +418,36 @@ function setupEventListeners() {
     // Hotkey button - recording mode
     const hotkeyBtn = document.getElementById('hotkeyBtn');
     let isRecording = false;
+    let modifierHeldState = { ctrl: false, alt: false, shift: false };
     
     hotkeyBtn.addEventListener('click', () => {
         if (isRecording) return;
         isRecording = true;
         hotkeyBtn.textContent = 'Nhấn phím...';
         hotkeyBtn.classList.add('recording');
+        modifierHeldState = { ctrl: false, alt: false, shift: false };
         console.log('Hotkey recording started');
         
-        const handler = async (e) => {
+        const keydownHandler = async (e) => {
             console.log('Key pressed:', e.key, 'keyCode:', e.keyCode, 'modifiers:', e.ctrlKey, e.altKey, e.shiftKey);
             e.preventDefault();
             e.stopPropagation();
             
-            // Ignore modifier-only presses
+            // Track modifiers being held
+            modifierHeldState.ctrl = e.ctrlKey;
+            modifierHeldState.alt = e.altKey;
+            modifierHeldState.shift = e.shiftKey;
+            
+            // If it's a modifier-only key, wait for potential keyup (modifier-only combo)
             if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+                // Update display to show current modifiers
+                const parts = [];
+                if (modifierHeldState.ctrl) parts.push('Ctrl');
+                if (modifierHeldState.alt) parts.push('Alt');
+                if (modifierHeldState.shift) parts.push('Shift');
+                if (parts.length > 0) {
+                    hotkeyBtn.textContent = parts.join('+') + '...';
+                }
                 return;
             }
             
@@ -434,7 +465,8 @@ function setupEventListeners() {
                     hotkeyBtn.classList.remove('recording');
                     isRecording = false;
                 }, 1200);
-                document.removeEventListener('keydown', handler);
+                document.removeEventListener('keydown', keydownHandler);
+                document.removeEventListener('keyup', keyupHandler);
                 return;
             }
             
@@ -443,12 +475,45 @@ function setupEventListeners() {
             updateHotkeyDisplay(currentSettings.toggleHotkey);
             hotkeyBtn.classList.remove('recording');
             isRecording = false;
-            document.removeEventListener('keydown', handler);
+            document.removeEventListener('keydown', keydownHandler);
+            document.removeEventListener('keyup', keyupHandler);
             
             await saveSettings();
         };
         
-        document.addEventListener('keydown', handler);
+        // Handle modifier-only combo: detect when user releases while holding required modifiers
+        const keyupHandler = async (e) => {
+            // Only trigger modifier-only combo if we had multiple modifiers
+            // and user releases one while still holding another
+            const hadMultipleModifiers = (modifierHeldState.ctrl && modifierHeldState.shift) ||
+                                        (modifierHeldState.ctrl && modifierHeldState.alt) ||
+                                        (modifierHeldState.alt && modifierHeldState.shift);
+            
+            if (hadMultipleModifiers && ['Control', 'Alt', 'Shift'].includes(e.key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Save modifier-only combo (keyCode = 0)
+                let modifiers = 0;
+                if (modifierHeldState.ctrl) modifiers |= 1;
+                if (modifierHeldState.alt) modifiers |= 2;
+                if (modifierHeldState.shift) modifiers |= 4;
+                
+                // Use keyCode 0 to indicate modifier-only
+                currentSettings.toggleHotkey = `0,${modifiers}`;
+                console.log('Modifier-only hotkey set:', currentSettings.toggleHotkey);
+                updateHotkeyDisplay(currentSettings.toggleHotkey);
+                hotkeyBtn.classList.remove('recording');
+                isRecording = false;
+                document.removeEventListener('keydown', keydownHandler);
+                document.removeEventListener('keyup', keyupHandler);
+                
+                await saveSettings();
+            }
+        };
+        
+        document.addEventListener('keydown', keydownHandler);
+        document.addEventListener('keyup', keyupHandler);
     });
     
     // Feedback link

@@ -42,7 +42,7 @@ body {
 }
 
 .container {
-    max-width: 360px;
+    max-width: 480px;
     margin: 0 auto;
     padding: 12px 16px;
 }
@@ -556,7 +556,7 @@ footer a:hover {
 .hotkey-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
     padding: 4px 0;
     font-size: 12px;
     border-bottom: 1px solid #eee;
@@ -567,7 +567,10 @@ footer a:hover {
 }
 
 .hotkey-row .hotkey-name {
+    flex: 1;
+    min-width: 80px;
     color: var(--text);
+    text-align: left;
 }
 
 .hotkey-row .hotkey-key {

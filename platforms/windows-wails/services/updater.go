@@ -60,12 +60,20 @@ type UpdaterService struct {
 	currentVersion string
 	lastCheck      time.Time
 	cachedInfo     *UpdateInfo
+	githubToken    string // Optional: for private repos
 }
 
 // NewUpdaterService creates a new updater service
 func NewUpdaterService(currentVersion string) *UpdaterService {
+	// Try to get GitHub token from environment for private repos
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		token = os.Getenv("GH_TOKEN")
+	}
+	
 	return &UpdaterService{
 		currentVersion: currentVersion,
+		githubToken:    token,
 	}
 }
 
@@ -100,6 +108,11 @@ func (u *UpdaterService) fetchLatestRelease() (*Release, error) {
 
 	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	
+	// Add authorization for private repos
+	if u.githubToken != "" {
+		req.Header.Set("Authorization", "Bearer "+u.githubToken)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -111,8 +124,14 @@ func (u *UpdaterService) fetchLatestRelease() (*Release, error) {
 		return nil, fmt.Errorf("no releases found")
 	}
 
+	if resp.StatusCode == 403 {
+		// Rate limited - just show simple message, no need for token
+		return nil, fmt.Errorf("Đã kiểm tra quá nhiều lần. Thử lại sau 1 giờ")
+	}
+
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("GitHub API error: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API error: %d - %s", resp.StatusCode, string(body))
 	}
 
 	var release Release
@@ -341,7 +360,9 @@ del "%%~f0"
 
 // RunUpdateScript runs the update batch script and signals app to exit
 func (u *UpdaterService) RunUpdateScript(batchPath string) error {
-	cmd := exec.Command("cmd", "/c", "start", "", "/min", batchPath)
+	// Use cmd /c with quoted path to handle spaces
+	cmd := exec.Command("cmd", "/c", batchPath)
+	cmd.Dir = filepath.Dir(batchPath)
 	return cmd.Start()
 }
 
