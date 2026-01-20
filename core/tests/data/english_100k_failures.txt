@@ -451,6 +451,7 @@ turf	tù
 mir	mỉ
 sown	sơn
 oj	ọ
+theses	thes
 dee	dê
 charms	chám
 vows	vớ
@@ -487,6 +488,7 @@ loaf	loà
 vest	vét
 pius	píu
 tow	tơ
+dd	đ
 reefs	rế
 vor	vỏ
 reuse	rếu
@@ -714,6 +716,7 @@ dips	díp
 dwarfs	dứa
 pow	pơ
 loo	lô
+casas	cas
 ecr	ẻc
 masts	mats
 loot	lôt
@@ -845,6 +848,7 @@ cocoon	cocon
 bono	bôn
 ips	íp
 booze	boe
+dieses	dies
 esr	ẻ
 ree	rê
 caso	cáo
@@ -1096,6 +1100,7 @@ aca	âc
 thar	thả
 mujer	muẻ
 wwii	wii
+nyerere	nyere
 terns	tén
 nasir	nải
 amar	ẩm
@@ -2053,7 +2058,6 @@ guyer	guyẻ
 ganja	gận
 sws	sứ
 sif	sì
-comoros	cốm
 harre	hare
 bors	bó
 bair	bải
@@ -2086,6 +2090,7 @@ rossa	rosa
 nueces	nuếc
 hys	hý
 doxa	doã
+bajaj	baj
 oom	ôm
 vix	vĩ
 haro	hảo
@@ -2191,6 +2196,7 @@ rosse	rose
 larus	láu
 posix	põi
 nias	nía
+meses	mes
 puer	puẻ
 esm	ém
 oost	ốt
@@ -2418,6 +2424,7 @@ passo	paso
 transf	tràn
 puro	puỏ
 yx	ỹ
+miserere	miere
 musts	muts
 ufw	ừ
 awwa	awa
@@ -2473,6 +2480,7 @@ kisch	kích
 ajay	ậy
 wus	ứu
 sarna	sẩn
+harar	har
 larix	lãi
 etfs	ét
 kyr	kỷ

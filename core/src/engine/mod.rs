@@ -1575,7 +1575,17 @@ impl Engine {
                         let is_uo_pattern = c1.key == keys::U && c2.key == keys::O;
                         let has_final = self.buf.get(pos2 + 1).is_some();
 
-                        if is_uo_pattern && !has_final {
+                        // Check if 'u' is preceded by 'Q' (qu-initial consonant cluster)
+                        // In "Qu-", the 'u' is part of the initial and should not get horn
+                        // Examples: "Quoiws" → "Quới" (not "Qưới"), "quốc" (not "qước")
+                        let preceded_by_q =
+                            pos1 > 0 && self.buf.get(pos1 - 1).map(|c| c.key) == Some(keys::Q);
+
+                        if preceded_by_q {
+                            // "Qu-" pattern - only second vowel gets horn
+                            target_positions.push(pos2);
+                            self.pending_u_horn_pos = None;
+                        } else if is_uo_pattern && !has_final {
                             // "uơ" pattern - only 'o' gets horn initially
                             // Set pending so 'u' gets horn if final consonant/vowel is added
                             target_positions.push(pos2);
@@ -2380,10 +2390,12 @@ impl Engine {
                     // - Second vowel is at end (trigger position)
                     // - Has valid Vietnamese initial (skip English like "proposal")
                     // - No double initial (those work immediately without delay)
+                    // - User didn't just revert a circumflex (typing 3rd vowel to cancel)
                     if is_non_extending_final
                         && second_vowel_at_end
                         && has_valid_vietnamese_initial
                         && !has_vietnamese_double_initial
+                        && !self.had_circumflex_revert
                     {
                         // Skip delayed circumflex if raw_input is an English word
                         // This prevents "pasta" → "pất", "costa" → "côt", etc.
@@ -3906,8 +3918,11 @@ impl Engine {
 
                 // Simple logic: buffer invalid VN + raw in English dict → restore
                 // Special case: W at end + in dict → restore (foreign word pattern)
-                if has_stroke && !raw_in_english_dict {
-                    // Skip restore - Vietnamese abbreviation like đc, đt
+                // Issue #247: Standalone "đ" (buffer len 1 with stroke) should NOT restore
+                // This is intentional Vietnamese typing, not English "dd"
+                let is_standalone_stroke = self.buf.len() == 1 && has_stroke;
+                if has_stroke && (!raw_in_english_dict || is_standalone_stroke) {
+                    // Skip restore - Vietnamese abbreviation like đc, đt, or standalone đ
                 } else if w_at_end && raw_in_english_dict {
                     // W at end + in dict → restore foreign words (moscow, warsaw, saw)
                     return self.build_raw_chars_exact();
@@ -4000,6 +4015,75 @@ impl Engine {
                 let raw_much_longer = full_restore_len > self.buf.len() + 1;
                 if !has_marks && !has_stroke && !has_repeated_consonant && !raw_much_longer {
                     return None; // Keep buffer (clean, no Vietnamese transforms)
+                }
+
+                // Issue #230: Alternating pattern fix (herere → here, therere → there)
+                // Detect alternating vowel-mark-vowel-mark pattern at end of raw_input.
+                // Pattern like `h-e-r-e-r-e` (V-M-V-M-V at end) indicates English typing where
+                // marks got applied then reverted, and user continued with vowel.
+                //
+                // NOTE: We check self.raw_input (full input like "Therere"), not stored
+                // (telex_double_raw = "There" at time of revert). The pattern appears in full input.
+                //
+                // IMPORTANT: Only apply this fix when:
+                // 1. raw input is NOT a valid English word (avoid breaking "theses" etc.)
+                // 2. raw input matches alternating V-M-V-M or V-M-V-M-V pattern with SAME vowels
+                //    - "herere": e-r-e-r-e (V-M-V-M-V) → keep "here"
+                //    - "herer": e-r-e-r (V-M-V-M) → keep "her"
+                //    - "harare": a-r-a-r-e (different vowels a≠e) → skip fix
+                let raw_input_str = self.get_raw_input_string();
+                let raw_is_english = english_dict::is_english_word(&raw_input_str);
+                let chars: Vec<char> = raw_input_str.chars().collect();
+
+                if !raw_is_english && chars.len() >= 4 {
+                    let len = chars.len();
+                    let is_mark_char = |c: char| matches!(c, 's' | 'f' | 'r' | 'x' | 'j');
+                    let is_vowel_char = |c: char| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+                    let last = chars[len - 1].to_ascii_lowercase();
+
+                    // Check for two alternating patterns:
+                    // 1. V-M-V-M-V (ends with vowel): "herere" = e-r-e-r-e → keep "here"
+                    // 2. V-M-V-M (ends with mark): "herer" = e-r-e-r → keep "her"
+
+                    let is_vmvmv_pattern = len >= 5
+                        && is_vowel_char(last) // ends with vowel
+                        && {
+                            let v1 = last;
+                            let m1 = chars[len - 2].to_ascii_lowercase();
+                            let v2 = chars[len - 3].to_ascii_lowercase();
+                            let m2 = chars[len - 4].to_ascii_lowercase();
+                            let v3 = chars[len - 5].to_ascii_lowercase();
+
+                            is_mark_char(m1)
+                                && is_vowel_char(v2)
+                                && is_mark_char(m2)
+                                && is_vowel_char(v3)
+                                && m1 == m2           // Same mark repeated
+                                && v1 == v2 && v2 == v3 // Same vowel repeated
+                        };
+
+                    let is_vmvm_pattern = is_mark_char(last) // ends with mark
+                        && {
+                            let m1 = last;
+                            let v1 = chars[len - 2].to_ascii_lowercase();
+                            let m2 = chars[len - 3].to_ascii_lowercase();
+                            let v2 = chars[len - 4].to_ascii_lowercase();
+
+                            is_vowel_char(v1)
+                                && is_mark_char(m2)
+                                && is_vowel_char(v2)
+                                && m1 == m2       // Same mark repeated
+                                && v1 == v2       // Same vowel repeated
+                        };
+
+                    // For alternating pattern, only check for actual diacritic marks (sắc/huyền/hỏi/ngã/nặng),
+                    // not vowel modifiers (circumflex/horn/breve from doubled vowels like ee→ê).
+                    let has_diacritic_marks = self.buf.iter().any(|c| c.mark > 0);
+
+                    if (is_vmvmv_pattern || is_vmvm_pattern) && !has_diacritic_marks && !has_stroke
+                    {
+                        return None; // Keep buffer (alternating pattern reverted cleanly)
+                    }
                 }
             }
         }
