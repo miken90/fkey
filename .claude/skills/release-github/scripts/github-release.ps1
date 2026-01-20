@@ -327,6 +327,13 @@ try {
     Write-Host "  Asset: $ZipName" -ForegroundColor Gray
     Write-Host ""
 
+    # Update VERSION file for auto-updater
+    $VersionFile = Join-Path $ProjectRoot "VERSION"
+    Write-Host "  Updating VERSION file..." -ForegroundColor Gray
+    Set-Content -Path $VersionFile -Value $Version -NoNewline
+    $null = git add $VersionFile 2>&1
+    $null = git commit -m "release: v$Version" --allow-empty 2>&1
+
     # Push code and tag to origin only (never upstream)
     $prevErrorAction = $ErrorActionPreference
     $ErrorActionPreference = "Continue"

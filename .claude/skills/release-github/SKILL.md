@@ -42,7 +42,10 @@ Example:
 
 2. **Generate Release Notes** - Auto-generates from commits since last tag
 
-3. **Create GitHub Release** - Uses `gh` CLI to:
+3. **Update VERSION File** - Updates `VERSION` in repo root for auto-updater
+   - Auto-updater fetches from `raw.githubusercontent.com` (no rate limit)
+
+4. **Create GitHub Release** - Uses `gh` CLI to:
    - Create version tag (e.g., `v2.0.0`)
    - Upload portable ZIP
    - Publish release notes
