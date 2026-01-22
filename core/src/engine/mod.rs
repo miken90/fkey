@@ -894,16 +894,16 @@ impl Engine {
         // unless they're mark/tone keys (allow "ban" + restore + "s" → "bán")
         if self.restored_pending_clear && keys::is_letter(key) {
             let m = input::get(self.method);
-            let is_mark_or_tone = m.mark(key).is_some() || m.tone(key).is_some();
-            // Clear buffer when letter is NOT a mark/tone modifier:
+            let is_modifier = m.mark(key).is_some() || m.tone(key).is_some() || m.remove(key);
+            // Clear buffer when letter is NOT a modifier (mark/tone/remove):
             // - Vietnamese restored: clear on consonant (vowels may add diacritics)
-            // - ASCII restored: clear on any non-mark/tone letter (consonant OR vowel)
+            // - ASCII restored: clear on any non-modifier letter (consonant OR vowel)
             let should_clear = if self.restored_is_ascii {
-                // Pure ASCII: clear on any letter except mark/tone keys
-                !is_mark_or_tone
+                // Pure ASCII: clear on any letter except modifier keys
+                !is_modifier
             } else {
-                // Vietnamese: clear only on consonant that's not mark/tone
-                keys::is_consonant(key) && !is_mark_or_tone
+                // Vietnamese: clear only on consonant that's not a modifier
+                keys::is_consonant(key) && !is_modifier
             };
             if should_clear {
                 self.clear();
