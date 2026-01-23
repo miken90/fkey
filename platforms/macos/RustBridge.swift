@@ -1473,19 +1473,22 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
     if bundleId == "com.todesktop.230313mzl4w4u92" { return cached(.slow, (8000, 15000, 8000), "slow:claude") }
     if bundleId == "notion.id" { return cached(.slow, (12000, 25000, 12000), "slow:notion") }
 
-    // Warp terminal - higher delays
-    if bundleId == "dev.warp.Warp-Stable" { return cached(.slow, (8000, 15000, 8000), "slow:warp") }
-
-    // Terminal/IDE apps - conservative delays
-    let terminals = [
+    // Code editors & terminals - higher delays for Monaco/Electron-based apps
+    // Includes: VSCode-based (VSCode, Cursor, Antigravity), terminals (Warp, Ghostty, Kitty, etc.)
+    let codeApps = [
+        // VSCode-based IDEs
+        "com.microsoft.VSCode", "com.google.antigravity", "com.todesktop.cursor",
+        "com.visualstudio.code.oss", "com.vscodium",
+        // Terminals
+        "dev.warp.Warp-Stable", "com.mitchellh.ghostty", "net.kovidgoyal.kitty",
         "com.apple.Terminal", "com.googlecode.iterm2", "io.alacritty",
-        "com.github.wez.wezterm", "com.mitchellh.ghostty", "net.kovidgoyal.kitty",
-        "co.zeit.hyper", "org.tabby", "com.raphaelamorim.rio", "com.termius-dmg.mac",
-        "com.microsoft.VSCode", "com.google.antigravity", "dev.zed.Zed",
-        "com.sublimetext.4", "com.sublimetext.3", "com.panic.Nova"
+        "com.github.wez.wezterm", "co.zeit.hyper", "org.tabby",
+        "com.raphaelamorim.rio", "com.termius-dmg.mac",
+        // Other code editors
+        "dev.zed.Zed", "com.sublimetext.4", "com.sublimetext.3", "com.panic.Nova"
     ]
-    if terminals.contains(bundleId) { return cached(.slow, (3000, 8000, 3000), "slow:term") }
-    if bundleId.hasPrefix("com.jetbrains") { return cached(.slow, (3000, 8000, 3000), "slow:jb") }
+    if codeApps.contains(bundleId) { return cached(.slow, (8000, 15000, 8000), "slow:code") }
+    if bundleId.hasPrefix("com.jetbrains") { return cached(.slow, (8000, 15000, 8000), "slow:jb") }
 
     // Default: safe delays
     return cached(.fast, (1000, 3000, 1500), "default")
