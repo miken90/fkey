@@ -44,6 +44,13 @@ VOWEL_PCT=$(echo "scale=1; $EN_VOWEL * 100 / $EN_FAILED" | bc)
 BOTH_PCT=$(echo "scale=1; $EN_BOTH * 100 / $EN_FAILED" | bc)
 UNKNOWN_PCT=$(echo "scale=1; $EN_UNKNOWN * 100 / $EN_FAILED" | bc)
 
+# Calculate Vietnamese aggregate (worst case)
+VN_TOTAL=$VNI_TOTAL
+VN_FAILED=$((VNI_FAILED + TELEX_FAILED + TELEX_AR_FAILED))
+VN_PASSED=$((VN_TOTAL * 3 - VN_FAILED))
+# Use worst rate among the 3 tests
+VN_RATE=$(echo "scale=2; if ($VNI_RATE < $TELEX_RATE) { if ($VNI_RATE < $TELEX_AR_RATE) $VNI_RATE else $TELEX_AR_RATE } else { if ($TELEX_RATE < $TELEX_AR_RATE) $TELEX_RATE else $TELEX_AR_RATE }" | bc)
+
 # Print combined summary table
 echo ""
 echo "┌──────────────────────────────────────────────────────────────────┐"
@@ -51,7 +58,7 @@ echo "│                    DICTIONARY TEST RESULTS                       │"
 echo "├──────────────┬──────────┬──────────┬──────────┬─────────┬────────┤"
 echo "│ Dictionary   │ Total    │ Passed   │ Failed   │ Rate    │ Target │"
 echo "├──────────────┼──────────┼──────────┼──────────┼─────────┼────────┤"
-printf "│ Vietnamese   │ %8s │ %8s │ %8s │ %6s%% │   100%% │\n" "$VNI_TOTAL" "$VNI_PASSED" "$VNI_FAILED" "$VNI_RATE"
+printf "│ Vietnamese   │ %8s │ %8s │ %8s │ %6s%% │   100%% │\n" "$VN_TOTAL" "$VN_PASSED" "$VN_FAILED" "$VN_RATE"
 printf "│  - VNI       │          │          │ %8s │ %6s%% │        │\n" "$VNI_FAILED" "$VNI_RATE"
 printf "│  - Telex     │          │          │ %8s │ %6s%% │        │\n" "$TELEX_FAILED" "$TELEX_RATE"
 printf "│  - Telex+AR  │          │          │ %8s │ %6s%% │        │\n" "$TELEX_AR_FAILED" "$TELEX_AR_RATE"

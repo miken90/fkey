@@ -335,6 +335,38 @@ fn generate_all_telex_variants(word: &str) -> Vec<String> {
                     variants.insert(v);
                 }
             }
+
+            // Pattern 4: For circumflex vowels, tone between base vowel and circumflex completer
+            // Example: giầm → giafam (gi + a + f + a + m)
+            // Example: giấc → giacsa (gi + a + c + s + a)
+            // This applies when:
+            // - Single vowel with circumflex mark (â, ê, ô)
+            // - Has final consonant
+            if vowels.len() == 1 && !final_cons.is_empty() {
+                let (base_vowel, mark) = &vowels[0];
+                if let Some(m) = mark {
+                    // Check if it's a circumflex (mark == base vowel lowercase)
+                    if *m == base_vowel.to_ascii_lowercase() {
+                        // Pattern 4a: initial + base_vowel + tone + circumflex_completer + final
+                        // Example: giầm → giafam
+                        let mut v = initial.clone();
+                        v.push(*base_vowel);
+                        v.push(t);
+                        v.push(*m);
+                        v.push_str(final_cons);
+                        variants.insert(v);
+
+                        // Pattern 4b: initial + base_vowel + final + tone + circumflex_completer
+                        // Example: giấc → giacsa
+                        let mut v = initial.clone();
+                        v.push(*base_vowel);
+                        v.push_str(final_cons);
+                        v.push(t);
+                        v.push(*m);
+                        variants.insert(v);
+                    }
+                }
+            }
         } else {
             // No tone, just the base pattern
             let mut v = initial.clone();
@@ -393,16 +425,15 @@ fn generate_modifiers_at_end_patterns(parts: &SyllableParts) -> Vec<String> {
     // Final consonant
     base.push_str(final_cons);
 
-    // Collect all modifiers to add at end
-    let mut end_modifiers = String::new();
+    // Collect vowel modifiers
+    let mut vowel_mods: Vec<char> = Vec::new();
+    let mut stroke_mod: Option<char> = None;
 
-    // Add stroke modifier (d for đ)
     if has_stroke {
-        end_modifiers.push('d');
+        stroke_mod = Some('d');
     }
 
     // Check for ươ cluster (both u and o have horn marks)
-    // In Telex, a single 'w' at end applies horn to both u and o in ươ cluster
     let has_horn_u = vowels
         .iter()
         .any(|(v, m)| v.to_ascii_lowercase() == 'u' && *m == Some('w'));
@@ -412,46 +443,165 @@ fn generate_modifiers_at_end_patterns(parts: &SyllableParts) -> Vec<String> {
     let has_uwo_cluster = has_horn_u && has_horn_o;
     let mut horn_w_added = false;
 
-    // Add vowel marks
+    // Collect vowel marks
     for (v, mark) in vowels {
         if let Some(m) = mark {
             match m {
                 'w' => {
-                    // Horn mark - add w
-                    // For ươ cluster, only add ONE 'w' (not two)
                     if has_uwo_cluster {
                         if !horn_w_added {
-                            end_modifiers.push('w');
+                            vowel_mods.push('w');
                             horn_w_added = true;
                         }
                     } else {
-                        end_modifiers.push('w');
+                        vowel_mods.push('w');
                     }
                 }
                 _ => {
-                    // Circumflex (aa, ee, oo) or breve (aw) - add the modifier char
                     if *m == v.to_ascii_lowercase() {
-                        // Circumflex: aa->â, ee->ê, oo->ô
-                        end_modifiers.push(*v);
+                        vowel_mods.push(*v);
                     } else {
-                        // Breve or other: aw->ă
-                        end_modifiers.push(*m);
+                        vowel_mods.push(*m);
                     }
                 }
             }
         }
     }
 
-    // Add tone modifier
-    if let Some(t) = tone {
-        end_modifiers.push(t);
+    // Generate all permutations of modifiers at end
+    // Pattern 1: base + stroke + vowel_mods + tone
+    // Pattern 2: base + stroke + tone + vowel_mods
+    // Pattern 3: base + vowel_mods + stroke + tone (etc.)
+
+    let has_mods = stroke_mod.is_some() || !vowel_mods.is_empty() || tone.is_some();
+    if !has_mods {
+        return patterns;
     }
 
-    // Only add pattern if there are modifiers to append
-    if !end_modifiers.is_empty() {
-        let mut pattern = base;
-        pattern.push_str(&end_modifiers);
-        patterns.push(pattern);
+    // Simple case: just vowel mods + tone (most common)
+    if stroke_mod.is_none() && !vowel_mods.is_empty() && tone.is_some() {
+        let t = tone.unwrap();
+        // Pattern 1: vowel_mods then tone (existing)
+        let mut p1 = base.clone();
+        for m in &vowel_mods {
+            p1.push(*m);
+        }
+        p1.push(t);
+        patterns.push(p1);
+
+        // Pattern 2: tone then vowel_mods (NEW!)
+        let mut p2 = base.clone();
+        p2.push(t);
+        for m in &vowel_mods {
+            p2.push(*m);
+        }
+        patterns.push(p2);
+    } else if stroke_mod.is_none() && !vowel_mods.is_empty() && tone.is_none() {
+        // Just vowel mods, no tone
+        let mut p = base.clone();
+        for m in &vowel_mods {
+            p.push(*m);
+        }
+        patterns.push(p);
+    } else if stroke_mod.is_none() && vowel_mods.is_empty() && tone.is_some() {
+        // Just tone
+        let mut p = base.clone();
+        p.push(tone.unwrap());
+        patterns.push(p);
+    } else if stroke_mod.is_some() {
+        // Has stroke - generate common patterns
+        let d = stroke_mod.unwrap();
+
+        if vowel_mods.is_empty() && tone.is_none() {
+            // Just stroke
+            let mut p = base.clone();
+            p.push(d);
+            patterns.push(p);
+        } else if vowel_mods.is_empty() && tone.is_some() {
+            // Stroke + tone
+            let t = tone.unwrap();
+            let mut p1 = base.clone();
+            p1.push(d);
+            p1.push(t);
+            patterns.push(p1);
+
+            let mut p2 = base.clone();
+            p2.push(t);
+            p2.push(d);
+            patterns.push(p2);
+        } else if !vowel_mods.is_empty() && tone.is_none() {
+            // Stroke + vowel_mods
+            let mut p1 = base.clone();
+            p1.push(d);
+            for m in &vowel_mods {
+                p1.push(*m);
+            }
+            patterns.push(p1);
+
+            let mut p2 = base.clone();
+            for m in &vowel_mods {
+                p2.push(*m);
+            }
+            p2.push(d);
+            patterns.push(p2);
+        } else {
+            // Stroke + vowel_mods + tone - generate key permutations
+            let t = tone.unwrap();
+
+            // d + vowel_mods + t
+            let mut p1 = base.clone();
+            p1.push(d);
+            for m in &vowel_mods {
+                p1.push(*m);
+            }
+            p1.push(t);
+            patterns.push(p1);
+
+            // d + t + vowel_mods
+            let mut p2 = base.clone();
+            p2.push(d);
+            p2.push(t);
+            for m in &vowel_mods {
+                p2.push(*m);
+            }
+            patterns.push(p2);
+
+            // vowel_mods + d + t
+            let mut p3 = base.clone();
+            for m in &vowel_mods {
+                p3.push(*m);
+            }
+            p3.push(d);
+            p3.push(t);
+            patterns.push(p3);
+
+            // vowel_mods + t + d
+            let mut p4 = base.clone();
+            for m in &vowel_mods {
+                p4.push(*m);
+            }
+            p4.push(t);
+            p4.push(d);
+            patterns.push(p4);
+
+            // t + vowel_mods + d
+            let mut p5 = base.clone();
+            p5.push(t);
+            for m in &vowel_mods {
+                p5.push(*m);
+            }
+            p5.push(d);
+            patterns.push(p5);
+
+            // t + d + vowel_mods
+            let mut p6 = base.clone();
+            p6.push(t);
+            p6.push(d);
+            for m in &vowel_mods {
+                p6.push(*m);
+            }
+            patterns.push(p6);
+        }
     }
 
     patterns
@@ -796,6 +946,9 @@ fn circumflex_patterns() {
         ("ốn", vec!["oons", "oosn"]),
         ("riêng", vec!["rieeng"]),
         ("tiếng", vec!["tieengs", "tieesng"]),
+        // Circumflex with tone in different positions
+        ("giầm", vec!["giaafm", "giaamf", "giafam", "giamaf", "giamfa"]),
+        ("giấc", vec!["giaacs", "giaasc", "giasac", "giacas", "giacsa"]),
     ];
 
     let mut all_passed = true;
