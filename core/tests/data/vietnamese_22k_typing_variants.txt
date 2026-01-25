@@ -3393,7 +3393,7 @@ bính	binhs,bisnh
 bính	binhs,bisnh
 bong	bong
 bính	binhs,bisnh
-boong	boong
+boong	booong
 bịnh	bijnh,binhj
 bịp	bijp,bipj
 bịp	bijp,bipj
@@ -3644,9 +3644,9 @@ bọng	bojng,bongj
 đái	daids,daisd,ddais,ddasi
 bọng	bojng,bongj
 ong	ong
-boong	boong
-boong	boong
-boong	boong
+boong	booong
+boong	booong
+boong	booong
 bóp	bops,bosp
 bóp	bops,bosp
 bụng	bujng,bungj
@@ -4979,7 +4979,7 @@ trang	trang
 cải	cair,cari
 trắng	trangsw,trangws,trawngs,trawsng
 cải	cair,cari
-xoong	xoong
+xoong	xooong
 cãi	caix,caxi
 cãi	caix,caxi
 cọ	coj
@@ -7639,7 +7639,7 @@ chóng	chongs,chosng
 mặt	matjw,matwj,mawjt,mawtj
 chóng	chongs,chosng
 vánh	vanhs,vasnh
-chòong	choofng,choongf
+chòong	chooofng,chooongf
 chóp	chops,chosp
 chóp	chops,chosp
 bu	bu
@@ -16034,7 +16034,7 @@ mắt	matsw,matws,mawst,mawts
 gọng	gojng,gongj
 gọng	gojng,gongj
 kìm	kifm,kimf
-gòong	goofng,goongf
+gòong	gooofng,gooongf
 góp	gops,gosp
 góp	gops,gosp
 chuyện	chuyeejn,chuyeenj,chuyejen,chuyenej,chuyenje
@@ -35534,7 +35534,7 @@ sòng	sofng,songf
 phẳng	phangrw,phangwr,phawngr,phawrng
 sòng	sofng,songf
 sọc	socj,sojc
-soong	soong
+soong	sooong
 sót	sost,sots
 sót	sost,sots
 nhau	nhau

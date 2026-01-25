@@ -1,6 +1,6 @@
 # Vietnamese 22k Typing Variants Failures
 # Format: WORD \t VARIANT \t EXPECTED \t ACTUAL
-# Total failures: 269
+# Total failures: 262
 
 giấc	giacsa	giấc	giáca
 giấc	giasac	giấc	giáac
@@ -44,33 +44,28 @@ giấc	giasac	giấc	giáac
 ấp	apsa	ấp	ápa
 ập	apja	ập	ạpa
 ất	atsa	ất	áta
-giấy	giaysa	giấy	giáya
-boong	boong	boong	bông
 Blowing	Bloiwng	Blowing	Bloiwng
 dust	dust	dust	dút
 wind.	wind.	wind.	ưind.
-boong	boong	boong	bông
-boong	boong	boong	bông
-boong	boong	boong	bông
 phượu	phuoujw	phượu	phuoujw
 bướu	buousw	bướu	buousw
 bướu	buousw	bướu	buousw
 bướu	buousw	bướu	buousw
 bướu	buousw	bướu	buousw
-xoong	xoong	xoong	xông
 giấm	giasam	giấm	giáam
 quấy	quayas	quấy	quayas
 giấm	giasam	giấm	giáam
 giâm	giama	giâm	giama
+giấy	giaysa	giấy	giáya
 giận	giajan	giận	giạan
 giận	gianja	giận	giạna
 ấm	amsa	ấm	áma
 quẩy	quayar	quẩy	quayar
-giấu	giausa	giấu	giáua
+giấy	giaysa	giấy	giáya
 giấc	giacsa	giấc	giáca
 giấc	giasac	giấc	giáac
-chòong	choofng	chòong	chồng
-chòong	choongf	chòong	chồng
+chòong	chooofng	chòong	choofng
+chòong	chooongf	chòong	choongf
 giật	giajat	giật	giạat
 rượu	ruoujw	rượu	ruoujw
 giận	giajan	giận	giạan
@@ -146,10 +141,9 @@ giật	giajat	giật	giạat
 giật	giajat	giật	giạat
 giật	giajat	giật	giạat
 giật	giajat	giật	giạat
+giầu	giaufa	giầu	giàua
 giấu	giausa	giấu	giáua
 giấu	giausa	giấu	giáua
-giấy	giaysa	giấy	giáya
-giấy	giaysa	giấy	giáya
 giấy	giaysa	giấy	giáya
 giấy	giaysa	giấy	giáya
 giấy	giaysa	giấy	giáya
@@ -163,8 +157,8 @@ giấy	giaysa	giấy	giáya
 giấy	giaysa	giấy	giáya
 giấc	giacsa	giấc	giáca
 giấc	giasac	giấc	giáac
-gòong	goofng	gòong	gồng
-gòong	goongf	gòong	gồng
+gòong	gooofng	gòong	goofng
+gòong	gooongf	gòong	goongf
 giận	giajan	giận	giạan
 giận	gianja	giận	giạna
 buá	buas	buá	búa
@@ -183,7 +177,6 @@ giận	gianja	giận	giạna
 khướu	khuousw	khướu	khuousw
 muá	muas	muá	múa
 muá	musa	muá	múa
-giấy	giaysa	giấy	giáya
 giật	giajat	giật	giạat
 rượu	ruoujw	rượu	ruoujw
 giấc	giacsa	giấc	giáca
@@ -261,7 +254,7 @@ rượu	ruoujw	rượu	ruoujw
 uất	uatsa	uất	uáta
 rượu	ruoujw	rượu	ruoujw
 ẩm	amra	ẩm	ảma
-soong	soong	soong	sông
+giấy	giaysa	giấy	giáya
 ấp	apsa	ấp	ápa
 giấc	giacsa	giấc	giáca
 giấc	giasac	giấc	giáac

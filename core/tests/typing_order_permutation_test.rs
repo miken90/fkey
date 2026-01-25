@@ -400,6 +400,23 @@ fn generate_all_telex_variants(word: &str) -> Vec<String> {
         variants.insert(pattern);
     }
 
+    // Pattern 6: Consecutive identical vowels (literal oo, aa, ee)
+    // When word has literal "oo" (not ô), need to type "ooo" to cancel circumflex
+    // Example: "boong" → "booong" (bo + ooo → boo + ng)
+    // This applies to aa, ee, oo without marks
+    // IMPORTANT: For Telex, the double-vowel variant (boong) is INVALID because
+    // it produces circumflex (bông). Only triple-vowel variant (booong) is valid.
+    let has_consecutive_vowels = detect_consecutive_identical_vowels(vowels);
+    if has_consecutive_vowels {
+        // Remove all existing variants (they have double vowels which produce circumflex)
+        variants.clear();
+        // Generate ONLY the triple-vowel variant to cancel circumflex
+        let cancel_patterns = generate_circumflex_cancel_variants(&parts);
+        for pattern in cancel_patterns {
+            variants.insert(pattern);
+        }
+    }
+
     let mut result: Vec<String> = variants.into_iter().collect();
     result.sort(); // Ensure deterministic order
     result
@@ -617,6 +634,84 @@ fn generate_modifiers_at_end_patterns(parts: &SyllableParts) -> Vec<String> {
             p6.push(d);
             patterns.push(p6);
         }
+    }
+
+    patterns
+}
+
+/// Detect if word has consecutive identical vowels without marks (literal aa, ee, oo)
+/// These need special handling because typing "oo" produces "ô", not "oo"
+fn detect_consecutive_identical_vowels(vowels: &[(char, Option<char>)]) -> bool {
+    for i in 0..vowels.len().saturating_sub(1) {
+        let (v1, m1) = &vowels[i];
+        let (v2, m2) = &vowels[i + 1];
+        // Check if consecutive same vowels without marks
+        if v1.to_ascii_lowercase() == v2.to_ascii_lowercase() && m1.is_none() && m2.is_none() {
+            // Only for a, e, o (which have circumflex forms)
+            if matches!(v1.to_ascii_lowercase(), 'a' | 'e' | 'o') {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Generate variants that cancel circumflex for consecutive identical vowels
+/// Example: "boong" with vowels [('o', None), ('o', None)] → needs "ooo" variant
+fn generate_circumflex_cancel_variants(parts: &SyllableParts) -> Vec<String> {
+    let mut patterns = Vec::new();
+
+    let initial = &parts.initial;
+    let vowels = &parts.vowels;
+    let final_cons = &parts.final_cons;
+    let tone = parts.tone;
+
+    // Find consecutive identical vowels and add extra vowel to cancel circumflex
+    let mut vowel_str = String::new();
+    let mut i = 0;
+    while i < vowels.len() {
+        let (v, m) = &vowels[i];
+        vowel_str.push(*v);
+
+        // Check if next vowel is same and both have no marks
+        if i + 1 < vowels.len() {
+            let (v2, m2) = &vowels[i + 1];
+            if v.to_ascii_lowercase() == v2.to_ascii_lowercase()
+                && m.is_none()
+                && m2.is_none()
+                && matches!(v.to_ascii_lowercase(), 'a' | 'e' | 'o')
+            {
+                // Add extra vowel to cancel circumflex (ooo instead of oo)
+                vowel_str.push(v.to_ascii_lowercase());
+                vowel_str.push(*v2);
+                i += 2;
+                continue;
+            }
+        }
+
+        // Add mark if present
+        if let Some(mark) = m {
+            vowel_str.push(*mark);
+        }
+        i += 1;
+    }
+
+    // Build the pattern
+    let mut pattern = initial.clone();
+    pattern.push_str(&vowel_str);
+    if let Some(t) = tone {
+        pattern.push(t);
+    }
+    pattern.push_str(final_cons);
+    patterns.push(pattern.clone());
+
+    // Also generate tone after final variant
+    if tone.is_some() && !final_cons.is_empty() {
+        let mut pattern2 = initial.clone();
+        pattern2.push_str(&vowel_str);
+        pattern2.push_str(final_cons);
+        pattern2.push(tone.unwrap());
+        patterns.push(pattern2);
     }
 
     patterns
