@@ -1,6 +1,6 @@
 # English 100k Typing Variants Failures
 # Format: WORD \t VARIANT \t EXPECTED \t ACTUAL \t BUFFER
-# Total failures: 490
+# Total failures: 492
 
 been	been	been	bên	bên
 see	see	see	sê	sê
@@ -154,7 +154,7 @@ ow	ow	ow	ơ	ơ
 renee	renee	renee	rene	renê
 hoof	hoof	hoof	hồ	hôf
 beets	beets	beets	bết	bêts
-norwood	norwood	norwood	nỏod	norwôd
+norwood	norwood	norwood	noỏd	norwôd
 leech	leech	leech	lêch	lêch
 lees	lees	lees	lế	lês
 pee	pee	pee	pê	pê
@@ -175,7 +175,7 @@ puree	puree	puree	pủee	purê
 hoops	hoops	hoops	hốp	hôps
 noose	noose	noose	nốe	nôse
 mee	mee	mee	mê	mê
-beseech	beseech	beseech	béech	besêch
+beseech	beseech	beseech	beéch	besêch
 voodoo	vooodooo	voodoo	voodooo	vôodôo
 uaw	uaw	uaw	ưa	uă
 hoofs	hoofs	hoofs	hố	hôfs
@@ -312,7 +312,7 @@ aat	aat	aat	ât	ât
 aaas	aaas	aaas	aas	âas
 peet	peet	peet	pêt	pêt
 coors	coors	coors	cố	côrs
-horwood	horwood	horwood	hỏod	horwôd
+horwood	horwood	horwood	hoỏd	horwôd
 kees	kees	kees	kế	kês
 trow	trow	trow	trơ	trơ
 geek	geeek	geek	geeek	gêek
@@ -325,8 +325,9 @@ powwow	powwow	powwow	powow	pơwơ
 coot	coot	coot	côt	côt
 dees	dees	dees	dế	dês
 aws	aws	aws	ắ	ăs
-boxwood	boxwood	boxwood	bõod	boxwôd
+boxwood	boxwood	boxwood	boõd	boxwôd
 hopwood	hopwood	hopwood	hopod	hopwôd
+boos	booos	boos	boó	bôos
 boos	boos	boos	bố	bôs
 tdd	tdd	tdd	tđ	tđ
 maar	maar	maar	mẩ	mâr
@@ -409,6 +410,7 @@ awacs	awacs	awacs	ấc	ăacs
 laa	laa	laa	lâ	lâ
 oon	oon	oon	ôn	ôn
 lowa	lowa	lowa	lơa	lơa
+oost	ooost	oost	oót	ôost
 oost	oost	oost	ốt	ôst
 deedee	deeedeee	deedee	deedeee	dêedêe
 deedee	deedee	deedee	đêee	dêdê
@@ -442,7 +444,7 @@ kuwaitis	kuwwaitis	kuwaitis	kuwwaitis	kưwaitis
 geeks	geeeks	geeks	geeeks	gêeks
 mees	mees	mees	mế	mês
 haart	haart	haart	hẩt	hârt
-beseeched	beseeched	beseeched	béeched	besêched
+beseeched	beseeched	beseeched	beéched	besêched
 lowdown	lowwdowwn	lowdown	lowdowwn	lơwdơwn
 geert	geeert	geert	geeert	gêert
 tyree	tyreee	tyree	tyre	tyrêe
@@ -452,7 +454,7 @@ eero	eero	eero	ểo	êro
 gawk	gawk	gawk	găk	găk
 cooch	cooch	cooch	côch	côch
 kaaba	kaaaba	kaaba	kaaaba	kâaba
-oroonoko	oroonoko	oroonoko	ỏonoko	orônoko
+oroonoko	oroonoko	oroonoko	oỏnoko	orônoko
 hoodoo	hooodooo	hoodoo	hoodooo	hôodôo
 awwa	awwa	awwa	awa	ăwa
 oooh	oooh	oooh	ooh	ôoh
