@@ -48,8 +48,9 @@ var appProfiles = map[string]AppProfile{
 	"discordcanary": ProfileDiscord,
 	"discordptb":    ProfileDiscord,
 
-	// Electron apps - slow mode with delays
+	// Electron apps / Node.js CLI - slow mode with delays
 	"claude":   ProfileSlow,
+	"auggie":   ProfileSlow,
 	"notion":   ProfileSlow,
 	"slack":    ProfileSlow,
 	"teams":    ProfileSlow,
