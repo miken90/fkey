@@ -225,9 +225,9 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		if profile.Coalesce && backspaces > 0 {
 			l.coalescer.Queue(text, backspaces, profile.Method, profile.CoalesceMs)
 		} else {
-			// Send immediately
+			// Send immediately using full profile (includes BackspaceMode)
 			l.coalescer.Flush()
-			SendTextWithMethod(text, backspaces, profile.Method)
+			SendTextWithProfile(text, backspaces, profile)
 		}
 		return true
 

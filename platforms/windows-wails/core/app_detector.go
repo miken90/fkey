@@ -24,11 +24,20 @@ const (
 	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
 
+// BackspaceMode determines how backspace is sent
+type BackspaceMode int
+
+const (
+	BackspaceVK      BackspaceMode = iota // VK_BACK virtual key (default, works for most apps)
+	BackspaceUnicode                      // Unicode BS (0x08) via KEYEVENTF_UNICODE (for CLI apps that don't handle DEL)
+)
+
 // AppProfile defines injection behavior for an app
 type AppProfile struct {
-	Method    InjectionMethod
-	Coalesce  bool // Whether to use coalescing
-	CoalesceMs int  // Coalescing timer (0 = use default 25ms)
+	Method        InjectionMethod
+	Coalesce      bool          // Whether to use coalescing
+	CoalesceMs    int           // Coalescing timer (0 = use default 25ms)
+	BackspaceMode BackspaceMode // How to send backspace (default: BackspaceVK)
 }
 
 // Default profiles
@@ -41,6 +50,10 @@ var (
 	// Terminal profile: atomic mode to minimize hook blocking time
 	// Terminals are sensitive to input latency; atomic sends all in one SendInput call
 	ProfileTerminal = AppProfile{Method: MethodAtomic, Coalesce: false}
+	// Augment CLI profile: uses Unicode BS (0x08) instead of VK_BACK
+	// Augment CLI doesn't handle DEL (0x7F) that terminals translate from VK_BACK
+	// This causes duplicate characters like "những" -> "nhữưung"
+	ProfileAugment = AppProfile{Method: MethodAtomic, Coalesce: false, BackspaceMode: BackspaceUnicode}
 )
 
 // appProfiles maps process names to their injection profiles
@@ -74,6 +87,13 @@ var appProfiles = map[string]AppProfile{
 	"mintty":          ProfileTerminal,
 	"wave":            ProfileTerminal,
 	"waveterm":        ProfileTerminal,
+
+	// Augment CLI (auggie) - uses Unicode BS to fix duplicate chars issue
+	// npm package: @augmentcode/auggie, command: auggie
+	// Process name may vary: auggie, augment, or node (when running via npx)
+	// Adding common variants
+	"auggie":  ProfileAugment,
+	"augment": ProfileAugment,
 
 	// Browsers - slow mode as safe default
 	"chrome":  ProfileSlow,

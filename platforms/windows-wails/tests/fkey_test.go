@@ -603,6 +603,9 @@ func TestDetermineMethod(t *testing.T) {
 		{"waveterm", core.MethodAtomic},
 		{"wezterm", core.MethodAtomic},
 		{"alacritty", core.MethodAtomic},
+		// Augment CLI - atomic mode with Unicode BS
+		{"auggie", core.MethodAtomic},
+		{"augment", core.MethodAtomic},
 		// Fast apps
 		{"notepad", core.MethodFast},
 		{"winword", core.MethodFast},
@@ -616,6 +619,24 @@ func TestDetermineMethod(t *testing.T) {
 			got := core.DetermineMethod(tt.processName)
 			if got != tt.want {
 				t.Errorf("DetermineMethod(%q) = %v, want %v", tt.processName, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestAugmentProfile verifies Augment CLI uses Unicode backspace mode
+func TestAugmentProfile(t *testing.T) {
+	// Test both "auggie" and "augment" process names
+	for _, name := range []string{"auggie", "augment"} {
+		t.Run(name, func(t *testing.T) {
+			profile := core.GetAppProfile(name)
+			
+			if profile.Method != core.MethodAtomic {
+				t.Errorf("GetAppProfile(%q).Method = %v, want MethodAtomic", name, profile.Method)
+			}
+			
+			if profile.BackspaceMode != core.BackspaceUnicode {
+				t.Errorf("GetAppProfile(%q).BackspaceMode = %v, want BackspaceUnicode", name, profile.BackspaceMode)
 			}
 		})
 	}

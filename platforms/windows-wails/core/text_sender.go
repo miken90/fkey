@@ -283,3 +283,184 @@ func sendUnicodeTextSlow(text string, delayMs int) {
 func DetectInjectionMethod() InjectionMethod {
 	return GetInjectionMethod()
 }
+
+// SendTextWithProfile sends text with full app profile (includes backspace mode)
+func SendTextWithProfile(text string, backspaces int, profile AppProfile) {
+	if len(text) == 0 && backspaces == 0 {
+		return
+	}
+
+	switch profile.Method {
+	case MethodFast:
+		sendFastWithProfile(text, backspaces, profile.BackspaceMode)
+	case MethodSlow:
+		sendSlowWithProfile(text, backspaces, SlowModePreDelay, SlowModePostDelay, SlowModeKeyDelay, profile.BackspaceMode)
+	case MethodAtomic:
+		sendAtomicWithProfile(text, backspaces, profile.BackspaceMode)
+	}
+}
+
+func sendFastWithProfile(text string, backspaces int, bsMode BackspaceMode) {
+	if backspaces > 0 {
+		sendBackspacesWithMode(backspaces, bsMode)
+		time.Sleep(FastModeDelay * time.Millisecond)
+	}
+	if len(text) > 0 {
+		sendUnicodeTextBatch(text)
+	}
+}
+
+func sendSlowWithProfile(text string, backspaces int, preDelay, postDelay, keyDelay int, bsMode BackspaceMode) {
+	if backspaces > 0 {
+		sendBackspacesWithMode(backspaces, bsMode)
+		time.Sleep(time.Duration(postDelay) * time.Millisecond)
+	}
+	if len(text) > 0 {
+		time.Sleep(time.Duration(preDelay) * time.Millisecond)
+		sendUnicodeTextSlow(text, keyDelay)
+	}
+}
+
+// sendAtomicWithProfile combines backspaces and text into a single SendInput call
+// Supports both VK_BACK and Unicode BS modes
+func sendAtomicWithProfile(text string, backspaces int, bsMode BackspaceMode) {
+	runes := []rune(text)
+	totalEvents := backspaces*2 + len(runes)*2
+
+	if totalEvents == 0 {
+		return
+	}
+
+	inputs := make([]INPUT, totalEvents)
+	idx := 0
+
+	// Add backspace events first
+	for i := 0; i < backspaces; i++ {
+		if bsMode == BackspaceUnicode {
+			// Unicode BS (0x08) - for CLI apps that don't handle DEL
+			inputs[idx] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         0,
+					WScan:       0x0008, // Unicode BS
+					DwFlags:     KEYEVENTF_UNICODE,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+			idx++
+			inputs[idx] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         0,
+					WScan:       0x0008,
+					DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+		} else {
+			// VK_BACK (default)
+			inputs[idx] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         VK_BACK,
+					DwFlags:     0,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+			idx++
+			inputs[idx] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         VK_BACK,
+					DwFlags:     KEYEVENTF_KEYUP,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+		}
+		idx++
+	}
+
+	// Add Unicode text events
+	for _, r := range runes {
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         0,
+				WScan:       uint16(r),
+				DwFlags:     KEYEVENTF_UNICODE,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+		inputs[idx] = INPUT{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         0,
+				WScan:       uint16(r),
+				DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		}
+		idx++
+	}
+
+	// Single atomic SendInput call
+	procSendInput.Call(
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&inputs[0])),
+		uintptr(inputSize),
+	)
+}
+
+// sendBackspacesWithMode sends backspaces using specified mode
+func sendBackspacesWithMode(count int, bsMode BackspaceMode) {
+	inputs := make([]INPUT, count*2)
+
+	for i := 0; i < count; i++ {
+		if bsMode == BackspaceUnicode {
+			// Unicode BS (0x08)
+			inputs[i*2] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         0,
+					WScan:       0x0008,
+					DwFlags:     KEYEVENTF_UNICODE,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+			inputs[i*2+1] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         0,
+					WScan:       0x0008,
+					DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+		} else {
+			// VK_BACK (default)
+			inputs[i*2] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         VK_BACK,
+					DwFlags:     0,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+			inputs[i*2+1] = INPUT{
+				Type: INPUT_KEYBOARD,
+				Ki: KEYBDINPUT{
+					WVk:         VK_BACK,
+					DwFlags:     KEYEVENTF_KEYUP,
+					DwExtraInfo: InjectedKeyMarker,
+				},
+			}
+		}
+	}
+
+	procSendInput.Call(
+		uintptr(len(inputs)),
+		uintptr(unsafe.Pointer(&inputs[0])),
+		uintptr(inputSize),
+	)
+}
