@@ -18,7 +18,7 @@ pub mod validation;
 
 use crate::data::{
     chars::{self, mark, tone},
-    constants, english_dict, keys, telex_doubles,
+    constants, english_dict, keys, telex_doubles, vietnamese_spellcheck,
     vowel::{Phonology, Vowel},
 };
 use crate::input::{self, ToneType};
@@ -26,8 +26,8 @@ use crate::utils;
 use buffer::{Buffer, Char, MAX};
 use shortcut::{InputMethod, ShortcutTable};
 use validation::{
-    is_foreign_word_pattern, is_valid, is_valid_for_transform_with_foreign,
-    is_valid_with_foreign, is_valid_with_tones, is_valid_with_tones_and_foreign,
+    is_foreign_word_pattern, is_valid, is_valid_for_transform_with_foreign, is_valid_with_foreign,
+    is_valid_with_tones, is_valid_with_tones_and_foreign,
 };
 
 /// Engine action result
@@ -102,6 +102,10 @@ enum Transform {
     /// Short-pattern stroke (d + vowel + d → đ + vowel)
     /// This is revertible if next character creates invalid Vietnamese
     ShortPatternStroke,
+    /// Delayed circumflex (same-vowel trigger: aa → â, ee → ê, oo → ô)
+    /// Stores the consumed vowel key for potential revert
+    /// This is revertible if next consonant creates invalid pattern (like "expect" → "ễpct")
+    DelayedCircumflex(u16),
     /// W as vowel ư (for revert: ww → w)
     WAsVowel,
     /// W shortcut was explicitly skipped (prevent re-transformation)
@@ -349,12 +353,6 @@ pub struct Engine {
     /// Only set pending_capitalize when space/Enter follows
     /// Issue #185: don't capitalize immediately after punctuation (e.g., google.com)
     saw_sentence_ending: bool,
-    /// Track the last break key for backspace handling
-    /// Used to reset auto-capitalize state when user deletes sentence-ending punctuation
-    last_break_key: Option<(u16, bool)>, // (keycode, shift)
-    /// Tracks if any content was typed after the last space (for auto-capitalize reset logic)
-    /// Set when typing letters after space, cleared on space/clear
-    typed_after_space: bool,
     /// Allow foreign consonants (z, w, j, f) as valid initial consonants
     /// When true, these letters are accepted as Vietnamese consonants for loanwords
     allow_foreign_consonants: bool,
@@ -403,8 +401,6 @@ impl Engine {
             pending_capitalize: false,
             auto_capitalize_used: false,
             saw_sentence_ending: false,
-            last_break_key: None,
-            typed_after_space: false,
             allow_foreign_consonants: false, // Default: OFF
         }
     }
@@ -542,6 +538,66 @@ impl Engine {
     /// * `ctrl` - true if Cmd/Ctrl/Alt is pressed (bypasses IME)
     pub fn on_key(&mut self, key: u16, caps: bool, ctrl: bool) -> Result {
         self.on_key_ext(key, caps, ctrl, false)
+    }
+
+    /// Handle key event with actual Unicode character for shortcuts.
+    ///
+    /// Used for Option-modified keys on macOS where the keycode doesn't change
+    /// but the character is different (e.g., Option+V produces √).
+    ///
+    /// # Arguments
+    /// * `key` - macOS virtual keycode
+    /// * `caps` - true if Caps Lock is active
+    /// * `ctrl` - true if Cmd/Ctrl is pressed (bypasses IME)
+    /// * `shift` - true if Shift is pressed
+    /// * `ch` - The actual Unicode character. If Some, uses this for shortcut matching.
+    ///
+    /// # Issue #275
+    /// This enables shortcuts with special characters like √√ → ✅
+    /// When typing ≈ç√√, we need to find √√ as a suffix match.
+    pub fn on_key_with_char(
+        &mut self,
+        key: u16,
+        caps: bool,
+        ctrl: bool,
+        shift: bool,
+        ch: Option<char>,
+    ) -> Result {
+        // No character provided → fall back to normal processing
+        let Some(ch) = ch else {
+            return self.on_key_ext(key, caps, ctrl, shift);
+        };
+
+        // Ctrl/Cmd bypasses everything
+        if ctrl {
+            self.clear();
+            self.word_history.clear();
+            self.spaces_after_commit = 0;
+            return Result::none();
+        }
+
+        // Accumulate character for suffix matching
+        self.shortcut_prefix.push(ch);
+
+        // Try suffix matches (longest first) using char_indices to avoid allocations
+        let input_method = self.current_input_method();
+        for (idx, _) in self.shortcut_prefix.char_indices() {
+            let suffix = &self.shortcut_prefix[idx..];
+            if let Some(m) = self.shortcuts.try_match_for_method(
+                suffix,
+                None,
+                false, // immediate, not word boundary
+                input_method,
+            ) {
+                let output: Vec<char> = m.output.chars().collect();
+                let backspace_count = (m.backspace_count as u8).saturating_sub(1);
+                self.shortcut_prefix.clear();
+                return Result::send_consumed(backspace_count, &output);
+            }
+        }
+
+        // No match yet, let the character pass through
+        Result::none()
     }
 
     /// Check if key+shift combo is a raw mode prefix character
@@ -695,7 +751,6 @@ impl Engine {
             if !self.buf.is_empty() {
                 self.word_history.push(self.buf.clone());
                 self.spaces_after_commit = 1; // First space after word
-                self.typed_after_space = false; // Reset for new word
             } else if self.spaces_after_commit > 0 {
                 // Additional space after commit - increment counter
                 self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
@@ -782,12 +837,10 @@ impl Engine {
                     // pending_capitalize will be set when space follows
                     if self.auto_capitalize && is_sentence_ending_punctuation(key, shift) {
                         self.saw_sentence_ending = true;
-                        self.last_break_key = Some((key, shift)); // Track for backspace
                     } else if self.auto_capitalize && (key == keys::RETURN || key == keys::ENTER) {
                         // Enter = newline = immediate capitalize (no space needed)
                         self.pending_capitalize = true;
                         self.saw_sentence_ending = false;
-                        self.last_break_key = Some((key, shift));
                     }
                     return Result::none(); // Let the char pass through, keep accumulating
                 }
@@ -797,20 +850,15 @@ impl Engine {
             // pending_capitalize will be set when space follows
             if self.auto_capitalize && is_sentence_ending_punctuation(key, shift) {
                 self.saw_sentence_ending = true;
-                self.last_break_key = Some((key, shift)); // Track for backspace
             } else if self.auto_capitalize && (key == keys::RETURN || key == keys::ENTER) {
                 // Enter = newline = immediate capitalize (no space needed)
                 self.pending_capitalize = true;
                 self.saw_sentence_ending = false;
-                self.last_break_key = Some((key, shift));
             } else if self.auto_capitalize && should_reset_pending_capitalize(key, shift) {
                 // Reset pending for word-breaking keys (comma, semicolon, etc.)
                 // But preserve pending for neutral keys (quotes, parentheses, brackets)
                 self.pending_capitalize = false;
                 self.saw_sentence_ending = false;
-                self.last_break_key = Some((key, shift));
-            } else {
-                self.last_break_key = Some((key, shift));
             }
             self.auto_capitalize_used = false; // Reset on word boundary
 
@@ -875,50 +923,6 @@ impl Engine {
             // e.g., "đa" + SPACE + backspace×2 + "a" should NOT match shortcut "a"
             if self.buf.is_empty() {
                 self.has_non_letter_prefix = true;
-                
-                // Track backspaces on empty buffer to detect when user deletes past the dot
-                // 
-                // Scenarios:
-                // A. "ok." + space + "Ban" + delete all → pending=true, space was typed
-                //    - First backspace = delete space → consume last_break_key, keep pending
-                //    - Second backspace = delete dot → reset pending
-                // B. "ok." + backspace → pending=false, saw_sentence_ending=true, no space
-                //    - First backspace = delete dot → reset saw_sentence_ending
-                //
-                // Key insight: 
-                // - If pending_capitalize=true, space was typed, so first backspace = delete space
-                // - If pending_capitalize=false but saw_sentence_ending=true, no space, first backspace = delete dot
-                if let Some((last_key, last_shift)) = self.last_break_key {
-                    if is_sentence_ending_punctuation(last_key, last_shift) {
-                        if self.pending_capitalize {
-                            // Space was typed after dot
-                            // This is first backspace = delete space, keep pending_capitalize
-                            // Just consume the break key context
-                            self.last_break_key = None;
-                            self.typed_after_space = false;
-                        } else if self.saw_sentence_ending {
-                            // No space was typed, this backspace = delete dot
-                            // Reset saw_sentence_ending so next space won't set pending
-                            self.saw_sentence_ending = false;
-                            self.last_break_key = None;
-                            self.typed_after_space = false;
-                        } else {
-                            self.last_break_key = None;
-                        }
-                    } else {
-                        self.last_break_key = None;
-                    }
-                } else {
-                    // No last_break_key = user already consumed it with previous backspace
-                    // This backspace is deleting the dot or content before it
-                    // Reset pending_capitalize because the sentence-ending context is gone
-                    if self.pending_capitalize {
-                        self.pending_capitalize = false;
-                        self.saw_sentence_ending = false;
-                        self.auto_capitalize_used = false;
-                    }
-                    self.typed_after_space = false;
-                }
             }
             self.buf.pop();
             self.raw_input.pop();
@@ -929,6 +933,9 @@ impl Engine {
             // Issue #217: Reset reverted_circumflex_key on backspace so user can re-trigger circumflex
             // e.g., "eee" → "ee", then backspace×2 → "", type "phe" → "phê" (not "phee")
             self.reverted_circumflex_key = None;
+            // Reset had_circumflex_revert on backspace so user can type circumflex in new words
+            // e.g., "meee" → "mee", then backspace×3 → "", type "phee" → "phê" (not "phee")
+            self.had_circumflex_revert = false;
             // Only reset restored_pending_clear when buffer is empty
             // (user finished deleting restored word completely)
             // If buffer still has chars, user might think they cleared everything
@@ -954,16 +961,16 @@ impl Engine {
         // unless they're mark/tone keys (allow "ban" + restore + "s" → "bán")
         if self.restored_pending_clear && keys::is_letter(key) {
             let m = input::get(self.method);
-            let is_mark_or_tone = m.mark(key).is_some() || m.tone(key).is_some();
-            // Clear buffer when letter is NOT a mark/tone modifier:
+            let is_modifier = m.mark(key).is_some() || m.tone(key).is_some() || m.remove(key);
+            // Clear buffer when letter is NOT a modifier (mark/tone/remove):
             // - Vietnamese restored: clear on consonant (vowels may add diacritics)
-            // - ASCII restored: clear on any non-mark/tone letter (consonant OR vowel)
+            // - ASCII restored: clear on any non-modifier letter (consonant OR vowel)
             let should_clear = if self.restored_is_ascii {
-                // Pure ASCII: clear on any letter except mark/tone keys
-                !is_mark_or_tone
+                // Pure ASCII: clear on any letter except modifier keys
+                !is_modifier
             } else {
-                // Vietnamese: clear only on consonant that's not mark/tone
-                keys::is_consonant(key) && !is_mark_or_tone
+                // Vietnamese: clear only on consonant that's not a modifier
+                keys::is_consonant(key) && !is_modifier
             };
             if should_clear {
                 self.clear();
@@ -1073,7 +1080,13 @@ impl Engine {
             let mut buf_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
             buf_keys.push(key);
 
-            if !is_valid(&raw_keys) && !is_valid(&buf_keys) {
+            // EXCEPTION: Vietnamese triple-o words (đoòng, etc.)
+            // These have literal double-o which fails standard validation,
+            // but they are valid Vietnamese words when completing the pattern
+            // Example: buffer [đ,o,o] + 'n' → "đoon" - part of đoòng pattern
+            let is_triple_o_word = self.is_vietnamese_triple_o_word();
+
+            if !is_valid(&raw_keys) && !is_valid(&buf_keys) && !is_triple_o_word {
                 // Invalid pattern - revert stroke and rebuild from raw_input
                 if let Some(raw_chars) = self.build_raw_chars() {
                     // Calculate backspace: screen shows buffer content (e.g., "đe")
@@ -1091,9 +1104,120 @@ impl Engine {
             }
         }
 
+        // Revert delayed circumflex if adding consonant creates invalid pattern
+        // Example: "expect" → e + x(ngã) + p + e(circumflex) → "ễp" + c → invalid "pc" pattern
+        // When "pc" or "pct" appears after vowel, it's clearly not Vietnamese → revert
+        // Skip this check for mark keys (s, f, r, x, j) - they confirm Vietnamese intent
+        // Skip this check for stroke keys (d) - they trigger đ transformation
+        // Skip this check for tone keys (w, a, e, o in Telex) - they apply tone modifiers
+        // Issue: "hojpow" was incorrectly reverting because 'w' was treated as consonant
+        // creating invalid "pw" final, but 'w' is a horn modifier that should switch ộ → ợ
+        let is_mark_key = m.mark(key).is_some();
+        let is_stroke_key = m.stroke(key);
+        let is_tone_key = m.tone(key).is_some();
+        if keys::is_consonant(key)
+            && !is_mark_key
+            && !is_stroke_key
+            && !is_tone_key
+            && matches!(self.last_transform, Some(Transform::DelayedCircumflex(_)))
+        {
+            // Check consonants after the vowel that got circumflex
+            // Find the vowel with circumflex
+            let circumflex_pos = self.buf.iter().position(|c| c.tone == tone::CIRCUMFLEX);
+
+            if let Some(vowel_pos) = circumflex_pos {
+                // Get consonants after the circumflex vowel (excluding current key being added)
+                let consonants_after: Vec<u16> = (vowel_pos + 1..self.buf.len())
+                    .filter_map(|i| {
+                        self.buf.get(i).and_then(|c| {
+                            if keys::is_consonant(c.key) {
+                                Some(c.key)
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .collect();
+
+                // Check if adding current consonant would create invalid pattern
+                // Valid Vietnamese finals: single (c,m,n,p,t) or pairs (ch,ng,nh)
+                // If we already have 1+ consonants and adding more → invalid
+                let would_be_invalid = match consonants_after.len() {
+                    0 => false, // First consonant after vowel - could be valid
+                    1 => {
+                        // Second consonant: only valid if forms ch/ng/nh
+                        let pair = [consonants_after[0], key];
+                        !constants::VALID_FINALS_2.contains(&pair)
+                    }
+                    _ => true, // 3+ consonants is always invalid
+                };
+
+                if would_be_invalid {
+                    // Invalid pattern detected - revert circumflex but keep existing marks
+                    // This handles "expect" → e + x(ngã) + p + e(circumflex) → "ẽp" + c
+                    // Result should be "ẽpec" (keep ngã, remove circumflex, add 'c')
+                    //
+                    // The delayed circumflex consumed the trigger vowel (it wasn't added to buffer).
+                    // So we need to restore from raw_input but preserve the mark on the vowel.
+
+                    // Save the mark value before restoring
+                    let mark_val = self.buf.get(vowel_pos).map(|c| c.mark).unwrap_or(0);
+
+                    // Calculate backspace: clear current displayed buffer
+                    let backspace = self.buf.len() as u8;
+
+                    // Rebuild buffer from raw_input (plain chars with trigger vowel)
+                    self.buf.clear();
+                    for &(k, c, _) in &self.raw_input {
+                        self.buf.push(Char::new(k, c));
+                    }
+
+                    // Reapply the mark to the vowel at the same position
+                    // Note: vowel_pos is still valid since raw_input has all chars
+                    if mark_val > 0 {
+                        if let Some(c) = self.buf.get_mut(vowel_pos) {
+                            c.mark = mark_val;
+                        }
+                    }
+
+                    self.last_transform = None;
+                    self.had_vowel_triggered_circumflex = false;
+                    // Keep had_any_transform if mark was preserved
+                    if mark_val == 0 {
+                        self.had_any_transform = false;
+                    }
+
+                    // Build output chars (with mark if any)
+                    let output: Vec<char> = self
+                        .buf
+                        .iter()
+                        .filter_map(|c| {
+                            if c.mark > 0 {
+                                chars::to_char(c.key, c.caps, tone::NONE, c.mark)
+                            } else {
+                                utils::key_to_char(c.key, c.caps)
+                            }
+                        })
+                        .collect();
+
+                    return Result::send(backspace, &output);
+                }
+            }
+        }
+
         // In VNI mode, if Shift is pressed with a number key, skip all modifiers
         // User wants the symbol (@ for Shift+2, # for Shift+3, etc.), not VNI marks
         let skip_vni_modifiers = self.method == 1 && shift && keys::is_number(key);
+
+        // Skip modifiers after circumflex revert (ooo→oo, eee→ee, aaa→aa)
+        // Example: "booo" → "boo" (revert), then "s" → "boos" (not "boós")
+        // Example: "seee" → "see" (revert), then "m" → "seem" (not "seém")
+        // This applies to ALL subsequent keys until word ends (space/break clears flag)
+        // EXCEPTION: Vietnamese triple-o words with valid tones (s=sắc, f=huyền)
+        // Triple-o words only use sắc or huyền tones, NOT ngã (x), hỏi (r), nặng (j)
+        let is_valid_triple_o_tone =
+            (key == keys::S || key == keys::F) && self.is_vietnamese_triple_o_word();
+        let skip_after_revert = self.had_circumflex_revert && !is_valid_triple_o_tone;
 
         // Check modifiers by scanning buffer for patterns
 
@@ -1105,7 +1229,7 @@ impl Engine {
         }
 
         // 2. Tone modifier (circumflex, horn, breve)
-        if !skip_vni_modifiers {
+        if !skip_vni_modifiers && !skip_after_revert {
             if let Some(tone_type) = m.tone(key) {
                 let targets = m.tone_targets(key);
                 if let Some(result) = self.try_tone(key, caps, tone_type, targets) {
@@ -1115,7 +1239,7 @@ impl Engine {
         }
 
         // 3. Mark modifier
-        if !skip_vni_modifiers {
+        if !skip_vni_modifiers && !skip_after_revert {
             if let Some(mark_val) = m.mark(key) {
                 if let Some(result) = self.try_mark(key, caps, mark_val) {
                     return result;
@@ -1382,6 +1506,52 @@ impl Engine {
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
         let has_vowel = buffer_keys.iter().any(|&k| keys::is_vowel(k));
 
+        // Check for circumflex trigger pattern: D + V1 + C + V2 + V2 (same vowel at end)
+        // Example: "duoto" = [D, U, O, T, O] → after circumflex becomes "duôt" = [D, U, Ô, T]
+        // This pattern specifically allows stroke on initial 'd' even when vowel pattern looks invalid
+        // Conditions:
+        // 1. Initial must be 'd' (this is try_stroke, so we're checking for stroke)
+        // 2. Last two vowels must be same (circumflex trigger)
+        // 3. There must be a non-extending final (t, m, p) between them
+        let has_circumflex_trigger_pattern = {
+            let first_is_d = buffer_keys.first() == Some(&keys::D);
+
+            if first_is_d {
+                let vowel_positions: Vec<(usize, u16)> = buffer_keys
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, &k)| keys::is_vowel(k))
+                    .map(|(i, &k)| (i, k))
+                    .collect();
+
+                // Check if last two same vowels are separated by non-extending final (t, m, p)
+                if vowel_positions.len() >= 2 {
+                    let (pos1, key1) = vowel_positions[vowel_positions.len() - 2];
+                    let (pos2, key2) = vowel_positions[vowel_positions.len() - 1];
+
+                    // Must be same vowel that can take circumflex
+                    let same_circumflex_vowel =
+                        key1 == key2 && matches!(key1, keys::A | keys::E | keys::O);
+
+                    // Check consonants between the vowels
+                    let consonants_between: Vec<u16> = (pos1 + 1..pos2)
+                        .filter_map(|j| buffer_keys.get(j).copied())
+                        .filter(|&k| !keys::is_vowel(k))
+                        .collect();
+
+                    // Must have exactly one non-extending final consonant (t, m, p)
+                    let has_non_extending_final = consonants_between.len() == 1
+                        && matches!(consonants_between[0], keys::T | keys::M | keys::P);
+
+                    same_circumflex_vowel && has_non_extending_final
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        };
+
         // Find position of un-stroked 'd' to apply stroke
         // Also track if this is a short pattern stroke (revertible)
         let (pos, is_short_pattern_stroke) = if self.method == 0 {
@@ -1408,7 +1578,12 @@ impl Engine {
                 // Must form valid Vietnamese (including vowel pattern) for delayed stroke
                 // Use is_valid() instead of is_valid_for_transform() to check vowel patterns
                 // This prevents "dea" + "d" → "đea" (invalid "ea" diphthong)
-                if !is_valid_with_foreign(&buffer_keys, self.allow_foreign_consonants) {
+                // BUT: Allow circumflex trigger patterns even if they look invalid now
+                // ALSO: Allow Vietnamese triple-o words (đoòng) which have literal double-o
+                if !has_circumflex_trigger_pattern
+                    && !is_valid_with_foreign(&buffer_keys, self.allow_foreign_consonants)
+                    && !self.is_vietnamese_triple_o_word()
+                {
                     return None;
                 }
 
@@ -1429,8 +1604,15 @@ impl Engine {
                 let is_d_vowels_only_pattern = key == keys::D
                     && self.buf.len() >= 2
                     && self.buf.iter().skip(1).all(|c| keys::is_vowel(c.key));
-                if syllable.final_c.is_empty() && !has_mark_applied && !is_d_vowels_only_pattern {
-                    // Open syllable without mark, not d+vowels pattern - defer stroke decision
+                // For circumflex trigger pattern (duoto → đuôt), we should allow stroke
+                // even if syllable.final_c is empty, because the pattern will become valid
+                // after circumflex is applied
+                if syllable.final_c.is_empty()
+                    && !has_mark_applied
+                    && !is_d_vowels_only_pattern
+                    && !has_circumflex_trigger_pattern
+                {
+                    // Open syllable without mark, not d+vowels pattern, not circumflex trigger
                     return None;
                 }
 
@@ -1461,8 +1643,12 @@ impl Engine {
         // Only validate if buffer has vowels (complete syllable)
         // Allow stroke on initial consonant before vowel is typed (e.g., "dd" → "đ" then "đi")
         // Skip validation if free_tone mode is enabled
+        // Also skip validation for circumflex trigger patterns (duoto → đuôt)
+        // Also skip validation for Vietnamese triple-o words (đoòng) which have literal double-o
         if !self.free_tone_enabled
             && has_vowel
+            && !has_circumflex_trigger_pattern
+            && !self.is_vietnamese_triple_o_word()
             && !is_valid_for_transform_with_foreign(&buffer_keys, self.allow_foreign_consonants)
         {
             return None;
@@ -1581,7 +1767,20 @@ impl Engine {
                         let preceded_by_q =
                             pos1 > 0 && self.buf.get(pos1 - 1).map(|c| c.key) == Some(keys::Q);
 
-                        if preceded_by_q {
+                        // Check for "quoa" pattern: Q + U + O + A
+                        // In this case, skip U+O compound and let phonology rules handle O+A
+                        // W should apply breve to A, not horn to O
+                        // Example: "quoắt" = qu + oă + t
+                        let has_a_after_o = self
+                            .buf
+                            .get(pos2 + 1)
+                            .map(|c| c.key == keys::A)
+                            .unwrap_or(false);
+
+                        if preceded_by_q && has_a_after_o {
+                            // Skip compound handling - let find_horn_target_with_switch handle it
+                            // This will trigger O+A breve pattern in phonology rules
+                        } else if preceded_by_q {
                             // "Qu-" pattern - only second vowel gets horn
                             target_positions.push(pos2);
                             self.pending_u_horn_pos = None;
@@ -1629,6 +1828,10 @@ impl Engine {
                 // Issue #312: If any vowel already has a tone (horn/circumflex/breve),
                 // don't trigger same-vowel circumflex. The typed vowel should append raw.
                 // Example: "chưa" + "a" → "chưaa" (NOT "chưâ")
+                //
+                // Also check for English patterns like "expect":
+                // E + X(mark) + P + E → mark comes BEFORE consonant, block circumflex
+                // vs Vietnamese "onro": O + N + R(mark) + O → mark comes AFTER consonant, allow
                 if is_telex_circumflex {
                     let any_vowel_has_tone = self
                         .buf
@@ -1651,8 +1854,23 @@ impl Engine {
                         self.buf.iter().filter(|c| keys::is_vowel(c.key)).collect();
 
                     let has_any_mark = vowel_chars.iter().any(|c| c.has_mark());
-                    let unique_vowel_types: std::collections::HashSet<u16> =
-                        vowel_chars.iter().map(|c| c.key).collect();
+
+                    // Check for gi-initial pattern: G + I at start where I is part of consonant cluster
+                    // In Vietnamese, "gi" is a consonant cluster, so "giấc" (giacsa) has only 1 vowel (a)
+                    // The I in "gi" should not be counted as a separate vowel type
+                    let is_gi_initial_here = self.buf.get(0).map(|c| c.key) == Some(keys::G)
+                        && self.buf.get(1).is_some_and(|c| c.key == keys::I);
+
+                    // Exclude I from vowel types if it's part of gi-initial
+                    let unique_vowel_types: std::collections::HashSet<u16> = if is_gi_initial_here {
+                        vowel_chars
+                            .iter()
+                            .filter(|c| c.key != keys::I)
+                            .map(|c| c.key)
+                            .collect()
+                    } else {
+                        vowel_chars.iter().map(|c| c.key).collect()
+                    };
                     let has_multiple_vowel_types = unique_vowel_types.len() > 1;
 
                     if has_any_mark && has_multiple_vowel_types {
@@ -1750,10 +1968,43 @@ impl Engine {
                                 //
                                 // BUT: Exclude Q + U pattern (like "queue")
                                 // In Vietnamese, Q only appears as part of "qu" initial cluster
-                                // If initial is Q and first vowel is U, it's English (queue, quest)
+                                // For Vietnamese "qu" words: qu + vowels where U is part of initial
+                                // For English "queue": U appears again AFTER the first U
+                                // Detection: initial Q + first vowel U + U appears again later
                                 let initial_q = self.buf.get(0).is_some_and(|c| c.key == keys::Q);
                                 let first_vowel_u = vowels.first().is_some_and(|&v| v == keys::U);
-                                let is_english_qu_pattern = initial_q && first_vowel_u;
+                                // Check if U appears again after the first position (English pattern)
+                                // BUT: If the final U is part of a valid diphthong (like êu in quêu),
+                                // it's Vietnamese, not English "queue"
+                                let has_repeated_u =
+                                    vowels.len() > 1 && vowels[1..].contains(&keys::U);
+
+                                // Check if the repeated U is the final vowel in a valid diphthong
+                                // For "quêu": vowels = [U, E, U] → [E, U] is valid diphthong êu
+                                // This means the second U is a Vietnamese glide, not English queue
+                                let final_u_is_valid_glide = if has_repeated_u && vowels.len() >= 2
+                                {
+                                    let last_vowel = vowels[vowels.len() - 1];
+                                    let second_last = vowels[vowels.len() - 2];
+                                    // If last vowel is U and [second_last, U] is a valid diphthong
+                                    // then this U is a glide, not English pattern
+                                    last_vowel == keys::U
+                                        && matches!(
+                                            second_last,
+                                            keys::A | keys::E | keys::I | keys::O
+                                        )
+                                } else {
+                                    false
+                                };
+
+                                // English "qu" pattern: Q initial + U first + U repeats later
+                                // BUT NOT when the final U is a valid Vietnamese glide
+                                // Vietnamese "qu" pattern: Q initial + U first + no U repeat (quây, quá)
+                                // Vietnamese "quêu" pattern: Q initial + U first + U as final glide
+                                let is_english_qu_pattern = initial_q
+                                    && first_vowel_u
+                                    && has_repeated_u
+                                    && !final_u_is_valid_glide;
 
                                 let is_valid_vn_triphthong = vowels.len() == 3
                                     && !is_english_qu_pattern
@@ -1979,13 +2230,119 @@ impl Engine {
                                             .buf
                                             .get(i + 1)
                                             .is_some_and(|ch| keys::is_vowel(ch.key));
+                                    // Check for valid 3-vowel pattern like "xuata" → "xuât", "buomo" → "buôm"
+                                    // Requirements:
+                                    // 1. Exactly 3 vowels total (2 in buffer + 1 trigger)
+                                    // 2. First vowel is 'u' with no transformation
+                                    // 3. Target is 'a' or 'o' (forming "ua"→"uâ" or "uo"→"uô" diphthong)
+                                    // 4. First two vowels are adjacent
+                                    // 5. Buffer length <= 4 (typical Vietnamese syllable size: C+V1+V2+C)
+                                    // 6. Initial consonant must be common Vietnamese pattern for this diphthong
+                                    //    Exclude: g, q (foreign gu- patterns), d (duomo is Italian)
+                                    // This specifically handles: xuất, tuất, luật, buồm, cuốn, muốn, etc.
+                                    let vowel_positions: Vec<(usize, u16)> = self
+                                        .buf
+                                        .iter()
+                                        .enumerate()
+                                        .filter(|(_, c)| keys::is_vowel(c.key))
+                                        .map(|(pos, c)| (pos, c.key))
+                                        .collect();
+
+                                    // Check if initial consonant is likely foreign pattern
+                                    // g/q: "guatanamo", "quest"
+                                    // d: "duomo" (Italian), but Vietnamese "đ" uses stroke
+                                    // EXCEPTION: "gi" is a valid Vietnamese initial (giâm, giận, etc.)
+                                    let is_gi_initial = self.buf.get(0).map(|c| c.key)
+                                        == Some(keys::G)
+                                        && self.buf.get(1).map(|c| c.key) == Some(keys::I)
+                                        && vowel_positions.len() >= 2
+                                        && vowel_positions[0].0 == 1; // I must be at position 1
+                                    let has_foreign_initial = self.buf.get(0).is_some_and(|ch| {
+                                        matches!(ch.key, keys::G | keys::Q | keys::D)
+                                    }) && !is_gi_initial;
+
+                                    // Target must be 'a' or 'o' (circumflex vowels in ua/uo diphthongs)
+                                    let is_valid_circumflex_target =
+                                        matches!(key, keys::A | keys::O);
+
+                                    let is_valid_3_vowel_diphthong_pattern = self.buf.len() <= 4  // Max syllable size before trigger
+                                            && vowel_positions.len() == 2  // Only 2 in buffer, 3rd is being typed
+                                            && has_adjacent_vowel_before
+                                            && is_valid_circumflex_target  // Trigger must be 'a' or 'o'
+                                            && !has_foreign_initial  // Exclude foreign patterns
+                                            && self.buf.get(i - 1).is_some_and(|ch| {
+                                                ch.key == keys::U  // Only 'u' before target
+                                                    && ch.tone == 0
+                                                    && ch.mark == 0
+                                            })
+                                            && self.buf.get(i).is_some_and(|ch| ch.key == key); // Target matches trigger
+
                                     let has_any_adjacent_vowel =
                                         has_adjacent_vowel_before || has_adjacent_vowel_after;
+
+                                    // Check for gi-initial pattern: gi + a + C + a → giâ + C
+                                    // In Vietnamese, "gi" is a consonant cluster, so "giama" → "giâm"
+                                    // The I in "gi" is part of the initial, not a separate vowel
+                                    // For gi patterns, allow ANY single consonant final (not just t,m,p)
+                                    // because "gi" prefix already indicates Vietnamese intent
+                                    // Handle both 2-vowel (buffer: gi-a-m) and 3-vowel (buffer: gi-a-c-a) cases
+                                    let has_single_consonant_final = consonants_after.len() == 1;
+                                    let gi_effective_vowel_count = if is_gi_initial
+                                        && vowel_positions.len() >= 2
+                                        && vowel_positions[0].1 == keys::I
+                                        && vowel_positions[0].0 == 1
+                                    {
+                                        // Ignore I as it's part of gi-initial, count remaining vowels
+                                        vowel_positions.len() - 1
+                                    } else {
+                                        vowel_positions.len()
+                                    };
+                                    let is_gi_initial_pattern = is_gi_initial
+                                        && gi_effective_vowel_count == 1  // Only 1 effective vowel (excluding I from gi)
+                                        && vowel_positions[0].1 == keys::I  // First is I (part of gi)
+                                        && is_same_vowel_trigger  // Trigger matches the vowel in buffer
+                                        && has_single_consonant_final; // Any single consonant final
+
                                     // Block if: has adjacent vowel (diphthong pattern) with non-extending final
-                                    if is_same_vowel_trigger
+                                    // UNLESS it's the specific 3-vowel diphthong pattern (xuata)
+                                    // OR it's the gi-initial pattern (giama, giacsa, etc.)
+                                    //
+                                    // Also allow when target already has mark AND no adjacent vowel:
+                                    // Pattern: V(mark) + C + V → Circumflex on first V, preserve mark
+                                    // Example: "afma" → à + m + a → ầ + m (a with huyền gets circumflex)
+                                    // For gi-initial with mark, allow any single consonant final
+                                    let allow_with_existing_mark = !has_any_adjacent_vowel
                                         && is_non_extending_final
-                                        && target_has_no_mark
-                                        && !has_any_adjacent_vowel
+                                        && self.buf.get(i).is_some_and(|c| c.mark > 0);
+
+                                    // Special case: gi-initial with mark allows any single consonant
+                                    let allow_gi_with_mark = is_gi_initial
+                                        && has_single_consonant_final
+                                        && self.buf.get(i).is_some_and(|c| c.mark > 0);
+
+                                    // Special case: vowel-initial patterns (ua, uo) with mark
+                                    // Pattern: U + A(mark) + T + A → U + Ấ + T (uất)
+                                    // When first char is vowel U and target has mark, allow circumflex
+                                    let is_vowel_initial_with_mark =
+                                        self.buf.get(0).is_some_and(|c| c.key == keys::U)
+                                            && is_non_extending_final
+                                            && self.buf.get(i).is_some_and(|c| c.mark > 0)
+                                            && is_valid_3_vowel_diphthong_pattern;
+
+                                    if is_same_vowel_trigger
+                                        && (is_non_extending_final
+                                            || is_gi_initial_pattern
+                                            || allow_gi_with_mark
+                                            || is_vowel_initial_with_mark)
+                                        && (target_has_no_mark
+                                            || allow_with_existing_mark
+                                            || allow_gi_with_mark
+                                            || is_vowel_initial_with_mark)
+                                        && (!has_any_adjacent_vowel
+                                            || is_valid_3_vowel_diphthong_pattern
+                                            || is_gi_initial_pattern
+                                            || allow_gi_with_mark
+                                            || is_vowel_initial_with_mark)
                                     {
                                         // Apply circumflex to first vowel
                                         if let Some(c) = self.buf.get_mut(i) {
@@ -1993,6 +2350,11 @@ impl Engine {
                                             self.had_any_transform = true;
                                             self.had_vowel_triggered_circumflex = true;
                                         }
+                                        // Track this as delayed circumflex for potential revert
+                                        // If next consonants create invalid pattern (like "pct" in "expect"),
+                                        // the circumflex can be reverted
+                                        self.last_transform =
+                                            Some(Transform::DelayedCircumflex(key));
                                         // Don't add the trigger vowel - return result immediately
                                         // Need extra backspace because we're replacing displayed char
                                         let result = self.rebuild_from(i);
@@ -2317,10 +2679,37 @@ impl Engine {
                 .map(|(i, c)| (i, c.key))
                 .collect();
 
-            // Check for exactly 2 vowels that are the same (a, e, or o for circumflex)
-            if vowel_positions.len() == 2 {
-                let (pos1, key1) = vowel_positions[0];
-                let (pos2, key2) = vowel_positions[1];
+            // Check for at least 2 vowels where the last two are the same (a, e, or o for circumflex)
+            // This handles words like "xuata" (x-u-a-t-a) where we have 3 vowels but the last two 'a's should trigger circumflex
+            // Only allow > 2 vowels case for exactly 3 vowels where:
+            // - First vowel is 'u' or 'i' (common in Vietnamese diphthongs like "ua", "uô", "ia", "iê")
+            // - First two vowels are adjacent (forming a diphthong like "ua" in xuata)
+            // - First vowel is different from the pair
+            // This prevents "roemer" → "roêm" (English word corruption)
+            let valid_multi_vowel_pattern = if vowel_positions.len() == 3 {
+                let (pos0, first_key) = vowel_positions[0];
+                let (pos1, second_key) = vowel_positions[1];
+                // First must be u/i (diphthong starter), different from pair, and adjacent
+                let is_diphthong_starter = matches!(first_key, keys::U | keys::I);
+                // Also check if first vowel already has any transformation (mark/tone)
+                // This prevents "mỉama" + r from triggering (ỉ already has mark)
+                let first_vowel_has_transform = self
+                    .buf
+                    .get(pos0)
+                    .is_some_and(|c| c.tone != 0 || c.mark != 0);
+                is_diphthong_starter
+                    && first_key != second_key
+                    && pos1 == pos0 + 1
+                    && !first_vowel_has_transform
+            } else {
+                // For > 3 vowels, don't trigger delayed circumflex
+                // For exactly 2 vowels, always valid (original behavior)
+                vowel_positions.len() == 2
+            };
+
+            if vowel_positions.len() >= 2 && valid_multi_vowel_pattern {
+                let (pos1, key1) = vowel_positions[vowel_positions.len() - 2];
+                let (pos2, key2) = vowel_positions[vowel_positions.len() - 1];
                 let is_circumflex_vowel = matches!(key1, keys::A | keys::E | keys::O);
 
                 // Check if first vowel already has circumflex - skip delayed circumflex if so
@@ -2743,6 +3132,43 @@ impl Engine {
             }
         }
 
+        // Fix for ươu triphthong pattern:
+        // In Vietnamese, ươu has horn on ư and ơ only, final u stays plain.
+        // When we have [U(horn), O, U] or [U(horn), O(horn), U], don't apply horn to final U.
+        let buf_len = self.buf.len();
+        if buf_len >= 3 {
+            let last_pos = buf_len - 1;
+            let last_is_plain_u = self
+                .buf
+                .get(last_pos)
+                .map(|c| c.key == keys::U && c.tone == tone::NONE)
+                .unwrap_or(false);
+
+            if last_is_plain_u && result.contains(&last_pos) {
+                // Check if there's O immediately before the final U
+                let o_before_u = self
+                    .buf
+                    .get(last_pos - 1)
+                    .map(|c| c.key == keys::O)
+                    .unwrap_or(false);
+
+                if o_before_u {
+                    // Check if there's U with horn somewhere before the O
+                    let has_u_horn_before_o = (0..last_pos - 1).any(|i| {
+                        self.buf
+                            .get(i)
+                            .map(|c| c.key == keys::U && c.tone == tone::HORN)
+                            .unwrap_or(false)
+                    });
+
+                    if has_u_horn_before_o {
+                        // We're in ươu triphthong pattern - don't apply horn to final U
+                        result.retain(|&pos| pos != last_pos);
+                    }
+                }
+            }
+        }
+
         result
             .into_iter()
             .filter(|&pos| {
@@ -2849,16 +3275,22 @@ impl Engine {
                 &vowels
             };
 
+            // Issue #162 fix: Don't reposition if vowels are identical (doubled vowels like "oo")
+            // UNLESS there's a final consonant (NG/C) - then Vietnamese tone rules apply.
+            // Example: "bosoong" → "boóng" (mark moves to second O before NG final)
+            let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
+            let has_final = self.has_final_consonant(last_vowel_pos);
+
             if effective_vowels.len() >= 2
                 && effective_vowels
                     .iter()
                     .all(|v| v.key == effective_vowels[0].key)
+                && !has_final
+            // Allow repositioning if there's a final consonant
             {
                 return None;
             }
 
-            let last_vowel_pos = vowels.last().map(|v| v.pos).unwrap_or(0);
-            let has_final = self.has_final_consonant(last_vowel_pos);
             let new_pos =
                 Phonology::find_tone_position(&vowels, has_final, self.modern_tone, has_qu, has_gi);
 
@@ -3086,14 +3518,15 @@ impl Engine {
     /// Common revert logic: clear modifier, add key to buffer, rebuild output
     fn revert_and_rebuild(&mut self, pos: usize, key: u16, caps: bool) -> Result {
         // Calculate backspace BEFORE adding key (based on old buffer state)
-        let backspace = (self.buf.len() - pos) as u8;
+        // Use saturating_sub to prevent underflow if pos > buf.len()
+        let backspace = self.buf.len().saturating_sub(pos) as u8;
 
         // Add the reverted key to buffer so validation sees the full sequence
         self.buf.push(Char::new(key, caps));
 
         // Build output from position (includes new key)
         // Use chars::to_char to preserve mark (sắc/huyền/etc) on reverted vowels
-        let mut output = Vec::with_capacity(self.buf.len() - pos);
+        let mut output = Vec::with_capacity(self.buf.len().saturating_sub(pos));
         for i in pos..self.buf.len() {
             if let Some(c) = self.buf.get(i) {
                 if c.key == keys::D && c.stroke {
@@ -3119,6 +3552,11 @@ impl Engine {
         for pos in self.buf.find_vowels().into_iter().rev() {
             if let Some(c) = self.buf.get_mut(pos) {
                 if c.tone > tone::NONE {
+                    // Track circumflex revert for literal double vowel behavior
+                    // When ooo→oo, eee→ee, aaa→aa, subsequent keys should be literal
+                    if c.tone == tone::CIRCUMFLEX {
+                        self.had_circumflex_revert = true;
+                    }
                     c.tone = tone::NONE;
                     // Track for auto-restore logic (double ss/ff detection)
                     self.had_mark_revert = true;
@@ -3433,6 +3871,132 @@ impl Engine {
                 return self.rebuild_from_after_insert(u_pos);
             }
 
+            // Revert mark on B-initial triple-o when invalid consonant follows
+            // "booos" → "boó", but "booost" → "boost" (revert mark when T follows)
+            // Only revert for consonants that can't form valid finals (not N for NG)
+            if self.had_circumflex_revert
+                && self.method == 0
+                && keys::is_consonant(key)
+                && key != keys::N
+            {
+                let buf_len = self.buf.len();
+                // Check for pattern: B + Oó (O with mark) at end, consonant just added
+                // Buffer: [B, O, Oó, consonant] where Oó has mark != 0
+                if buf_len >= 3 {
+                    let first_key = self.buf.get(0).map(|c| c.key).unwrap_or(0);
+                    let is_b_initial = first_key == keys::B;
+
+                    // Check if second-to-last char (before just-added consonant) is O with mark
+                    // buf_len-1 is the just-added consonant, buf_len-2 is the potential marked O
+                    let marked_o_pos = buf_len - 2;
+                    let has_marked_o = self
+                        .buf
+                        .get(marked_o_pos)
+                        .map(|c| c.key == keys::O && c.mark != 0)
+                        .unwrap_or(false);
+
+                    // Check if there's another O before the marked O (double-O pattern)
+                    let has_oo_pattern = marked_o_pos >= 1
+                        && self
+                            .buf
+                            .get(marked_o_pos - 1)
+                            .map(|c| c.key == keys::O)
+                            .unwrap_or(false);
+
+                    if is_b_initial && has_marked_o && has_oo_pattern {
+                        // Get the mark value before clearing (to determine which key to insert)
+                        let mark_val = self.buf.get(marked_o_pos).map(|c| c.mark).unwrap_or(0);
+                        let mark_key = if mark_val == 1 { keys::S } else { keys::F }; // sắc=1=s, huyền=2=f
+
+                        // Clear the mark on O
+                        if let Some(c) = self.buf.get_mut(marked_o_pos) {
+                            c.mark = 0;
+                        }
+
+                        // Insert the mark key as literal BEFORE the just-added consonant
+                        // Use pop/push since Buffer doesn't have insert
+                        // Before: [B, O, Oó, T] where Oó has mark
+                        // After:  [B, O, O, S, T] (mark cleared, S inserted)
+                        if let Some(consonant) = self.buf.pop() {
+                            self.buf.push(Char::new(mark_key, false));
+                            self.buf.push(consonant);
+                        }
+
+                        // Manual rebuild: screen has "boó" (T not yet shown)
+                        // Need to delete "ó" (1 char) and output "ost" (3 chars)
+                        // Output from marked_o_pos to end of buffer
+                        let mut output = Vec::new();
+                        for i in marked_o_pos..self.buf.len() {
+                            if let Some(c) = self.buf.get(i) {
+                                if let Some(ch) = chars::to_char(c.key, c.caps, c.tone, c.mark) {
+                                    output.push(ch);
+                                } else if let Some(ch) = crate::utils::key_to_char(c.key, c.caps) {
+                                    output.push(ch);
+                                }
+                            }
+                        }
+                        // Backspace 1 to delete "ó", output "ost"
+                        return Result::send(1, &output);
+                    }
+                }
+            }
+
+            // Detect and apply mark for triple-o word patterns (booofng → boòng)
+            // When NG final is typed after a pattern like "boo" + mark_key (f/s),
+            // retroactively apply the mark and remove the literal mark key
+            // This handles B/C/M initials that were excluded from is_vietnamese_triple_o_word
+            if key == keys::G && self.had_circumflex_revert && self.method == 0 {
+                let buf_len = self.buf.len();
+                // Check for pattern: [initial] + OO + [f/s] + N + G (just added)
+                // Buffer now has: [B, O, O, F, N, G] or [M, O, O, S, N, G]
+                if buf_len >= 5 {
+                    let first_key = self.buf.get(0).map(|c| c.key).unwrap_or(0);
+                    let is_bcm_initial = matches!(first_key, keys::B | keys::C | keys::M);
+                    let has_n_before_g = self.buf.get(buf_len - 2).map(|c| c.key) == Some(keys::N);
+
+                    if is_bcm_initial && has_n_before_g {
+                        // Find mark key (f/s) between double-O and N
+                        // Pattern: OO + mark_key + N + G
+                        let mark_pos = buf_len - 3; // Position before N
+                        if let Some(mark_char) = self.buf.get(mark_pos) {
+                            let is_mark_key = mark_char.key == keys::F || mark_char.key == keys::S;
+                            let mark_key = mark_char.key;
+
+                            // Check for double-O before mark key
+                            let has_oo_before = mark_pos >= 2
+                                && self.buf.get(mark_pos - 1).map(|c| c.key) == Some(keys::O)
+                                && self.buf.get(mark_pos - 2).map(|c| c.key) == Some(keys::O);
+
+                            if is_mark_key && has_oo_before {
+                                // Calculate mark value: f=huyền(2), s=sắc(1)
+                                let mark_val = if mark_key == keys::F { 2u8 } else { 1u8 };
+                                let o_pos = mark_pos - 1; // Last O position
+
+                                // Remove the mark key from buffer
+                                self.buf.remove(mark_pos);
+
+                                // Apply mark to the O
+                                if let Some(c) = self.buf.get_mut(o_pos) {
+                                    if c.key == keys::O {
+                                        c.mark = mark_val;
+                                        self.had_any_transform = true;
+                                    }
+                                }
+
+                                // Rebuild: screen has "boofng", buffer now has "boòng"
+                                // Need extra backspace for removed mark key
+                                let result = self.rebuild_from_after_insert(o_pos);
+                                let chars: Vec<char> = result.chars[..result.count as usize]
+                                    .iter()
+                                    .filter_map(|&c| char::from_u32(c))
+                                    .collect();
+                                return Result::send(result.backspace + 1, &chars);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Normalize ưo → ươ immediately when 'o' is typed after 'ư'
             // This ensures "dduwo" → "đươ" (Telex) and "u7o" → "ươ" (VNI)
             // Works for both methods since "ưo" alone is not valid Vietnamese
@@ -3603,7 +4167,10 @@ impl Engine {
             }
         }
 
-        self.rebuild_from(first_pos)
+        // Use rebuild_from_after_insert because the triggering character (e.g., 'l' in "would")
+        // was already pushed to buffer but NOT yet displayed on screen.
+        // rebuild_from would count it in backspace, causing 1 extra backspace.
+        self.rebuild_from_after_insert(first_pos)
     }
 
     /// Collect vowels from buffer
@@ -3628,7 +4195,7 @@ impl Engine {
 
     /// Rebuild output from position
     fn rebuild_from(&self, from: usize) -> Result {
-        let mut output = Vec::with_capacity(self.buf.len() - from);
+        let mut output = Vec::with_capacity(self.buf.len().saturating_sub(from));
         let mut backspace = 0u8;
 
         for i in from..self.buf.len() {
@@ -3662,7 +4229,7 @@ impl Engine {
             return Result::none();
         }
 
-        let mut output = Vec::with_capacity(self.buf.len() - from);
+        let mut output = Vec::with_capacity(self.buf.len().saturating_sub(from));
         // Backspace = number of chars from `from` to BEFORE the new char
         // The new char (last in buffer) hasn't been displayed yet
         let backspace = (self.buf.len().saturating_sub(1).saturating_sub(from)) as u8;
@@ -3716,18 +4283,21 @@ impl Engine {
         self.restored_pending_clear = false;
         self.restored_is_ascii = false;
         self.shortcut_prefix.clear();
-        self.typed_after_space = false;
-        // Note: DO NOT clear last_break_key, saw_sentence_ending, or pending_capitalize here
-        // These need to persist across word boundaries for auto-capitalize to work correctly
     }
 
     /// Clear everything including word history
     /// Used when cursor position changes (mouse click, arrow keys, etc.)
     /// to prevent accidental restore from stale history
+    /// Issue #274: Also reset auto-capitalize state to prevent incorrect
+    /// capitalization after paste/cursor change
     pub fn clear_all(&mut self) {
         self.clear();
         self.word_history.clear();
         self.spaces_after_commit = 0;
+        // Issue #274: Reset auto-capitalize state on cursor change
+        // This prevents incorrect capitalization after copy-paste
+        self.pending_capitalize = false;
+        self.saw_sentence_ending = false;
     }
 
     /// Get the full composed buffer as a Vietnamese string with diacritics.
@@ -3807,22 +4377,67 @@ impl Engine {
             return None;
         }
 
-        // Issue #211: Skip auto-restore for extended vowel patterns
-        // When user types "áaa" or "hảaa", this is intentional Vietnamese (casual messaging)
-        // not English that needs to be restored. Detect by checking if:
-        // 1. reverted_circumflex_key is set (revert happened)
-        // 2. All vowels in buffer are the same key (extended pattern)
-        if self.reverted_circumflex_key.is_some() {
+        // Issue #211: Skip auto-restore for extended character patterns
+        // When user types "ơiiiiii", "điiii", "ôiiii", "vàooooo", etc.
+        // This is intentional Vietnamese (casual messaging) not English.
+        //
+        // Check if buffer has ANY Vietnamese-specific modifier:
+        // - HORN: ơ, ư, ă (from 'w' key)
+        // - CIRCUMFLEX: ô, â, ê (from double vowel)
+        // - MARK: sắc, huyền, hỏi, ngã, nặng (from s/f/r/x/j keys)
+        // - STROKE: đ (from 'dd')
+        // AND has CONSECUTIVE extended characters (3+ same key in a row)
+        //
+        // NOTE: Must be CONSECUTIVE - "WebSocket" has 'e' twice but not consecutive
+        // NOTE: reverted_circumflex_key handles Issue #211 case (áaa pattern after revert)
+        //
+        // Examples:
+        //   "cuwuuuuus" → "cứuuuuu" → horn + consecutive u's → keep Vietnamese
+        //   "owiiiiii" → "ơiiiiii" → horn + consecutive i's → keep Vietnamese
+        //   "ooiiii" → "ôiiii" → circumflex + consecutive i's → keep Vietnamese
+        //   "ddiiii" → "điiii" → stroke + consecutive i's → keep Vietnamese
+        //   "vafooooo" → "vàooooo" → mark (huyền) + consecutive o's → keep Vietnamese
+        let has_vn_specific_modifier = self.buf.iter().any(|c| {
+            c.tone == tone::HORN      // ơ, ư, ă
+                || c.tone == tone::CIRCUMFLEX // ô, â, ê
+                || c.mark > 0         // sắc, huyền, hỏi, ngã, nặng
+                || c.key == keys::D && self.buf.iter().filter(|x| x.key == keys::D).count() == 0
+                    && self.had_telex_transform // đ from dd
+        });
+
+        // Also check for stroke (đ) - when D in buffer but had_telex_transform and raw had 'dd'
+        let has_stroke = self
+            .raw_input
+            .windows(2)
+            .any(|pair| pair[0].0 == keys::D && pair[1].0 == keys::D)
+            && self.buf.iter().any(|c| c.key == keys::D);
+
+        let has_vn_modifier = has_vn_specific_modifier || has_stroke;
+
+        // Check for consecutive extended characters: 3+ of the same key in a row
+        // Can be vowels (iiiii, uuuuu) or consonants (ggggg for emphasis)
+        // Require 3+ to distinguish from English words like "sweet" (ee), "flood" (oo)
+        let buf_chars: Vec<_> = self.buf.iter().collect();
+        let has_consecutive_extended = buf_chars
+            .windows(3)
+            .any(|triple| triple[0].key == triple[1].key && triple[1].key == triple[2].key);
+
+        // Also check original Issue #211 pattern: reverted_circumflex + all vowels same key
+        let all_vowels_same = if self.reverted_circumflex_key.is_some() {
             let vowels: Vec<u16> = self
                 .buf
                 .iter()
                 .filter(|c| keys::is_vowel(c.key))
                 .map(|c| c.key)
                 .collect();
-            if vowels.len() >= 2 && vowels.iter().all(|&k| k == vowels[0]) {
-                // Extended vowel pattern - skip auto-restore
-                return None;
-            }
+            vowels.len() >= 2 && vowels.iter().all(|&k| k == vowels[0])
+        } else {
+            false
+        };
+
+        if (has_vn_modifier && has_consecutive_extended) || all_vowels_same {
+            // Extended character pattern - skip auto-restore
+            return None;
         }
 
         // VIETNAMESE PRIORITY: Only keep Vietnamese when buffer has Vietnamese-SPECIFIC marks
@@ -3963,13 +4578,23 @@ impl Engine {
                         if is_double_ss || is_double_ff {
                             let original_lower = stored.to_lowercase();
                             if english_dict::is_english_word(&original_lower) {
-                                // EXCEPTIONS: "off", "iff", "ass" should keep reverted form
+                                // EXCEPTIONS: certain words should keep reverted form (buffer)
+                                // instead of restoring to raw double letter pattern.
+                                // This handles cases where collapsed buffer is more common:
+                                //   "off" → "of" (common word)
+                                //   "iff" → "if" (common word)
+                                //   "ass" → "as" (common word)
+                                //   "hiss" → "his" (common word, more frequent than "hiss")
                                 let is_exception = if chars.len() == 3 {
                                     let first = chars[0].to_ascii_lowercase();
                                     let is_off = first == 'o' && is_double_ff;
                                     let is_iff = first == 'i' && is_double_ff;
                                     let is_ass = first == 'a' && is_double_ss;
                                     is_off || is_iff || is_ass
+                                } else if chars.len() == 4 {
+                                    // 4-char exceptions: "hiss" → "his"
+                                    let first = chars[0].to_ascii_lowercase();
+                                    first == 'h' && is_double_ss
                                 } else {
                                     false
                                 };
@@ -4266,10 +4891,62 @@ impl Engine {
         // EXCEPTION: If buffer has stroke (đ), this is intentional Vietnamese
         // Example: "derde" → "để" has stroke, keep it (valid VN word)
         // Example: "law" → "lă" has no stroke, restore to "law" (English)
+        // EXCEPTION: If buffer is VALID Vietnamese with VN-specific marks (breve/horn/circumflex),
+        // AND W is NOT at final position (has consonants after W),
+        // AND W comes AFTER a vowel (medial position, not initial),
+        // skip restore. This handles patterns like "banwfg" → "bằng" where W is a vowel modifier.
+        // The pattern "a + consonants + w + finals" produces breve on 'a' (ă), which is valid Vietnamese.
+        // But "law", "saw", "raw" have W at end - these should restore to English.
+        // And "west", "water" have W at start - these should restore to English.
         if is_word_complete && self.has_english_modifier_pattern(true) && raw_input_valid_en {
             // Skip restore if buffer has stroke - user intentionally typed Vietnamese đ
             if !has_stroke {
-                return self.build_raw_chars();
+                // Skip restore if buffer is VALID Vietnamese with VN-specific marks
+                // AND W is not at final position (has consonants after W)
+                // AND W comes after a vowel (not at initial position)
+                // This handles "banwfg" → "bằng" but NOT "law" or "west"
+                let buffer_valid_vn = !self.is_buffer_invalid_vietnamese();
+
+                // Check if W is at end (final position) - English pattern like "law", "saw"
+                let w_at_end = self
+                    .raw_input
+                    .last()
+                    .map(|(k, _, _)| *k == keys::W)
+                    .unwrap_or(false);
+
+                // Find W position and check context
+                let w_pos = self.raw_input.iter().rposition(|(k, _, _)| *k == keys::W);
+
+                // Check if there are consonants after the last W in raw_input
+                // Pattern: "banwfg" has W at pos 3, then "fg" (consonants) - Vietnamese pattern
+                // Pattern: "law" has W at end - English pattern
+                let has_consonants_after_w = w_pos.is_some_and(|pos| {
+                    self.raw_input[pos + 1..].iter().any(|(k, _, _)| {
+                        keys::is_consonant(*k)
+                            && !matches!(*k, keys::S | keys::F | keys::R | keys::X | keys::J)
+                    })
+                });
+
+                // Check if W comes after a vowel (medial position, not initial)
+                // Pattern: "banwfg" has vowel 'a' before W (pos 1) → medial W → Vietnamese
+                // Pattern: "west" has W at pos 0 (initial) → no vowel before → English
+                let has_vowel_before_w = w_pos.is_some_and(|pos| {
+                    self.raw_input[..pos]
+                        .iter()
+                        .any(|(k, _, _)| keys::is_vowel(*k))
+                });
+
+                if buffer_valid_vn
+                    && has_vn_specific_mark
+                    && !w_at_end
+                    && has_consonants_after_w
+                    && has_vowel_before_w
+                {
+                    // Valid Vietnamese with VN marks, W not at end, consonants after W, vowel before W
+                    // Examples: "banwfg" → "bằng", "thanwfg" → "thằng"
+                } else {
+                    return self.build_raw_chars();
+                }
             }
         }
 
@@ -4562,6 +5239,51 @@ impl Engine {
             return false;
         }
 
+        // DICTIONARY-BASED VALIDATION (when english_auto_restore is enabled)
+        // If word is in Vietnamese dictionary, it's definitely valid Vietnamese.
+        // Uses check_with_style to respect modern_tone setting (DauMoi vs DauCu).
+        if self.english_auto_restore {
+            let buffer_str = self.buf.to_full_string();
+            if vietnamese_spellcheck::check_with_style_and_foreign(
+                &buffer_str,
+                self.modern_tone,
+                self.allow_foreign_consonants,
+            ) {
+                return false; // Valid VN word in dictionary
+            }
+
+            // If buffer is NOT in VN dictionary AND raw_input is a valid English word,
+            // AND raw_input has TELEX DOUBLE PATTERN (oo, ee, aa, dd, ss, ff...),
+            // consider buffer as INVALID Vietnamese to trigger auto-restore.
+            // This implements the "Not VN AND Is EN → restore" rule.
+            //
+            // IMPORTANT: Only apply for telex double patterns to maintain Vietnamese-first.
+            // Words like "lisa" → "lía" should stay Vietnamese (no double pattern).
+            // Words like "choose" (oo), "see" (ee), "add" (dd) should restore.
+            let raw_str = self.get_raw_input_string();
+            let has_telex_double = self.raw_input.windows(2).any(|pair| {
+                let (k1, _, _) = pair[0];
+                let (k2, _, _) = pair[1];
+                k1 == k2
+                    && matches!(
+                        k1,
+                        keys::O
+                            | keys::E
+                            | keys::A
+                            | keys::D
+                            | keys::S
+                            | keys::F
+                            | keys::R
+                            | keys::X
+                            | keys::J
+                    )
+            });
+
+            if has_telex_double && english_dict::is_english_word(&raw_str) {
+                return true; // Telex double + Not in VN dict + IS in EN dict → invalid VN
+            }
+        }
+
         // Get keys and tones from buffer
         let buffer_keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
         let buffer_tones: Vec<u8> = self.buf.iter().map(|c| c.tone).collect();
@@ -4657,7 +5379,119 @@ impl Engine {
             }
         }
 
+        // Check 7: "ươu" triphthong at word start (no initial) is INVALID Vietnamese
+        // Vietnamese syllables with "ươu" REQUIRE an initial consonant:
+        // - Valid: cươu, hươu, bươu (with initial)
+        // - Invalid: ươu (no initial - doesn't exist in Vietnamese)
+        // BUT "ươ" alone or with consonant final IS valid: ươ, ương, ươn, ươm
+        // This catches English words like "wou" → "ươu", "would" → "ươuld"
+        // Pattern: U+horn (ư) + O+horn (ơ) + U (plain) at word start
+        if buffer_keys.len() >= 3
+            && syllable.initial.is_empty()
+            && buffer_keys[0] == keys::U
+            && buffer_tones[0] == tone::HORN
+            && buffer_keys[1] == keys::O
+            && buffer_tones[1] == tone::HORN
+            && buffer_keys[2] == keys::U
+        {
+            return true; // ươu at word start without initial is invalid
+        }
+
+        // Check 8: K final + CIRCUMFLEX vowel = INVALID Vietnamese
+        // K final is only valid in ethnic minority words with:
+        // - Breve vowels (ă): Đắk, Lắk
+        // - Plain vowels with tone: Búk
+        // K final is NOT valid with circumflex (ô, ê, â): cổk, têk, âk are invalid
+        // This catches English words like "cowork" → "cổk", "network" → "netwổk"
+        if !syllable.final_c.is_empty() {
+            let final_key = buffer_keys[syllable.final_c[0]];
+            if final_key == keys::K {
+                // Check if vowel has circumflex - if so, invalid
+                for &i in &syllable.vowel {
+                    if buffer_tones[i] == tone::CIRCUMFLEX {
+                        return true; // circumflex + K final is invalid Vietnamese
+                    }
+                }
+            }
+        }
+
         false
+    }
+
+    /// Check if buffer matches a Vietnamese triple-o word pattern
+    ///
+    /// Vietnamese has rare words with literal double-o (not circumflex):
+    /// - boóng, choòng, đoòng, goòng, toòng → final is NG
+    /// - coóc, moóc, soóc → final is C
+    ///
+    /// When typing these words, user types triple-o (ooo) which reverts circumflex to oo.
+    /// After revert, tone modifiers (s, f) should STILL be applied.
+    /// This function identifies these patterns to allow tone modifier application.
+    ///
+    /// Supports two scenarios:
+    /// 1. Complete pattern: initial + OO + final (NG/C) → allow tone after final
+    /// 2. Partial pattern: initial + OO (no final yet) → allow tone before final
+    ///
+    /// For partial patterns (no final), we only match triple-o word initials.
+    fn is_vietnamese_triple_o_word(&self) -> bool {
+        if self.buf.len() < 2 {
+            // Minimum: OO (2 chars for vowel-initial pattern) or initial + OO (3 chars)
+            return false;
+        }
+
+        let keys: Vec<u16> = self.buf.iter().map(|c| c.key).collect();
+        let len = keys.len();
+
+        // Check for valid finals: NG or C
+        let has_ng_final = len >= 2 && keys[len - 2] == keys::N && keys[len - 1] == keys::G;
+        let has_c_final = keys[len - 1] == keys::C;
+        let has_valid_final = has_ng_final || has_c_final;
+
+        // Find double O position
+        let double_o_pos = keys
+            .windows(2)
+            .position(|pair| pair[0] == keys::O && pair[1] == keys::O);
+        if double_o_pos.is_none() {
+            return false;
+        }
+        let oo_pos = double_o_pos.unwrap();
+
+        // Check valid initials for Vietnamese triple-o words
+        let first_key = keys[0];
+
+        // Single consonant initials: B, C, G, M, S, T, D at position 0, OO at position 1,2
+        let single_initial_match = matches!(
+            first_key,
+            keys::B | keys::C | keys::G | keys::M | keys::S | keys::T | keys::D
+        ) && oo_pos == 1;
+
+        // CH initial: CH at position 0,1, OO at position 2,3
+        let ch_initial_match =
+            first_key == keys::C && len >= 2 && keys[1] == keys::H && oo_pos == 2;
+
+        // Vowel-initial: OO at position 0 (no consonant initial)
+        // Example: "ooosng" → "oóng", "ooosfng" → "oòng"
+        let vowel_initial_match = first_key == keys::O && oo_pos == 0;
+
+        if !single_initial_match && !ch_initial_match && !vowel_initial_match {
+            return false;
+        }
+
+        // CASE 1: Complete pattern with valid final (NG/C) → always match
+        if has_valid_final {
+            return true;
+        }
+
+        // CASE 2: Partial pattern (no final yet) → only for initials without English collision
+        // Allow: B, CH, D, G, T, S (Vietnamese triple-o patterns)
+        // B is included: "booos" → "boó" (mark applied, auto-restored if consonant follows)
+        // Exclude: C, M (collide with English "coos", "moos")
+        // Also allow vowel-initial: "ooo" → "oo" + tone
+        let oo_at_end = oo_pos + 2 == len;
+        let safe_partial_initial =
+            matches!(first_key, keys::B | keys::D | keys::G | keys::T | keys::S);
+        (ch_initial_match || vowel_initial_match || (safe_partial_initial && single_initial_match))
+            && oo_at_end
     }
 
     /// Check if raw_input is valid English (for unified auto-restore logic)
@@ -4833,17 +5667,32 @@ impl Engine {
                 chars.remove(pos);
             }
 
-            // 3. Double vowel at VERY END → collapse when circumflex was applied then reverted
-            // Example: "dataa" → "data" (aa at end, circumflex was applied then reverted)
-            // This happens when user types a-a-a and third 'a' reverts the circumflex
+            // 3. Double vowel collapse when circumflex was applied then reverted
+            // Scans entire word (end AND middle) for double a/e/o from circumflex revert.
+            // Dict priority: if double form is in dict → keep it; if collapsed form is in dict → collapse.
+            // If neither in dict → keep double form (no collapse).
             // IMPORTANT: Use had_circumflex_revert, NOT had_mark_revert
             // had_mark_revert is set for tone marks (ff in coffee), which should NOT collapse
             if self.had_circumflex_revert && chars.len() >= 2 {
-                let last = chars[chars.len() - 1].to_ascii_lowercase();
-                let second_last = chars[chars.len() - 2].to_ascii_lowercase();
-                // Double vowel at very end (a/e/o)
-                if matches!(last, 'a' | 'e' | 'o') && last == second_last {
-                    chars.pop();
+                let current_str: String = chars.iter().collect::<String>().trim().to_lowercase();
+                // Only attempt collapse if current (double) form is NOT in dict
+                if !english_dict::is_english_word(&current_str) {
+                    let mut i = 0;
+                    while i + 1 < chars.len() {
+                        let c = chars[i].to_ascii_lowercase();
+                        let next = chars[i + 1].to_ascii_lowercase();
+                        if matches!(c, 'a' | 'e' | 'o') && c == next {
+                            let mut collapsed = chars.clone();
+                            collapsed.remove(i);
+                            let collapsed_str: String =
+                                collapsed.iter().collect::<String>().trim().to_lowercase();
+                            if english_dict::is_english_word(&collapsed_str) {
+                                chars = collapsed;
+                                continue; // re-check same position
+                            }
+                        }
+                        i += 1;
+                    }
                 }
             }
 
@@ -4979,7 +5828,8 @@ impl Engine {
         // Optimization: If raw_chars equals current buffer, no restore needed
         // This happens when user manually reverted (e.g., "usser" → "user")
         // Avoids unnecessary backspace + retype of the same content
-        let buffer_str: String = self.buf.to_string_preserve_case();
+        // NOTE: Use to_full_string() to include diacritics for proper comparison
+        let buffer_str: String = self.buf.to_full_string();
         let raw_str: String = raw_chars.iter().collect();
         if buffer_str == raw_str {
             return None;
@@ -5003,7 +5853,7 @@ impl Engine {
 
         // Common English prefixes that suggest intentional revert
         const PREFIXES: &[&str] = &[
-            "dis", "mis", "un", "re", "de", "pre", "anti", "non", "sub", "trans", "con",
+            "dis", "mis", "un", "re", "de", "pre", "per", "anti", "non", "sub", "trans", "con",
         ];
 
         // Common English suffixes
@@ -5363,6 +6213,41 @@ impl Engine {
             }
         }
 
+        // Vietnamese diphthong with tone modifier in middle (3 chars)
+        // Pattern: vowel + tone_modifier + vowel → valid Vietnamese diphthong with tone
+        // Examples: "ira" → "ỉa", "ofa" → "òa", "ore" → "ỏe", "iru" → "ỉu"
+        // Only match VALID Vietnamese diphthongs (not all vowel pairs are valid)
+        if self.raw_input.len() == 3 {
+            let (k0, _, _) = self.raw_input[0];
+            let (k1, _, _) = self.raw_input[1];
+            let (k2, _, _) = self.raw_input[2];
+            if keys::is_vowel(k0) && tone_modifiers.contains(&k1) && keys::is_vowel(k2) {
+                // Check if this vowel pair is a valid Vietnamese diphthong
+                // Valid: ia, iu, ua, uo, oa, oe, oi, ai, ao, au, ay, ei, eo, eu
+                // Invalid: ue, ae, ie, io, ea, ou (these should restore to English)
+                let is_valid_diphthong = matches!(
+                    (k0, k2),
+                    (keys::I, keys::A)
+                        | (keys::I, keys::U)
+                        | (keys::U, keys::A)
+                        | (keys::U, keys::O)
+                        | (keys::O, keys::A)
+                        | (keys::O, keys::E)
+                        | (keys::O, keys::I)
+                        | (keys::A, keys::I)
+                        | (keys::A, keys::O)
+                        | (keys::A, keys::U)
+                        | (keys::A, keys::Y)
+                        | (keys::E, keys::I)
+                        | (keys::E, keys::O)
+                        | (keys::E, keys::U)
+                );
+                if is_valid_diphthong {
+                    return false; // Keep Vietnamese
+                }
+            }
+        }
+
         // Single vowel + modifiers only → valid Vietnamese (á, é, í, ó, ú, ý, etc.)
         // ALL single vowels with tone marks are valid Vietnamese words
         // Examples: "as" → "á", "es" → "é", "is" → "í", "or" → "ỏ", "us" → "ú"
@@ -5693,6 +6578,21 @@ impl Engine {
                         continue;
                     }
 
+                    // EXCEPTION: When next_key is D and there's another D earlier,
+                    // this is Vietnamese đ (stroke) pattern with d...d
+                    // Example: "daafdm" = d + aa + f + D + m → "đầm"
+                    // The two D's form the stroke pattern for đ
+                    if next_key == keys::D {
+                        let d_count = self
+                            .raw_input
+                            .iter()
+                            .filter(|(k, _, _)| *k == keys::D)
+                            .count();
+                        if d_count >= 2 {
+                            continue; // Vietnamese stroke pattern
+                        }
+                    }
+
                     // Case 1a: More letters after the consonant → definitely English
                     // Example: "expect" = E+X+P+E+C+T (X followed by P, then more)
                     if i + 2 < self.raw_input.len() {
@@ -5927,6 +6827,29 @@ impl Engine {
                                 // This creates circumflex+mark on vowel (ậ, ẫ, ầ, ẩ, ặ, etc.)
                                 // BUT: "param" has same pattern but IS in English dict → restore
                                 if keys::is_consonant(char_after) {
+                                    // EXCEPTION: u + modifier + u + w is Vietnamese ưu diphthong
+                                    // Pattern: "cufuw" = c + u + f + u + w → "cừu" (c + ừu)
+                                    // The 'w' is the horn modifier converting u to ư
+                                    // This is a valid Vietnamese typing order, not English
+                                    if prev_vowel == keys::U && char_after == keys::W {
+                                        continue; // Vietnamese ưu pattern
+                                    }
+
+                                    // EXCEPTION: When char_after is D and there are 2+ D's,
+                                    // this is Vietnamese stroke pattern d...d for đ
+                                    // Pattern: "dafadm" = d + a + f + a + D + m → "đầm"
+                                    // The two D's form the stroke pattern for đ
+                                    if char_after == keys::D {
+                                        let d_count = self
+                                            .raw_input
+                                            .iter()
+                                            .filter(|(k, _, _)| *k == keys::D)
+                                            .count();
+                                        if d_count >= 2 {
+                                            continue; // Vietnamese stroke pattern
+                                        }
+                                    }
+
                                     // Check if this forms valid Vietnamese syllable with circumflex
                                     // Circumflex vowels (â, ê, ô) + valid finals
                                     let is_circumflex_vowel =
@@ -6330,10 +7253,16 @@ impl Engine {
                 // - *ím: bím, dím, mím, tím (initials: B, D, M, T)
                 // - *ém: kém, lém, ném, sém, tém (initials: K, L, N, S, T)
                 // English plurals: sims, rims, gems, hems (NOT Vietnamese words)
+                // Vietnamese CÍM/CÉM words (with sắc tone):
+                // - *ím: bím, dím, mím, tím (initials: B, D, M, T)
+                // - *ém: kém, lém, mém, ném, sém, tém (initials: K, L, M, N, S, T)
                 let is_vietnamese_cim_word = (c1 == keys::I
                     && matches!(c0, keys::B | keys::D | keys::M | keys::T))
                     || (c1 == keys::E
-                        && matches!(c0, keys::K | keys::L | keys::N | keys::S | keys::T));
+                        && matches!(
+                            c0,
+                            keys::K | keys::L | keys::M | keys::N | keys::S | keys::T
+                        ));
 
                 if !is_vietnamese_cim_word {
                     // Not a known Vietnamese word → English plural pattern
@@ -6920,6 +7849,101 @@ mod tests {
             assert_eq!(
                 result, *expected,
                 "[Issue #217 circumflex reset] '{}' → '{}', expected '{}'",
+                input, result, expected
+            );
+        }
+    }
+
+    /// After typing "ooo" (revert to "oo"), "eee" (revert to "ee"), or "aaa" (revert to "aa"),
+    /// subsequent keys should be treated as literal (no tone/mark modification).
+    /// Examples:
+    /// - "booo" → "boo" (revert), then "s" → "boos" (not "boós")
+    /// - "seee" → "see" (revert), then "m" → "seem" (not "seém")
+    /// - "booo" + "k" → "book" (consonant also literal)
+    /// Note: Only works with valid Vietnamese initials (b, c, d, h, l, m, n, p, s, t, etc.)
+    #[test]
+    fn test_literal_after_circumflex_revert() {
+        let cases: &[(&str, &str)] = &[
+            // B-initial: mark applied when pattern ends with mark key
+            ("booos", "boó"), // booo→boo + s → boó (mark applied, ends with s)
+            // Auto-restore: consonant after mark → English word
+            ("booost", "boost"), // booo→boo + s + t → boost (auto-restore)
+            // Other patterns remain literal
+            ("seeem", "seem"), // seee→see + m → seem
+            ("mooos", "moos"), // mooo→moo + s → moos (M not in safe partial)
+            ("beeef", "beef"), // beee→bee + f → beef (not bèef)
+            ("gooox", "goox"), // gooo→goo + x → goox (x is not valid mark)
+            ("leeef", "leef"), // leee→lee + f → leef (not lèef)
+            // Consonant after revert → literal
+            ("boook", "book"), // booo→boo + k → book
+            ("seeen", "seen"), // seee→see + n → seen
+            ("looox", "loox"), // looo→loo + x → loox
+            // Multiple chars after revert
+            ("boooks", "books"), // booo→boo + k + s → books
+            ("seeend", "seend"), // seee→see + n + d → seend
+            // SaaS pattern should stay as "saas"
+            ("saaas", "saas"), // saaa→saa + s → saas
+        ];
+
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[Literal after revert] '{}' → '{}', expected '{}'",
+                input, result, expected
+            );
+        }
+    }
+
+    /// Vietnamese triple-o words should accept tone modifiers after circumflex revert.
+    /// These are rare Vietnamese words with literal double-o (not circumflex):
+    /// - boóng, choòng, coóc, đoòng, goòng, moóc, soóc, toòng
+    ///
+    /// IMPORTANT: Tone modifier must come AFTER final consonants (NG or C) for the
+    /// engine to recognize it as Vietnamese. This distinguishes from English words
+    /// like "boos", "books" where the letter after "oo" is literal.
+    ///
+    /// Typing order: [initial] + ooo + [final: ng/c] + [tone: s/f]
+    #[test]
+    fn test_vietnamese_triple_o_words() {
+        let cases: &[(&str, &str)] = &[
+            // Vietnamese triple-o words with sắc tone (s) - final before tone
+            ("booongs", "boóng"), // booo + ng + s → boóng
+            ("mooocs", "moóc"),   // mooo + c + s → moóc
+            ("sooocs", "soóc"),   // sooo + c + s → soóc
+            ("cooocs", "coóc"),   // cooo + c + s → coóc
+            // Vietnamese triple-o words with huyền tone (f) - final before tone
+            ("chooongf", "choòng"), // chooo + ng + f → choòng
+            ("gooongf", "goòng"),   // gooo + ng + f → goòng
+            ("tooongf", "toòng"),   // tooo + ng + f → toòng
+            ("booongf", "boòng"),   // booo + ng + f → boòng
+            // Vietnamese triple-o words with tone BEFORE final (typing order variant)
+            ("booofng", "boòng"), // booo + f + ng → boòng
+            ("booosng", "boóng"), // booo + s + ng → boóng
+            // đoòng with stroke (dd) + triple-o
+            ("ddooongf", "đoòng"), // dd + ooo + ng + f → đoòng
+            ("dooongdf", "đoòng"),
+            ("dooodngf", "đoòng"),
+            ("dooodfng", "đoòng"),
+            ("dooofdng", "đoòng"),
+            ("dooongfd", "đoòng"),
+            // Alternative typing order: stroke at end
+            ("dooongfd", "đoòng"), // d + ooo + ng + f + d → đoòng (stroke at end)
+            // Typing order: mark BEFORE double-o (b + o + s + oo + ng)
+            ("bosoong", "boóng"), // b + o + s + oo + ng → boóng (mark before oo)
+            // Vowel-initial triple-o words (no consonant initial)
+            ("ooosng", "oóng"), // ooo + s + ng → oóng
+            ("ooofng", "oòng"), // ooo + f + ng → oòng
+            ("ooongs", "oóng"), // ooo + ng + s → oóng (tone after final)
+        ];
+
+        for (input, expected) in cases {
+            let mut e = Engine::new();
+            let result = type_word(&mut e, input);
+            assert_eq!(
+                result, *expected,
+                "[Vietnamese triple-o] '{}' → '{}', expected '{}'",
                 input, result, expected
             );
         }
