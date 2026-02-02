@@ -14,6 +14,7 @@ Mỗi đóng góp, dù lớn hay nhỏ, đều giúp người Việt gõ tiếng
 
 Những người đã tin tưởng và ủng hộ dự án.
 
+
 ### 🥇 Gold
 
 <table>
@@ -83,6 +84,7 @@ Những người đã tin tưởng và ủng hộ dự án.
   </tr>
 </table>
 
+
 <p align="center">
   <a href="https://github.com/sponsors/khaphanspace">
     <img src="https://img.shields.io/badge/Trở_thành_Sponsor-💖-ea4aaa?style=for-the-badge" alt="Sponsor"/>
@@ -101,7 +103,7 @@ Những người đã đóng góp code, biến ý tưởng thành hiện thực.
       <a href="https://github.com/khaphanspace">
         <img src="https://avatars.githubusercontent.com/u/16458012?v=4" width="80" style="border-radius:50%"/><br/>
         <b>khaphanspace</b>
-      </a><br/><sub>933 commits</sub>
+      </a><br/><sub>935 commits</sub>
     </td>
     <td align="center">
       <a href="https://github.com/tuananhht94">
@@ -829,6 +831,12 @@ Những người đã báo lỗi, góp ý, và thảo luận giúp định hình
   </tr>
   <tr>
     <td align="center">
+      <a href="https://github.com/bichkhe">
+        <img src="https://avatars.githubusercontent.com/u/3736457?v=4" width="50" style="border-radius:50%"/><br/>
+        <b>bichkhe</b>
+      </a>
+    </td>
+    <td align="center">
       <a href="https://github.com/huyz">
         <img src="https://avatars.githubusercontent.com/u/128394?u=aaee556390ecf35d979057519bcb5e18ccc7123c&v=4" width="50" style="border-radius:50%"/><br/>
         <b>huyz</b>
@@ -855,12 +863,12 @@ Những người đã báo lỗi, góp ý, và thảo luận giúp định hình
 
 ### Bạn muốn đóng góp?
 
-<a href="https://github.com/sponsors/khaphanspace">💖 Sponsor</a> ·
 <a href="/CONTRIBUTING.md">📖 Hướng dẫn đóng góp</a> ·
-<a href="https://github.com/khaphanspace/gonhanh.org/issues">🐛 Báo lỗi</a>
+<a href="https://github.com/khaphanspace/gonhanh.org/issues">🐛 Báo lỗi</a> ·
+<a href="https://github.com/sponsors/khaphanspace">💖 Sponsor</a>
 
 ---
 
-_Được cập nhật tự động · Lần cuối: 02/02/2026_
+*Được cập nhật tự động · Lần cuối: 02/02/2026*
 
 </div>
