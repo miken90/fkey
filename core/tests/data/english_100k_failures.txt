@@ -1,6 +1,6 @@
 # English 100k Typing Variants Failures
 # Format: WORD \t VARIANT \t EXPECTED \t ACTUAL \t BUFFER
-# Total failures: 372
+# Total failures: 371
 
 been	been	been	bên	bên
 see	see	see	sê	sê
@@ -201,7 +201,6 @@ lycee	lyceee	lycee	lyceee	lycêe
 dda	dda	dda	đa	đa
 aar	aar	aar	ẩ	âr
 coons	coons	coons	cốn	côns
-tepee	tepee	tepee	tepe	tepê
 taa	taa	taa	tâ	tâ
 aap	aap	aap	âp	âp
 chaffee	chaffee	chaffee	chafee	chaffê
@@ -338,7 +337,7 @@ mees	mees	mees	mế	mês
 beseeched	beseeched	beseeched	beéched	besêched
 lowdown	lowwdowwn	lowdown	lowdowwn	lơwdơwn
 geert	geeert	geert	geeert	gêert
-tyree	tyreee	tyree	tyre	tyrêe
+tyree	tyreee	tyree	tỷee	tyrêe
 owa	owa	owa	ơa	ơa
 gawk	gawk	gawk	găk	găk
 kaaba	kaaaba	kaaba	kaaaba	kâaba

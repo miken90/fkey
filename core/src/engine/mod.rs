@@ -5667,17 +5667,32 @@ impl Engine {
                 chars.remove(pos);
             }
 
-            // 3. Double vowel at VERY END → collapse when circumflex was applied then reverted
-            // Example: "dataa" → "data" (aa at end, circumflex was applied then reverted)
-            // This happens when user types a-a-a and third 'a' reverts the circumflex
+            // 3. Double vowel collapse when circumflex was applied then reverted
+            // Scans entire word (end AND middle) for double a/e/o from circumflex revert.
+            // Dict priority: if double form is in dict → keep it; if collapsed form is in dict → collapse.
+            // If neither in dict → keep double form (no collapse).
             // IMPORTANT: Use had_circumflex_revert, NOT had_mark_revert
             // had_mark_revert is set for tone marks (ff in coffee), which should NOT collapse
             if self.had_circumflex_revert && chars.len() >= 2 {
-                let last = chars[chars.len() - 1].to_ascii_lowercase();
-                let second_last = chars[chars.len() - 2].to_ascii_lowercase();
-                // Double vowel at very end (a/e/o)
-                if matches!(last, 'a' | 'e' | 'o') && last == second_last {
-                    chars.pop();
+                let current_str: String = chars.iter().collect::<String>().trim().to_lowercase();
+                // Only attempt collapse if current (double) form is NOT in dict
+                if !english_dict::is_english_word(&current_str) {
+                    let mut i = 0;
+                    while i + 1 < chars.len() {
+                        let c = chars[i].to_ascii_lowercase();
+                        let next = chars[i + 1].to_ascii_lowercase();
+                        if matches!(c, 'a' | 'e' | 'o') && c == next {
+                            let mut collapsed = chars.clone();
+                            collapsed.remove(i);
+                            let collapsed_str: String =
+                                collapsed.iter().collect::<String>().trim().to_lowercase();
+                            if english_dict::is_english_word(&collapsed_str) {
+                                chars = collapsed;
+                                continue; // re-check same position
+                            }
+                        }
+                        i += 1;
+                    }
                 }
             }
 

@@ -3669,3 +3669,29 @@ fn standalone_stroke_not_restored_on_break() {
         "Standalone Đ should NOT be restored on punctuation"
     );
 }
+
+// Test: "dataabase " → "database " (double vowel in middle, collapse using dict check)
+// "dataabase" NOT in dict, "database" IS in dict → collapse
+#[test]
+fn test_dataabase_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "dataabase ");
+    assert_eq!(
+        result, "database ",
+        "dataabase should auto-restore to database (collapse mid-word double vowel via dict)"
+    );
+}
+
+// Test: "chooose " → "choose " (NOT "chose")
+// "choose" IS in dict → keep double 'o', don't over-collapse
+#[test]
+fn test_chooose_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "chooose ");
+    assert_eq!(
+        result, "choose ",
+        "chooose should auto-restore to choose, not collapse further to chose"
+    );
+}
