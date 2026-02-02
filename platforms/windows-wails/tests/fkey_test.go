@@ -583,21 +583,26 @@ func TestDetermineMethod(t *testing.T) {
 		processName string
 		want        core.InjectionMethod
 	}{
-		// Slow apps (Electron, terminals, browsers)
+		// Slow apps (Electron, browsers)
 		{"code", core.MethodSlow},
 		{"vscode", core.MethodSlow},
 		{"cursor", core.MethodSlow},
 		{"slack", core.MethodSlow},
-		{"discord", core.MethodAtomic},
+		{"discord", core.MethodSlow},
 		{"notion", core.MethodSlow},
 		{"chrome", core.MethodSlow},
 		{"msedge", core.MethodSlow},
 		{"firefox", core.MethodSlow},
-		{"windowsterminal", core.MethodSlow},
-		{"powershell", core.MethodSlow},
-		{"wave", core.MethodSlow},
-		{"waveterm", core.MethodSlow},
 		{"claude", core.MethodSlow},
+		// Terminals - atomic mode to minimize hook blocking
+		{"windowsterminal", core.MethodAtomic},
+		{"powershell", core.MethodAtomic},
+		{"pwsh", core.MethodAtomic},
+		{"cmd", core.MethodAtomic},
+		{"wave", core.MethodAtomic},
+		{"waveterm", core.MethodAtomic},
+		{"wezterm", core.MethodAtomic},
+		{"alacritty", core.MethodAtomic},
 		// Fast apps
 		{"notepad", core.MethodFast},
 		{"winword", core.MethodFast},

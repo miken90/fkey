@@ -38,6 +38,9 @@ var (
 	ProfileAtomic = AppProfile{Method: MethodAtomic, Coalesce: false}
 	// Discord profile: use slow mode like other Electron apps (atomic+coalesce caused lag)
 	ProfileDiscord = AppProfile{Method: MethodSlow, Coalesce: false}
+	// Terminal profile: atomic mode to minimize hook blocking time
+	// Terminals are sensitive to input latency; atomic sends all in one SendInput call
+	ProfileTerminal = AppProfile{Method: MethodAtomic, Coalesce: false}
 )
 
 // appProfiles maps process names to their injection profiles
@@ -59,17 +62,18 @@ var appProfiles = map[string]AppProfile{
 	"obsidian": ProfileSlow,
 	"figma":    ProfileSlow,
 
-	// Terminals - slow mode
-	"windowsterminal": ProfileSlow,
-	"cmd":             ProfileSlow,
-	"powershell":      ProfileSlow,
-	"pwsh":            ProfileSlow,
-	"wezterm":         ProfileSlow,
-	"alacritty":       ProfileSlow,
-	"hyper":           ProfileSlow,
-	"mintty":          ProfileSlow,
-	"wave":            ProfileSlow,
-	"waveterm":        ProfileSlow,
+	// Terminals - atomic mode to minimize hook blocking time
+	// Atomic sends backspaces + text in single SendInput call (no Sleep in hook)
+	"windowsterminal": ProfileTerminal,
+	"cmd":             ProfileTerminal,
+	"powershell":      ProfileTerminal,
+	"pwsh":            ProfileTerminal,
+	"wezterm":         ProfileTerminal,
+	"alacritty":       ProfileTerminal,
+	"hyper":           ProfileTerminal,
+	"mintty":          ProfileTerminal,
+	"wave":            ProfileTerminal,
+	"waveterm":        ProfileTerminal,
 
 	// Browsers - slow mode as safe default
 	"chrome":  ProfileSlow,
