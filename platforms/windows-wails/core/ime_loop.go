@@ -218,16 +218,16 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		text := result.GetText()
 		backspaces := int(result.Backspace)
 		
-		// Get app profile for current process
-		profile := GetAppProfile(GetCurrentProcessName())
+		// Get app profile - uses smart detection for CLI apps in terminals
+		profile := GetSmartAppProfile(GetCurrentProcessName())
 		
 		// Use coalescing if profile says so AND this is a diacritic replacement
 		if profile.Coalesce && backspaces > 0 {
 			l.coalescer.Queue(text, backspaces, profile.Method, profile.CoalesceMs)
 		} else {
-			// Send immediately
+			// Send immediately with full profile (includes BackspaceMode)
 			l.coalescer.Flush()
-			SendTextWithMethod(text, backspaces, profile.Method)
+			SendTextWithProfile(text, backspaces, profile)
 		}
 		return true
 

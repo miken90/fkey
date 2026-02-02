@@ -593,7 +593,9 @@ func TestDetermineMethod(t *testing.T) {
 		{"chrome", core.MethodSlow},
 		{"msedge", core.MethodSlow},
 		{"firefox", core.MethodSlow},
+		// Claude Code CLI - slow mode (was working in v2.2.4)
 		{"claude", core.MethodSlow},
+		{"claude code", core.MethodSlow},
 		// Terminals - atomic mode to minimize hook blocking
 		{"windowsterminal", core.MethodAtomic},
 		{"powershell", core.MethodAtomic},
@@ -637,6 +639,30 @@ func TestAugmentProfile(t *testing.T) {
 			
 			if profile.BackspaceMode != core.BackspaceUnicode {
 				t.Errorf("GetAppProfile(%q).BackspaceMode = %v, want BackspaceUnicode", name, profile.BackspaceMode)
+			}
+		})
+	}
+}
+
+// TestTerminalProfileVKBack verifies all terminals use VK_BACK (not Unicode BS)
+// Note: BackspaceUnicode was tested but caused issues with Wave, Claude Code
+func TestTerminalProfileVKBack(t *testing.T) {
+	terminals := []string{
+		"windowsterminal", "cmd", "powershell", "pwsh",
+		"wezterm", "alacritty", "hyper", "mintty", "wave", "waveterm",
+	}
+	
+	for _, name := range terminals {
+		t.Run(name, func(t *testing.T) {
+			profile := core.GetAppProfile(name)
+			
+			if profile.Method != core.MethodAtomic {
+				t.Errorf("GetAppProfile(%q).Method = %v, want MethodAtomic", name, profile.Method)
+			}
+			
+			// Terminals should use VK_BACK (default), not Unicode BS
+			if profile.BackspaceMode != core.BackspaceVK {
+				t.Errorf("GetAppProfile(%q).BackspaceMode = %v, want BackspaceVK", name, profile.BackspaceMode)
 			}
 		})
 	}
@@ -726,4 +752,16 @@ func TestFormatHandlerDelays(t *testing.T) {
 	if core.ClipboardRestoreWait != 150 {
 		t.Errorf("ClipboardRestoreWait = %d, want 150", core.ClipboardRestoreWait)
 	}
+}
+
+// ==================== Keyboard Hook Tests ====================
+
+func TestKeyboardHookConsumedMap(t *testing.T) {
+	// Test that NewKeyboardHook initializes consumed map
+	hook := core.NewKeyboardHook()
+	if hook == nil {
+		t.Fatal("NewKeyboardHook returned nil")
+	}
+	// The hook should be created successfully with consumed map initialized
+	// We can't directly test the map since it's private, but we verify hook creation works
 }

@@ -88,6 +88,11 @@ type KeyboardHook struct {
 	modifierOnlyPending bool
 	pendingModifiers    struct{ ctrl, alt, shift bool }
 
+	// Track consumed keys to suppress their KEYUP events
+	// This fixes Firefox address bar bug where KEYUP inserts the raw character
+	consumedMu sync.Mutex
+	consumed   map[uint16]bool
+
 	// Callbacks
 	OnKeyPressed func(keyCode uint16, shift, capsLock bool) bool // returns true if handled
 	OnHotkey     func()
@@ -126,6 +131,7 @@ func (ks *KeyboardShortcut) Matches(keyCode uint16, ctrl, alt, shift bool) bool 
 func NewKeyboardHook() *KeyboardHook {
 	return &KeyboardHook{
 		HotkeyEnabled: true,
+		consumed:      make(map[uint16]bool),
 	}
 }
 
@@ -167,12 +173,6 @@ func (h *KeyboardHook) Stop() {
 
 // hookCallback is the low-level keyboard procedure
 func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) uintptr {
-	// Don't process if already processing (prevents recursion)
-	if h.isProcessing {
-		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
-		return ret
-	}
-
 	hookStruct := (*KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
 
 	// Skip our own injected keys
@@ -187,10 +187,29 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		return ret
 	}
 
+	// Only skip physical keys if already processing AND it's an injected event
+	// This fixes the bug where physical KEYUP slips through during slow-mode injection
+	if h.isProcessing {
+		// isProcessing but not injected = physical key during SendInput
+		// We should NOT skip these - need to check if KEYUP should be suppressed
+		// Fall through to normal handling
+	}
+
 	keyCode := uint16(hookStruct.VkCode)
 
-	// Handle KEYUP for modifier-only hotkeys
+	// Handle KEYUP events
 	if nCode >= 0 && (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+		// First: Check if this KEYUP should be suppressed because we consumed the KEYDOWN
+		// This fixes Firefox address bar bug where KEYUP inserts the raw character
+		h.consumedMu.Lock()
+		if h.consumed[keyCode] {
+			delete(h.consumed, keyCode)
+			h.consumedMu.Unlock()
+			return 1 // Block KEYUP for consumed keys
+		}
+		h.consumedMu.Unlock()
+
+		// Handle modifier-only hotkeys
 		isShiftKey := keyCode == VK_SHIFT || keyCode == VK_LSHIFT || keyCode == VK_RSHIFT
 		isCtrlKey := keyCode == VK_CONTROL || keyCode == VK_LCONTROL || keyCode == VK_RCONTROL
 		isAltKey := keyCode == VK_MENU || keyCode == VK_LMENU || keyCode == VK_RMENU
@@ -385,6 +404,11 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 				h.mu.Unlock()
 
 				if handled {
+					// Track this key as consumed so we suppress its KEYUP too
+					// This fixes Firefox address bar bug where KEYUP inserts raw char
+					h.consumedMu.Lock()
+					h.consumed[keyCode] = true
+					h.consumedMu.Unlock()
 					return 1 // Block the original key
 				}
 			}
