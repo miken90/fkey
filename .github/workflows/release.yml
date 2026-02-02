@@ -255,27 +255,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           REPO="${{ github.repository }}"
           TAG_MSG="${{ steps.tag_message.outputs.message }}"
 
-          # Build PR number → GitHub username map
-          declare -A PR_AUTHOR
-          if [ -n "$PREV_TAG" ]; then
-            PR_NUMS=$(echo "$TAG_MSG" | grep -oE '#[0-9]+' | tr -d '#' | sort -u)
-            for pr in $PR_NUMS; do
-              login=$(gh api "repos/$REPO/pulls/$pr" --jq '.user.login // empty' 2>/dev/null || true)
-              if [ -n "$login" ]; then
-                PR_AUTHOR["$pr"]="$login"
-              fi
-            done
-          fi
-
           # Process tag message: append "bởi @username" to lines with (#NNN)
+          # Note: query PR author inline (no associative arrays - bash 3.x compat)
           while IFS= read -r line; do
             if [[ "$line" =~ \(#([0-9]+)\) ]]; then
               pr_num="${BASH_REMATCH[1]}"
-              login="${PR_AUTHOR[$pr_num]:-}"
+              login=$(gh api "repos/$REPO/pulls/$pr_num" --jq '.user.login // empty' 2>/dev/null || true)
               if [ -n "$login" ] && [[ "$line" != *"bởi @"* ]] && [[ "$line" != *"by @"* ]]; then
                 line="$line bởi @$login"
               fi
