@@ -47,12 +47,11 @@ var (
 	ProfileAtomic = AppProfile{Method: MethodAtomic, Coalesce: false}
 	// Discord profile: use slow mode like other Electron apps (atomic+coalesce caused lag)
 	ProfileDiscord = AppProfile{Method: MethodSlow, Coalesce: false}
-	// Terminal profile: atomic mode to minimize hook blocking time
-	// Terminals are sensitive to input latency; atomic sends all in one SendInput call
-	ProfileTerminal = AppProfile{Method: MethodAtomic, Coalesce: false}
-	// Augment CLI profile: uses Unicode BS (0x08) instead of VK_BACK
-	// Augment CLI doesn't handle DEL (0x7F) that terminals translate from VK_BACK
-	// This causes duplicate characters like "những" -> "nhữưung"
+	// Terminal profile: atomic mode with VK_BACK (default)
+	// Note: BackspaceUnicode caused issues with Wave, Claude Code
+	ProfileTerminal = AppProfile{Method: MethodAtomic, Coalesce: false, BackspaceMode: BackspaceVK}
+	// Augment CLI profile: uses Unicode BS - only for explicit auggie/augment process
+	// This is a workaround; user running auggie in terminal may still need script patch
 	ProfileAugment = AppProfile{Method: MethodAtomic, Coalesce: false, BackspaceMode: BackspaceUnicode}
 )
 
@@ -65,7 +64,6 @@ var appProfiles = map[string]AppProfile{
 	"discordptb":    ProfileDiscord,
 
 	// Electron apps - slow mode with delays
-	"claude":   ProfileSlow,
 	"notion":   ProfileSlow,
 	"slack":    ProfileSlow,
 	"teams":    ProfileSlow,
@@ -75,18 +73,23 @@ var appProfiles = map[string]AppProfile{
 	"obsidian": ProfileSlow,
 	"figma":    ProfileSlow,
 
-	// Terminals - atomic mode to minimize hook blocking time
-	// Atomic sends backspaces + text in single SendInput call (no Sleep in hook)
-	"windowsterminal": ProfileTerminal,
-	"cmd":             ProfileTerminal,
-	"powershell":      ProfileTerminal,
-	"pwsh":            ProfileTerminal,
-	"wezterm":         ProfileTerminal,
-	"alacritty":       ProfileTerminal,
-	"hyper":           ProfileTerminal,
-	"mintty":          ProfileTerminal,
-	"wave":            ProfileTerminal,
-	"waveterm":        ProfileTerminal,
+	// Claude Code CLI - keep slow mode (was working in v2.2.4)
+	// Process name can be "claude" or "claude code" depending on how it's launched
+	"claude":      ProfileSlow,
+	"claude code": ProfileSlow,
+
+	// Terminals - slow mode (same as v2.2.4 which was stable)
+	// Note: ProfileTerminal (atomic) caused missing chars in Claude Code
+	"windowsterminal": ProfileSlow,
+	"cmd":             ProfileSlow,
+	"powershell":      ProfileSlow,
+	"pwsh":            ProfileSlow,
+	"wezterm":         ProfileSlow,
+	"alacritty":       ProfileSlow,
+	"hyper":           ProfileSlow,
+	"mintty":          ProfileSlow,
+	"wave":            ProfileSlow,
+	"waveterm":        ProfileSlow,
 
 	// Augment CLI (auggie) - uses Unicode BS to fix duplicate chars issue
 	// npm package: @augmentcode/auggie, command: auggie

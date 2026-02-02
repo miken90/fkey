@@ -6,7 +6,6 @@ package core
 import (
 	"log"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"unsafe"
 )
@@ -79,8 +78,8 @@ var InjectedKeyMarker = uintptr(0x464B4559)
 // KeyboardHook manages low-level keyboard interception
 type KeyboardHook struct {
 	hookID       uintptr
-	hookProc     uintptr      // prevent GC
-	isProcessing atomic.Bool  // atomic to prevent data race
+	hookProc     uintptr // prevent GC
+	isProcessing bool
 	mu           sync.Mutex
 
 	// Modifier-only hotkey state tracking
@@ -169,8 +168,7 @@ func (h *KeyboardHook) Stop() {
 // hookCallback is the low-level keyboard procedure
 func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	// Don't process if already processing (prevents recursion)
-	// Use atomic to prevent data race
-	if h.isProcessing.Load() {
+	if h.isProcessing {
 		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
 		return ret
 	}
@@ -381,9 +379,9 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 			// Process the key through IME callback
 			if h.OnKeyPressed != nil {
 				h.mu.Lock()
-				h.isProcessing.Store(true)
+				h.isProcessing = true
 				handled := h.OnKeyPressed(keyCode, shift, capsLock)
-				h.isProcessing.Store(false)
+				h.isProcessing = false
 				h.mu.Unlock()
 
 				if handled {
