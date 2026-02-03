@@ -1,19 +1,17 @@
 # FKey Vietnamese IME - Agent Instructions
 
-## Environment: WSL on Windows (Hybrid Development)
+## Environment: WSL on Windows
 
-This project is developed in **WSL** with platform-specific build environments:
+This project is developed in **WSL** and builds for **Windows only**.
 
 | Platform | Edit Code | Build | Test |
 |----------|-----------|-------|------|
 | **Windows** | WSL | Windows PowerShell | Windows |
-| **Linux** | WSL | WSL (native) | WSL/Linux |
 
 ### Path Conventions
 - WSL paths: `/mnt/c/WORKSPACES/2026/gonhanh.org/...`
 - Windows paths: `C:\WORKSPACES\2026\gonhanh.org\...`
 - **Windows builds (PowerShell)**: Use Windows-style paths (`C:\...`)
-- **Linux builds (WSL bash)**: Use WSL paths (`/mnt/c/...`)
 
 ---
 
@@ -26,30 +24,18 @@ fkey/
 │   ├── tests/
 │   └── Cargo.toml
 ├── platforms/
-│   ├── windows-wails/             # Windows: Wails v3 Go (~5MB)
-│   │   ├── main.go
-│   │   ├── core/                  # Go wrapper for Rust DLL
-│   │   │   ├── bridge.go          # FFI to gonhanh_core.dll
-│   │   │   ├── keyboard_hook.go   # Low-level keyboard hook (Win32)
-│   │   │   └── text_sender.go     # SendInput Unicode injection
-│   │   ├── services/
-│   │   │   ├── settings.go        # Registry-based settings
-│   │   │   └── updater.go         # Auto-update checker
-│   │   ├── frontend/              # WebView2 UI (HTML/JS/CSS)
-│   │   ├── build.ps1              # Build script
-│   │   └── wails.json
-│   └── linux/                     # Linux: GTK3 + X11 (MVP)
+│   └── windows-wails/             # Windows: Wails v3 Go (~5MB)
 │       ├── main.go
-│       ├── core/
-│       │   ├── bridge.go          # FFI to libgonhanh_core.so
-│       │   ├── keyboard_x11.go    # X11 keyboard hook
-│       │   └── text_sender.go     # xdotool text injection
-│       ├── config/
-│       │   └── config.go          # TOML config (~/.config/fkey/)
-│       ├── ui/
-│       │   └── tray.go            # GTK3 system tray
-│       ├── Makefile
-│       └── README.md
+│       ├── core/                  # Go wrapper for Rust DLL
+│       │   ├── bridge.go          # FFI to gonhanh_core.dll
+│       │   ├── keyboard_hook.go   # Low-level keyboard hook (Win32)
+│       │   └── text_sender.go     # SendInput Unicode injection
+│       ├── services/
+│       │   ├── settings.go        # Registry-based settings
+│       │   └── updater.go         # Auto-update checker
+│       ├── frontend/              # WebView2 UI (HTML/JS/CSS)
+│       ├── build.ps1              # Build script
+│       └── wails.json
 ├── .claude/skills/                # Agent skills
 │   └── release-github/            # GitHub release automation
 └── AGENTS.md
@@ -66,9 +52,8 @@ All commits MUST include a platform prefix:
 | Prefix | Platform | Example |
 |--------|----------|---------|
 | `[win]` | Windows only | `[win] fix: auto-update batch file path` |
-| `[linux]` | Linux only | `[linux] feat: add system tray icon` |
-| `[core]` | Rust core (both platforms) | `[core] fix: tone placement algorithm` |
-| `[all]` | All platforms | `[all] docs: update README` |
+| `[core]` | Rust core | `[core] fix: tone placement algorithm` |
+| `[all]` | All (docs, config) | `[all] docs: update README` |
 
 ### Commit Type Prefixes
 
@@ -92,10 +77,7 @@ git commit -m "[win] fix: Smart Paste hotkey detection order"
 # Windows new feature → v2.3.0 (minor bump)
 git commit -m "[win] feat: add Smart Paste for mojibake fix"
 
-# Linux feature → v0.2.0-linux
-git commit -m "[linux] feat: GTK3 system tray"
-
-# Core fix (affects both) → bump both platforms
+# Core fix → v2.2.2 (patch bump)
 git commit -m "[core] fix: tone placement for 'oa' vowels"
 ```
 
@@ -109,7 +91,6 @@ git commit -m "[core] fix: tone placement for 'oa' vowels"
 
 **Platform-specific versions:**
 - Windows: `v2.3.0` (no suffix)
-- Linux: `v0.2.0-linux` (with `-linux` suffix)
 
 ---
 
@@ -140,38 +121,6 @@ powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wa
 # Run Go tests
 powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; go test ./... 2>&1"
 ```
-
----
-
-## Linux Build Commands (WSL Native)
-
-**Prerequisites** (run once in WSL):
-```bash
-# Ubuntu/Debian
-sudo apt update && sudo apt install -y build-essential libgtk-3-dev libx11-dev xdotool
-
-# Install Rust if not present
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-**Build Commands** (run in WSL bash):
-```bash
-# Build Rust core for Linux
-cd /mnt/c/WORKSPACES/2026/gonhanh.org/core
-cargo build --release
-
-# Build Linux app
-cd /mnt/c/WORKSPACES/2026/gonhanh.org/platforms/linux
-make deps      # Install Go dependencies
-make build     # Build binary
-
-# Run for testing (requires X11/WSLg)
-make run
-```
-
-**Testing on WSL**:
-- WSL2 with WSLg supports X11 apps natively
-- Older WSL needs VcXsrv or X410 on Windows with `export DISPLAY=:0`
 
 ### ⚠️ Version Management (IMPORTANT)
 
@@ -223,22 +172,6 @@ Or manually:
 cd C:\WORKSPACES\2026\gonhanh.org
 .\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0"
 ```
-
-### Linux Release (GitHub Actions)
-
-1. Go to: **Actions** → **Release Linux** → **Run workflow**
-2. Enter version (e.g., `0.1.0`)
-3. Check "prerelease" for beta versions
-4. Click **Run workflow**
-
-The workflow will:
-- Build Rust core + Go app on Ubuntu
-- Create `FKey-{version}-linux-x86_64.tar.gz`
-- Create GitHub Release with tag `v{version}-linux`
-
-**Release tags:**
-- Windows: `v2.0.9` (no suffix)
-- Linux: `v0.1.0-linux` (with `-linux` suffix)
 
 ---
 

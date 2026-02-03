@@ -225,8 +225,8 @@ func performAutoUpdate(downloadURL string) {
 	log.Printf("Starting auto-update from: %s", downloadURL)
 	
 	// Show downloading message
-	showMessageBox("Đang tải về...", 
-		"FKey đang tải bản cập nhật.\nVui lòng đợi...", 
+	showMessageBox("Cập nhật FKey", 
+		"FKey sẽ tải bản cập nhật sau khi click OK.\nNhấn OK để tiếp tục...", 
 		MB_OK|MB_ICONINFORMATION)
 	
 	// Download update

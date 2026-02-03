@@ -21,6 +21,7 @@ const (
 	MethodFast   InjectionMethod = iota // Separate calls with small delay (most apps)
 	MethodSlow                          // Per-character with delays (Electron, browsers)
 	MethodAtomic                        // Single atomic SendInput (Discord - no flicker)
+	MethodPaste                         // Clipboard + Ctrl+V (Warp terminal workaround)
 )
 
 // Delay settings (milliseconds)
@@ -77,7 +78,98 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 		sendSlow(text, backspaces, SlowModePreDelay, SlowModePostDelay, SlowModeKeyDelay)
 	case MethodAtomic:
 		sendAtomic(text, backspaces)
+	case MethodPaste:
+		sendPaste(text, backspaces)
 	}
+}
+
+// Virtual key code for V (Ctrl+V paste)
+const VK_V = 0x56
+
+// sendPaste injects text via clipboard + Ctrl+V
+// Used for apps that don't render KEYEVENTF_UNICODE properly (e.g., Warp terminal)
+func sendPaste(text string, backspaces int) {
+	// Send backspaces first
+	if backspaces > 0 {
+		sendBackspaces(backspaces)
+		time.Sleep(FastModeDelay * time.Millisecond)
+	}
+
+	if len(text) == 0 {
+		return
+	}
+
+	// Save current clipboard content
+	savedClipboard, _ := GetClipboardText()
+
+	// Set new text to clipboard
+	if err := SetClipboardText(text); err != nil {
+		// Fallback to slow mode if clipboard fails
+		sendUnicodeTextSlow(text, SlowModeKeyDelay)
+		return
+	}
+
+	// Small delay to ensure clipboard is set
+	time.Sleep(10 * time.Millisecond)
+
+	// Send Ctrl+V
+	sendCtrlV()
+
+	// Small delay before restoring
+	time.Sleep(20 * time.Millisecond)
+
+	// Restore previous clipboard content
+	if savedClipboard != "" {
+		SetClipboardText(savedClipboard)
+	}
+}
+
+// sendCtrlV sends Ctrl+V keystroke
+func sendCtrlV() {
+	inputs := [4]INPUT{
+		// Ctrl down
+		{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_CONTROL,
+				DwFlags:     0,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		},
+		// V down
+		{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_V,
+				DwFlags:     0,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		},
+		// V up
+		{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_V,
+				DwFlags:     KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		},
+		// Ctrl up
+		{
+			Type: INPUT_KEYBOARD,
+			Ki: KEYBDINPUT{
+				WVk:         VK_CONTROL,
+				DwFlags:     KEYEVENTF_KEYUP,
+				DwExtraInfo: InjectedKeyMarker,
+			},
+		},
+	}
+
+	procSendInput.Call(
+		4,
+		uintptr(unsafe.Pointer(&inputs[0])),
+		uintptr(inputSize),
+	)
 }
 
 func sendFast(text string, backspaces int) {
@@ -297,6 +389,8 @@ func SendTextWithProfile(text string, backspaces int, profile AppProfile) {
 		sendSlowWithProfile(text, backspaces, SlowModePreDelay, SlowModePostDelay, SlowModeKeyDelay, profile.BackspaceMode)
 	case MethodAtomic:
 		sendAtomicWithProfile(text, backspaces, profile.BackspaceMode)
+	case MethodPaste:
+		sendPaste(text, backspaces)
 	}
 }
 

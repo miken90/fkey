@@ -72,6 +72,9 @@ var (
 	// Augment CLI profile: uses Unicode BS - only for explicit auggie/augment process
 	// This is a workaround; user running auggie in terminal may still need script patch
 	ProfileAugment = AppProfile{Method: MethodAtomic, Coalesce: false, BackspaceMode: BackspaceUnicode}
+	// Paste profile: uses clipboard + Ctrl+V for apps that don't render KEYEVENTF_UNICODE
+	// Warp terminal doesn't display Unicode input but handles paste correctly
+	ProfilePaste = AppProfile{Method: MethodPaste, Coalesce: false}
 )
 
 // appProfiles maps process names to their injection profiles
@@ -125,6 +128,10 @@ var appProfiles = map[string]AppProfile{
 	"opera":   ProfileSlow,
 	"vivaldi": ProfileSlow,
 	"arc":     ProfileSlow,
+
+	// Warp terminal - uses paste mode because it doesn't render KEYEVENTF_UNICODE
+	// Known issue: https://github.com/warpdotdev/warp/issues/6759
+	"warp": ProfilePaste,
 }
 
 // GetAppProfile returns the injection profile for a process name
@@ -295,6 +302,7 @@ var terminalProcesses = map[string]bool{
 	"wave":            true,
 	"waveterm":        true,
 	"conhost":         true,
+	"warp":            true, // Warp terminal - uses paste mode
 }
 
 // cliAppProfiles maps CLI app names to their specific profiles
@@ -551,15 +559,16 @@ func GetAppProfileForTerminal(terminalName string) AppProfile {
 func GetSmartAppProfile(processName string) AppProfile {
 	name := strings.ToLower(processName)
 
+	// First check if terminal has a specific profile (e.g., Warp needs paste mode)
+	if profile, ok := appProfiles[name]; ok {
+		return profile
+	}
+
 	// Check if it's a terminal - if so, look for CLI apps inside
 	if isTerminalProcess(name) {
 		return GetAppProfileForTerminal(name)
 	}
 
-	// Not a terminal, use regular profile lookup
-	if profile, ok := appProfiles[name]; ok {
-		return profile
-	}
 	return ProfileFast
 }
 

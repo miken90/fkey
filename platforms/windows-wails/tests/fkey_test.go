@@ -596,15 +596,17 @@ func TestDetermineMethod(t *testing.T) {
 		// Claude Code CLI - slow mode (was working in v2.2.4)
 		{"claude", core.MethodSlow},
 		{"claude code", core.MethodSlow},
-		// Terminals - atomic mode to minimize hook blocking
-		{"windowsterminal", core.MethodAtomic},
-		{"powershell", core.MethodAtomic},
-		{"pwsh", core.MethodAtomic},
-		{"cmd", core.MethodAtomic},
-		{"wave", core.MethodAtomic},
-		{"waveterm", core.MethodAtomic},
-		{"wezterm", core.MethodAtomic},
-		{"alacritty", core.MethodAtomic},
+		// Terminals - slow mode (v2.2.4 stable, atomic caused missing chars)
+		{"windowsterminal", core.MethodSlow},
+		{"powershell", core.MethodSlow},
+		{"pwsh", core.MethodSlow},
+		{"cmd", core.MethodSlow},
+		{"wave", core.MethodSlow},
+		{"waveterm", core.MethodSlow},
+		{"wezterm", core.MethodSlow},
+		{"alacritty", core.MethodSlow},
+		// Warp terminal - paste mode (doesn't render KEYEVENTF_UNICODE)
+		{"warp", core.MethodPaste},
 		// Augment CLI - atomic mode with Unicode BS
 		{"auggie", core.MethodAtomic},
 		{"augment", core.MethodAtomic},
@@ -644,9 +646,9 @@ func TestAugmentProfile(t *testing.T) {
 	}
 }
 
-// TestTerminalProfileVKBack verifies all terminals use VK_BACK (not Unicode BS)
-// Note: BackspaceUnicode was tested but caused issues with Wave, Claude Code
-func TestTerminalProfileVKBack(t *testing.T) {
+// TestTerminalProfileSlowMode verifies standard terminals use slow mode (stable v2.2.4 behavior)
+// Note: MethodAtomic was tested but caused missing chars in Claude Code
+func TestTerminalProfileSlowMode(t *testing.T) {
 	terminals := []string{
 		"windowsterminal", "cmd", "powershell", "pwsh",
 		"wezterm", "alacritty", "hyper", "mintty", "wave", "waveterm",
@@ -656,8 +658,8 @@ func TestTerminalProfileVKBack(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			profile := core.GetAppProfile(name)
 			
-			if profile.Method != core.MethodAtomic {
-				t.Errorf("GetAppProfile(%q).Method = %v, want MethodAtomic", name, profile.Method)
+			if profile.Method != core.MethodSlow {
+				t.Errorf("GetAppProfile(%q).Method = %v, want MethodSlow", name, profile.Method)
 			}
 			
 			// Terminals should use VK_BACK (default), not Unicode BS
@@ -665,6 +667,16 @@ func TestTerminalProfileVKBack(t *testing.T) {
 				t.Errorf("GetAppProfile(%q).BackspaceMode = %v, want BackspaceVK", name, profile.BackspaceMode)
 			}
 		})
+	}
+}
+
+// TestWarpTerminalPasteMode verifies Warp terminal uses paste mode
+// Warp doesn't render KEYEVENTF_UNICODE but handles paste correctly
+func TestWarpTerminalPasteMode(t *testing.T) {
+	profile := core.GetAppProfile("warp")
+	
+	if profile.Method != core.MethodPaste {
+		t.Errorf("GetAppProfile(\"warp\").Method = %v, want MethodPaste", profile.Method)
 	}
 }
 
@@ -679,6 +691,9 @@ func TestInjectionMethodConstants(t *testing.T) {
 	}
 	if core.MethodAtomic != 2 {
 		t.Errorf("MethodAtomic = %d, want 2", core.MethodAtomic)
+	}
+	if core.MethodPaste != 3 {
+		t.Errorf("MethodPaste = %d, want 3", core.MethodPaste)
 	}
 }
 
