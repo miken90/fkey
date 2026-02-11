@@ -22,6 +22,7 @@
                 <div class="status-indicator" id="statusIndicator">
                     <span class="status-dot"></span>
                     <span class="status-text">Tiếng Việt: Đang bật</span>
+                    <span class="admin-badge" id="adminBadge" style="display:none">🛡️ Admin</span>
                 </div>
             </section>
 
@@ -151,6 +152,10 @@
                         <label class="checkbox-row">
                             <input type="checkbox" id="smartPaste" checked>
                             Dán thông minh (Ctrl+Shift+V sửa lỗi font)
+                        </label>
+                        <label class="checkbox-row admin-row">
+                            <input type="checkbox" id="runAsAdmin">
+                            <span class="admin-label">🛡️ Chạy với quyền Admin</span>
                         </label>
                     </div>
                 </details>

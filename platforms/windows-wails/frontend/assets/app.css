@@ -892,3 +892,55 @@ footer a:hover {
     background: var(--surface);
     cursor: pointer;
 }
+
+/* Admin badge */
+.admin-badge {
+    display: inline-block;
+    background: #e6f4ea;
+    color: var(--success);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* Admin checkbox row */
+.admin-row {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.admin-label {
+    font-size: 12px;
+}
+
+/* Restart overlay */
+.restart-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.restart-dialog {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 20px 28px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.restart-dialog p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text);
+}

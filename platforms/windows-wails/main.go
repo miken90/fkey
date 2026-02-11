@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"os"
 	"syscall"
 	"time"
 	"unsafe"
@@ -74,6 +75,32 @@ var (
 )
 
 func main() {
+	relaunch := false
+	for _, arg := range os.Args[1:] {
+		if arg == "--relaunch" {
+			relaunch = true
+			break
+		}
+	}
+
+	if err := core.AcquireMutex(relaunch); err != nil {
+		showMessageBox("FKey", err.Error(), MB_OK|MB_ICONWARNING)
+		os.Exit(1)
+	}
+	defer core.ReleaseMutex()
+
+	core.QuitApp = func() {
+		wantQuit = true
+		globalApp.Quit()
+	}
+
+	core.RevertRunAsAdmin = func() {
+		if settingsSvc != nil {
+			settingsSvc.Settings().RunAsAdmin = false
+			settingsSvc.Save()
+		}
+	}
+
 	// Extract embedded DLL (single-exe distribution)
 	dllPath, err := GetDLLPath()
 	if err != nil {
@@ -92,6 +119,16 @@ func main() {
 		log.Printf("Failed to load settings: %v", err)
 	}
 	settings := settingsSvc.Settings()
+
+	if settings.RunAsAdmin && !services.IsElevated() {
+		log.Printf("RunAsAdmin enabled but not elevated, re-launching...")
+		core.ElevateAndRelaunch()
+		return
+	}
+
+	if settings.AutoStart && settings.RunAsAdmin && services.IsElevated() {
+		settingsSvc.ReconcileScheduledTaskPath()
+	}
 
 	// Initialize formatting service
 	formattingSvc = services.NewFormattingService()

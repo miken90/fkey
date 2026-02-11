@@ -3,6 +3,7 @@ package main
 import (
 	"fkey/core"
 	"fkey/services"
+	"time"
 )
 
 // AppBindings exposes methods to the frontend via Wails bindings
@@ -75,6 +76,7 @@ func (a *AppBindings) GetSettings() map[string]interface{} {
 		"englishAutoRestore": s.EnglishAutoRestore,
 		"autoCapitalize":     s.AutoCapitalize,
 		"toggleHotkey":       s.ToggleHotkey,
+		"runAsAdmin":         s.RunAsAdmin,
 	}
 }
 
@@ -111,6 +113,9 @@ func (a *AppBindings) SaveSettings(settings map[string]interface{}) error {
 	}
 	if v, ok := settings["toggleHotkey"].(string); ok {
 		s.ToggleHotkey = v
+	}
+	if v, ok := settings["runAsAdmin"].(bool); ok {
+		s.RunAsAdmin = v
 	}
 
 	// Apply to IME loop
@@ -256,4 +261,42 @@ func (a *AppBindings) SaveFormattingConfig(config map[string]interface{}) error 
 // User can click "Detect" button, switch to target app, and the name will be captured
 func (a *AppBindings) DetectCurrentApp() string {
 	return core.DetectForegroundApp()
+}
+
+// GetAdminStatus returns the current elevation status and RunAsAdmin setting
+func (a *AppBindings) GetAdminStatus() map[string]interface{} {
+	return map[string]interface{}{
+		"isElevated": services.IsElevated(),
+		"runAsAdmin": a.settingsSvc.Settings().RunAsAdmin,
+	}
+}
+
+// SetRunAsAdminWithRelaunch toggles RunAsAdmin and triggers relaunch with appropriate elevation
+func (a *AppBindings) SetRunAsAdminWithRelaunch(enabled bool) map[string]interface{} {
+	s := a.settingsSvc.Settings()
+	oldValue := s.RunAsAdmin
+	s.RunAsAdmin = enabled
+	a.settingsSvc.Save()
+
+	result := map[string]interface{}{
+		"success":       true,
+		"needsRelaunch": oldValue != enabled,
+		"willElevate":   enabled,
+	}
+
+	if enabled {
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			core.ElevateAndRelaunch()
+		}()
+	} else {
+		if services.IsElevated() {
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				core.DeElevateAndRelaunch()
+			}()
+		}
+	}
+
+	return result
 }

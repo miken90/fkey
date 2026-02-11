@@ -7,10 +7,13 @@ package services
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -39,6 +42,7 @@ const (
 	KeyCoalescingApps     = "CoalescingApps"
 	KeyShowOSD            = "ShowOSD"
 	KeySmartPaste         = "SmartPaste"
+	KeyRunAsAdmin         = "RunAsAdmin"
 )
 
 // Settings holds all application settings
@@ -57,6 +61,7 @@ type Settings struct {
 	CoalescingApps     string // Comma-separated list of apps
 	ShowOSD            bool   // Show OSD when switching language
 	SmartPaste         bool   // Smart paste (Ctrl+Shift+V fixes mojibake)
+	RunAsAdmin         bool   // Run with administrator privileges
 }
 
 // DefaultSettings returns settings with default values
@@ -76,6 +81,7 @@ func DefaultSettings() *Settings {
 		CoalescingApps:     "discord,discordcanary,discordptb",
 		ShowOSD:            false,  // Default: OFF
 		SmartPaste:         true,   // Default: ON
+		RunAsAdmin:         false,  // Default: OFF
 	}
 }
 
@@ -125,6 +131,7 @@ func (s *SettingsService) Load() error {
 	s.settings.CoalescingApps = readString(key, KeyCoalescingApps, "discord,discordcanary,discordptb")
 	s.settings.ShowOSD = readDWORD(key, KeyShowOSD, 0) == 1
 	s.settings.SmartPaste = readDWORD(key, KeySmartPaste, 1) == 1
+	s.settings.RunAsAdmin = readDWORD(key, KeyRunAsAdmin, 0) == 1
 
 	return nil
 }
@@ -151,6 +158,7 @@ func (s *SettingsService) Save() error {
 	writeString(key, KeyCoalescingApps, s.settings.CoalescingApps)
 	writeDWORD(key, KeyShowOSD, boolToDWORD(s.settings.ShowOSD))
 	writeDWORD(key, KeySmartPaste, boolToDWORD(s.settings.SmartPaste))
+	writeDWORD(key, KeyRunAsAdmin, boolToDWORD(s.settings.RunAsAdmin))
 
 	// Update auto-start registry
 	s.updateAutoStart()
@@ -158,31 +166,86 @@ func (s *SettingsService) Save() error {
 	return nil
 }
 
-// updateAutoStart updates Windows startup entry
+// updateAutoStart updates Windows startup entry (registry or Task Scheduler)
 func (s *SettingsService) updateAutoStart() {
 	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE|registry.QUERY_VALUE)
+	if err == nil {
+		key.DeleteValue("GoNhanh")
+		key.Close()
+	}
+
+	if s.settings.AutoStart && s.settings.RunAsAdmin {
+		s.createScheduledTask()
+		s.removeRegistryAutoStart()
+	} else if s.settings.AutoStart {
+		s.createRegistryAutoStart()
+		s.removeScheduledTask()
+	} else {
+		s.removeRegistryAutoStart()
+		s.removeScheduledTask()
+	}
+}
+
+func (s *SettingsService) createRegistryAutoStart() {
+	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE)
 	if err != nil {
 		return
 	}
 	defer key.Close()
 
-	// Clean up legacy GoNhanh entry if exists
-	key.DeleteValue("GoNhanh")
-
-	if s.settings.AutoStart {
-		// Get current executable path
-		exePath, err := os.Executable()
-		if err != nil {
-			return
-		}
-		// Resolve symlinks to get real path
-		exePath, _ = filepath.EvalSymlinks(exePath)
-		if exePath != "" {
-			key.SetStringValue(AppName, fmt.Sprintf(`"%s"`, exePath))
-		}
-	} else {
-		key.DeleteValue(AppName)
+	exePath, err := os.Executable()
+	if err != nil {
+		return
 	}
+	exePath, _ = filepath.EvalSymlinks(exePath)
+	if exePath != "" {
+		key.SetStringValue(AppName, fmt.Sprintf(`"%s"`, exePath))
+	}
+}
+
+func (s *SettingsService) removeRegistryAutoStart() {
+	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE)
+	if err != nil {
+		return
+	}
+	defer key.Close()
+	key.DeleteValue(AppName)
+}
+
+func (s *SettingsService) createScheduledTask() {
+	exePath, err := os.Executable()
+	if err != nil {
+		return
+	}
+	exePath, _ = filepath.EvalSymlinks(exePath)
+	if exePath == "" {
+		return
+	}
+
+	cmd := exec.Command("schtasks", "/Create",
+		"/TN", AppName,
+		"/TR", fmt.Sprintf(`"%s"`, exePath),
+		"/SC", "ONLOGON",
+		"/RL", "HIGHEST",
+		"/F")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.Run()
+}
+
+func (s *SettingsService) removeScheduledTask() {
+	cmd := exec.Command("schtasks", "/Delete",
+		"/TN", AppName,
+		"/F")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.Run()
+}
+
+// ReconcileScheduledTaskPath updates the scheduled task exe path if it exists
+func (s *SettingsService) ReconcileScheduledTaskPath() {
+	if !s.settings.AutoStart || !s.settings.RunAsAdmin {
+		return
+	}
+	s.createScheduledTask()
 }
 
 // MarkFirstRunComplete sets FirstRun to false
@@ -353,4 +416,10 @@ func boolToDWORD(b bool) uint32 {
 		return 1
 	}
 	return 0
+}
+
+// IsElevated returns whether the current process is running with administrator privileges
+func IsElevated() bool {
+	token := windows.GetCurrentProcessToken()
+	return token.IsElevated()
 }

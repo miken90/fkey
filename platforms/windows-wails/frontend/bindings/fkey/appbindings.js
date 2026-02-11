@@ -55,6 +55,16 @@ export function DownloadAndInstallUpdate(downloadURL) {
 }
 
 /**
+ * GetAdminStatus returns the current elevation status and RunAsAdmin setting
+ * @returns {$CancellablePromise<{ [_: string]: any }>}
+ */
+export function GetAdminStatus() {
+    return $Call.ByID(4111324294).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
+    }));
+}
+
+/**
  * GetEnabled returns whether Vietnamese input is enabled
  * @returns {$CancellablePromise<boolean>}
  */
@@ -169,6 +179,17 @@ export function SetEnabled(enabled) {
  */
 export function SetInputMethod(method) {
     return $Call.ByID(526728894, method);
+}
+
+/**
+ * SetRunAsAdminWithRelaunch toggles RunAsAdmin and triggers relaunch with appropriate elevation
+ * @param {boolean} enabled
+ * @returns {$CancellablePromise<{ [_: string]: any }>}
+ */
+export function SetRunAsAdminWithRelaunch(enabled) {
+    return $Call.ByID(3712297739, enabled).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
+    }));
 }
 
 /**

@@ -23,6 +23,8 @@ const BindingIDs = {
     GetFormattingConfig: 2794236240,
     SaveFormattingConfig: 4109063599,
     DetectCurrentApp: 3058819472,
+    GetAdminStatus: 4111324294,
+    SetRunAsAdminWithRelaunch: 3712297739,
 };
 
 // Wait for Wails runtime to be ready
@@ -112,6 +114,17 @@ const App = {
     DetectCurrentApp: async () => {
         return await wails.Call.ByID(BindingIDs.DetectCurrentApp);
     },
+    GetAdminStatus: async () => {
+        try {
+            return await wails.Call.ByID(BindingIDs.GetAdminStatus);
+        } catch (e) {
+            console.error('GetAdminStatus error:', e);
+            return { isElevated: false, runAsAdmin: false };
+        }
+    },
+    SetRunAsAdminWithRelaunch: async (enabled) => {
+        return await wails.Call.ByID(BindingIDs.SetRunAsAdminWithRelaunch, enabled);
+    },
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -153,6 +166,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Load formatting config
         await loadFormattingConfig();
+        
+        // Load admin status
+        const adminStatus = await App.GetAdminStatus();
+        updateAdminUI(adminStatus);
         
         isLoading = false;
         document.body.classList.remove('loading');
@@ -268,7 +285,8 @@ function applySettingsToUI(settings) {
         'autoCapitalize': settings.autoCapitalize !== false,
         'autoStart': settings.autoStart,
         'showOSD': settings.showOSD,
-        'smartPaste': settings.smartPaste !== false
+        'smartPaste': settings.smartPaste !== false,
+        'runAsAdmin': settings.runAsAdmin
     };
     
     for (const [id, value] of Object.entries(checkboxes)) {
@@ -333,6 +351,24 @@ function getKeyName(keyCode) {
     if (keyCode >= 0x30 && keyCode <= 0x39) return String.fromCharCode(keyCode);
     
     return `Key${keyCode}`;
+}
+
+function updateAdminUI(adminStatus) {
+    const badge = document.getElementById('adminBadge');
+    if (badge) {
+        badge.style.display = adminStatus.isElevated ? 'inline-block' : 'none';
+    }
+    const checkbox = document.getElementById('runAsAdmin');
+    if (checkbox) {
+        checkbox.checked = adminStatus.runAsAdmin;
+    }
+}
+
+function showRestartingOverlay() {
+    const overlay = document.createElement('div');
+    overlay.className = 'restart-overlay';
+    overlay.innerHTML = '<div class="restart-dialog"><p>⏳ Đang khởi động lại...</p></div>';
+    document.body.appendChild(overlay);
 }
 
 function setupEventListeners() {
@@ -414,6 +450,34 @@ function setupEventListeners() {
             });
         }
     });
+    
+    // Special handler for RunAsAdmin (NOT in checkboxMapping - needs relaunch)
+    const runAsAdminEl = document.getElementById('runAsAdmin');
+    if (runAsAdminEl) {
+        runAsAdminEl.addEventListener('change', async (e) => {
+            if (isLoading) return;
+            const enabled = e.target.checked;
+            
+            const msg = enabled
+                ? 'FKey sẽ khởi động lại với quyền Admin.\nWindows sẽ hỏi xác nhận quyền (UAC).\n\nTiếp tục?'
+                : 'FKey sẽ khởi động lại không có quyền Admin.\n\nTiếp tục?';
+            
+            if (!confirm(msg)) {
+                e.target.checked = !enabled;
+                return;
+            }
+            
+            try {
+                const result = await App.SetRunAsAdminWithRelaunch(enabled);
+                if (result.needsRelaunch) {
+                    showRestartingOverlay();
+                }
+            } catch (err) {
+                console.error('Failed to set admin:', err);
+                e.target.checked = !enabled;
+            }
+        });
+    }
     
     // Hotkey button - recording mode
     const hotkeyBtn = document.getElementById('hotkeyBtn');
