@@ -132,6 +132,11 @@ var appProfiles = map[string]AppProfile{
 	// Warp terminal - uses paste mode because it doesn't render KEYEVENTF_UNICODE
 	// Known issue: https://github.com/warpdotdev/warp/issues/6759
 	"warp": ProfilePaste,
+
+	// Parsec remote desktop - uses paste mode because it only forwards VK codes,
+	// not KEYEVENTF_UNICODE events. Clipboard sharing syncs paste content to remote host.
+	"parsecd": ProfilePaste,
+	"parsec":  ProfilePaste,
 }
 
 // GetAppProfile returns the injection profile for a process name
@@ -554,22 +559,58 @@ func GetAppProfileForTerminal(terminalName string) AppProfile {
 	return ProfileSlow
 }
 
-// GetSmartAppProfile returns the best profile considering CLI apps in terminals
-// This should be called instead of GetAppProfile when you want CLI detection
-func GetSmartAppProfile(processName string) AppProfile {
-	name := strings.ToLower(processName)
+// Cached smart profile per window handle — avoids expensive process tree enumeration
+// on every keystroke. Only re-detects when foreground window changes.
+var (
+	smartCachedProfile AppProfile
+	smartCachedHwnd    uintptr
+	smartCacheValid    bool
+	smartCacheMu       sync.Mutex
+)
 
-	// First check if terminal has a specific profile (e.g., Warp needs paste mode)
-	if profile, ok := appProfiles[name]; ok {
+// InvalidateSmartProfileCache forces re-detection on next GetSmartAppProfile call.
+// Should be called when foreground app changes.
+func InvalidateSmartProfileCache() {
+	smartCacheMu.Lock()
+	smartCacheValid = false
+	smartCacheMu.Unlock()
+}
+
+// GetSmartAppProfile returns the best profile considering CLI apps in terminals.
+// Results are cached per window handle to avoid expensive process tree enumeration
+// on every keystroke. This should be called instead of GetAppProfile when you want CLI detection.
+func GetSmartAppProfile(processName string) AppProfile {
+	hwnd, _, _ := procGetForegroundWindow.Call()
+
+	// Fast path: return cached result if same window
+	smartCacheMu.Lock()
+	if smartCacheValid && hwnd == smartCachedHwnd {
+		profile := smartCachedProfile
+		smartCacheMu.Unlock()
 		return profile
 	}
+	smartCacheMu.Unlock()
 
-	// Check if it's a terminal - if so, look for CLI apps inside
-	if isTerminalProcess(name) {
-		return GetAppProfileForTerminal(name)
+	// Slow path: detect profile (may trigger process tree scan for terminals)
+	name := strings.ToLower(processName)
+	var profile AppProfile
+
+	if p, ok := appProfiles[name]; ok {
+		profile = p
+	} else if isTerminalProcess(name) {
+		profile = GetAppProfileForTerminal(name)
+	} else {
+		profile = ProfileFast
 	}
 
-	return ProfileFast
+	// Cache the result
+	smartCacheMu.Lock()
+	smartCachedProfile = profile
+	smartCachedHwnd = hwnd
+	smartCacheValid = true
+	smartCacheMu.Unlock()
+
+	return profile
 }
 
 // GetCachedCLIApp returns the cached CLI app name (for debugging)

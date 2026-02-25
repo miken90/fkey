@@ -184,10 +184,11 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		return false
 	}
 
-	// Check if foreground app changed - if so, clear buffer
+	// Check if foreground app changed - if so, clear buffer and invalidate caches
 	if AppChanged() {
 		l.bridge.Clear()
 		l.coalescer.Flush()
+		InvalidateSmartProfileCache()
 	}
 
 	// Translate Windows VK to macOS keycode for Rust engine

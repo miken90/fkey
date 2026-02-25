@@ -173,6 +173,15 @@ func (h *KeyboardHook) Stop() {
 
 // hookCallback is the low-level keyboard procedure
 func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) uintptr {
+	// Panic recovery — prevent app crash under resource pressure.
+	// If FFI, unsafe pointer ops, or Win32 API calls panic, the key
+	// just passes through instead of crashing the entire process.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[Hook] recovered from panic: %v", r)
+		}
+	}()
+
 	hookStruct := (*KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
 
 	// Skip our own injected keys
@@ -258,7 +267,7 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 			if IsSmartPasteEnabled() {
 				// Mark that a non-modifier key was pressed (prevents modifier-only toggle)
 				h.modifierOnlyPending = false
-				go HandleSmartPaste()
+				goSafe(HandleSmartPaste)
 				return 1 // Block key
 			}
 		}
@@ -281,7 +290,7 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 					log.Printf("[FormatHotkey] CUSTOM key=0x%X formatType=%s process=%s profile=%s",
 						keyCode, customFormatType, processName, profile)
 					if profile != "disabled" {
-						go handler.HandleFormatHotkey(customFormatType, profile)
+						goSafe(func() { handler.HandleFormatHotkey(customFormatType, profile) })
 						return 1 // Block key
 					}
 				}
@@ -300,7 +309,7 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 					log.Printf("[FormatHotkey] GLOBAL key=0x%X formatType=%s process=%s profile=%s",
 						keyCode, globalFormatType, processName, profile)
 					if profile != "disabled" {
-						go handler.HandleFormatHotkey(globalFormatType, profile)
+						goSafe(func() { handler.HandleFormatHotkey(globalFormatType, profile) })
 						return 1 // Block key
 					}
 				}
@@ -337,7 +346,7 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 						log.Printf("[FormatHotkey] key=0x%X shift=%v formatType=%s process=%s profile=%s",
 							keyCode, shift, formatType, processName, profile)
 						if profile != "disabled" {
-							go handler.HandleFormatHotkey(formatType, profile)
+							goSafe(func() { handler.HandleFormatHotkey(formatType, profile) })
 							return 1 // Block key
 						}
 					}
@@ -480,4 +489,18 @@ func PlayBeep(isVietnamese bool) {
 		// Lower pitch beep for English
 		procMessageBeep.Call(uintptr(MB_OK))
 	}
+}
+
+// goSafe runs fn in a goroutine with panic recovery.
+// Use for goroutines spawned from the hook callback to prevent
+// unrecovered panics from crashing the process.
+func goSafe(fn func()) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[Hook] goroutine panic: %v", r)
+			}
+		}()
+		fn()
+	}()
 }
