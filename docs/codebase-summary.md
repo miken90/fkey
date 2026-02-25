@@ -112,10 +112,10 @@ fkey/
 | `bindings.go` | JS ↔ Go bridge | `SettingsService`, `FormattingService` — methods callable from frontend |
 | **core/** | | |
 | `core/bridge.go` | Rust FFI | `ProcessKey()`, `NewEngine()` — Go wrappers around `gonhanh_core.dll` |
-| `core/keyboard_hook.go` | Keyboard hook | Win32 `SetWindowsHookEx(WH_KEYBOARD_LL)`, key event dispatch |
-| `core/ime_loop.go` | IME pipeline | Goroutine processing keystroke → engine → text output |
+| `core/keyboard_hook.go` | Keyboard hook | Win32 `SetWindowsHookEx(WH_KEYBOARD_LL)`, key event dispatch, panic recovery, `goSafe()` helper |
+| `core/ime_loop.go` | IME pipeline | Goroutine processing keystroke → engine → text output, smart profile cache invalidation |
 | `core/text_sender.go` | Text injection | `SendInput()` Unicode injection, backspace simulation |
-| `core/app_detector.go` | App profiles | Detects foreground app, selects injection strategy (SendInput vs clipboard) |
+| `core/app_detector.go` | App profiles | Detects foreground app, selects injection strategy, window-aware smart profile cache (`GetSmartAppProfile()`) |
 | `core/coalescer.go` | Coalescing | Batches rapid keystrokes for apps like Discord |
 | `core/smart_paste.go` | Mojibake fix | Detects and fixes UTF-8 → CP1252 mojibake via clipboard |
 | `core/elevation.go` | UAC handling | Elevates/de-elevates process for admin app input |
@@ -203,8 +203,8 @@ fkey/
 
 ```
 Keystroke (Win32 hook)
-  → keyboard_hook.go (intercept)
-  → ime_loop.go (dispatch)
+  → keyboard_hook.go (intercept, with panic recovery)
+  → ime_loop.go (dispatch, invalidate caches on app switch)
   → bridge.go (FFI call)
   → lib.rs → Engine::process_key()
       → input/telex.rs or vni.rs (map key)
@@ -212,6 +212,7 @@ Keystroke (Win32 hook)
       → engine/validation.rs (check spelling)
       → engine/syllable.rs (parse syllable)
   ← EngineResult { committed_text, buffer_display, backspaces }
+  → GetSmartAppProfile() (cached per window handle)
   → text_sender.go (SendInput or clipboard inject)
   → Target application receives Vietnamese text
 ```

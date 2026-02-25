@@ -117,10 +117,10 @@ Go application using Wails v3 framework with WebView2 for the settings UI.
 | Component | File | Purpose |
 |-----------|------|---------|
 | **Bridge** | `core/bridge.go` | FFI to Rust DLL via `syscall.LoadDLL`. Translates Windows VK → macOS keycodes |
-| **Keyboard Hook** | `core/keyboard_hook.go` | Win32 `WH_KEYBOARD_LL` low-level hook. System-wide keystroke interception |
-| **IME Loop** | `core/ime_loop.go` | Orchestrates hook → engine → injection pipeline |
+| **Keyboard Hook** | `core/keyboard_hook.go` | Win32 `WH_KEYBOARD_LL` low-level hook. System-wide keystroke interception. Panic recovery prevents crashes under resource pressure |
+| **IME Loop** | `core/ime_loop.go` | Orchestrates hook → engine → injection pipeline. Invalidates smart profile cache on app switch |
 | **Text Sender** | `core/text_sender.go` | `SendInput` API text injection with multiple methods |
-| **App Detector** | `core/app_detector.go` | Detects foreground process, selects injection profile |
+| **App Detector** | `core/app_detector.go` | Detects foreground process, selects injection profile. Window-aware smart profile cache avoids per-keystroke process tree scans |
 | **Coalescer** | `core/coalescer.go` | Batches rapid keystrokes for flicker-free injection |
 | **Smart Paste** | `core/smart_paste.go` | Ctrl+Shift+V mojibake detection and fix |
 | **Elevation** | `core/elevation.go` | UAC elevation/de-elevation via `ShellExecute` |
@@ -151,12 +151,15 @@ User keypress
     │
     ▼
 Win32 LowLevelKeyboardProc (keyboard_hook.go)
+    │  ├─ defer recover() — panic recovery for resilience under load
     │  ├─ Skip if: injected (FKEY marker), modifier-only, or disabled
     │  ├─ Check hotkey toggle (Ctrl+Shift, etc.)
+    │  ├─ Format hotkeys dispatched via goSafe() (non-blocking goroutine)
     │  └─ Detect Shift/CapsLock state
     │
     ▼
 ImeLoop.processKey (ime_loop.go)
+    │  ├─ Check AppChanged() → clear buffer + invalidate smart profile cache
     │  ├─ Translate VK → macOS keycode (bridge.go)
     │  └─ Call bridge.ProcessKey()
     │
@@ -173,7 +176,7 @@ Result {action, backspace, chars}
     │
     ▼
 Text injection (text_sender.go)
-    │  ├─ App detector selects method
+    │  ├─ GetSmartAppProfile() — cached per window handle, no per-key process scan
     │  ├─ Coalescer batches if needed
     │  └─ SendInput: backspaces → Unicode chars
     │
@@ -249,6 +252,18 @@ The Go→Rust bridge uses **`syscall.LoadDLL`** (no CGo dependency):
 6. Result struct parsed from raw bytes at known offsets
 
 **Keycode translation**: The Rust engine uses macOS keycodes internally (historical). `TranslateToMacKeycode()` in `bridge.go` maps Windows VK codes → macOS keycodes before each FFI call.
+
+---
+
+## Resilience & Performance (v2.3.1)
+
+The keyboard hook callback (`WH_KEYBOARD_LL`) must return quickly — Windows silently removes hooks that exceed `LowLevelHooksTimeout` (~300ms default). Three mechanisms prevent hook removal under system load:
+
+1. **Smart Profile Caching** (`app_detector.go`): `GetSmartAppProfile()` caches the detected profile per window handle. Process tree enumeration (via `CreateToolhelp32Snapshot`) only runs when the foreground window changes, not on every keystroke. Cache is invalidated by `InvalidateSmartProfileCache()` when `AppChanged()` fires in `ime_loop.go`.
+
+2. **Panic Recovery** (`keyboard_hook.go`): `hookCallback` wraps its body in `defer recover()` so that panics from FFI calls, `unsafe.Pointer` operations, or Win32 API calls under memory pressure don't crash the process — the key simply passes through.
+
+3. **goSafe() Helper** (`keyboard_hook.go`): Goroutines spawned from the hook callback (SmartPaste, FormatHotkey handlers) use `goSafe()` which wraps the function in a goroutine with its own `defer recover()`, preventing unrecovered panics from killing the process.
 
 ---
 
