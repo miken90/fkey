@@ -17,7 +17,7 @@ fkey/
 │   │   ├── lib.rs                     # FFI C-ABI exports (~916 lines)
 │   │   ├── utils.rs                   # String/char utilities (~522 lines)
 │   │   ├── engine/
-│   │   │   ├── mod.rs                 # Main Engine struct, keystroke processing (~7951 lines)
+│   │   │   ├── mod.rs                 # Main Engine struct, keystroke processing (~8106 lines)
 │   │   │   ├── buffer.rs              # Keystroke buffer management
 │   │   │   ├── shortcut.rs            # User-defined abbreviations (~897 lines)
 │   │   │   ├── syllable.rs            # Vietnamese syllable parsing
@@ -29,9 +29,9 @@ fkey/
 │   │   │   ├── keys.rs                # macOS keycode constants
 │   │   │   ├── english_dict.rs        # 100k English word dictionary
 │   │   │   ├── telex_doubles.rs       # Telex double-key patterns (~10k lines)
-│   │   │   ├── vietnamese_spellcheck.rs # Vietnamese spellcheck data
+│   │   │   ├── dictionary.rs          # Vietnamese word validation (HashSet, ~0.5MB)
 │   │   │   ├── constants.rs           # Shared constants
-│   │   │   └── dictionaries/          # Hunspell .dic files (vi_daumoi, vi_daucu)
+│   │   │   └── dictionaries/          # Dictionary files (vi.dic, keep.dic)
 │   │   ├── input/
 │   │   │   ├── mod.rs                 # Input method trait/types
 │   │   │   ├── telex.rs               # Telex input method
@@ -97,8 +97,8 @@ fkey/
 | `data/chars.rs` | Character maps | Mark → base char mappings, tone → char mappings |
 | `data/vowel.rs` | Vowel phonology | Vowel combination tables, tone placement rules per vowel cluster |
 | `data/english_dict.rs` | English dictionary | ~100k words for English auto-restore detection |
+| `data/dictionary.rs` | Vietnamese dictionary | HashSet-based word validation (~0.5MB), keep list for auto-restore exceptions |
 | `data/telex_doubles.rs` | Telex patterns | Double-key reversal patterns (e.g., `aa` → `â` → `aa`) |
-| `data/vietnamese_spellcheck.rs` | Spellcheck data | Valid Vietnamese syllable list for validation |
 | **input/** | | |
 | `input/mod.rs` | Input method trait | `InputMethod` trait definition |
 | `input/telex.rs` | Telex method | Maps Telex keystrokes (s→sắc, f→huyền, w→ư/ơ, etc.) |
@@ -173,7 +173,7 @@ fkey/
 | Go platform LOC | ~4k |
 | Rust test LOC | ~15k |
 | Go test LOC | ~800 |
-| Rust test files | 24 |
+| Rust test files | 23 |
 | Go test count | 27 |
 | Runtime dependencies (Rust) | 0 |
 | Runtime dependencies (Go) | Wails v3, golang.org/x/sys |

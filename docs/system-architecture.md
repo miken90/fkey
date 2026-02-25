@@ -33,6 +33,7 @@ FKey is a Vietnamese Input Method Editor (IME) for Windows with a two-layer arch
 │  │  syllable │  keys    │          │          │      │
 │  │  transform│  english │          │          │      │
 │  │  validate │  dict    │          │          │      │
+│  │           │  dictny  │          │          │      │
 │  └──────────┴──────────┴──────────┴──────────┘      │
 └─────────────────────────────────────────────────────┘
 ```
@@ -66,7 +67,8 @@ The engine is a pure Rust library with **zero runtime dependencies**. It compile
 | **Chars** | `data/chars.rs` | Character maps for marks (ă, â, ê, ô, ơ, ư, đ) and tones |
 | **Vowel** | `data/vowel.rs` | Vowel phonology tables for tone placement rules |
 | **Input** | `input/telex.rs`, `input/vni.rs` | Input method keystroke-to-diacritic mappings |
-| **Dictionary** | `data/english_dict.rs` | 100k English words for auto-restore feature |
+| **Dictionary** | `data/dictionary.rs` | Vietnamese word validation via HashSet (~0.5MB), keep list |
+| **English Dict** | `data/english_dict.rs` | 100k English words for auto-restore feature |
 
 ### FFI Interface (`lib.rs`)
 
@@ -203,7 +205,7 @@ App starts → 3s delay → updater.CheckForUpdates()
 Fetch raw.githubusercontent.com/miken90/fkey/main/VERSION
     │
     ▼
-Compare versions → If newer:
+Compare versions (supports pre-release: 1.0.1-pre.368) → If newer:
     │  ├─ Download FKey-vX.X.X-portable.zip
     │  ├─ Create batch script (wait, kill, replace, restart)
     │  └─ Run script, quit app
