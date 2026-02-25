@@ -59,7 +59,7 @@ platforms/linux/*.tar.gz
 .opencode/
 plans/
 history/
-docs/
+
 CLAUDE.md
 
 repomix-output.*
