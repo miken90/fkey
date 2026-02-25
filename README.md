@@ -5,14 +5,13 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white" alt="Windows" />
-  <img src="https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black" alt="Linux" />
   <img src="https://img.shields.io/github/v/release/miken90/fkey?color=green" alt="Release" />
   <img src="https://img.shields.io/github/downloads/miken90/fkey/total?color=blue" alt="Downloads" />
   <img src="https://img.shields.io/badge/License-BSD--3--Clause-blue.svg" alt="License" />
 </p>
 
 <p align="center">
-  <strong>Bộ gõ tiếng Việt miễn phí, nhanh, nhẹ cho Windows & Linux</strong><br>
+  <strong>Bộ gõ tiếng Việt miễn phí, nhanh, nhẹ cho Windows</strong><br>
   ~5MB · Không cần cài đặt · Không quảng cáo · Không thu thập dữ liệu
 </p>
 
@@ -51,7 +50,7 @@
 
 | Tính năng | Mô tả |
 |-----------|-------|
-| ⚡ **Siêu nhẹ** | ~5MB portable, ~10MB RAM |
+| ⚡ **Siêu nhẹ** | ~5MB portable, ~18MB RAM |
 | 🔍 **Mọi ứng dụng** | Chrome, VS Code, Terminal, Discord, Slack... |
 | 🔤 **Auto-restore tiếng Anh** | `text` `expect` `user` → tự khôi phục khi nhấn Space |
 | ⎋ **ESC khôi phục** | Gõ sai → nhấn ESC → về lại chữ gốc |
@@ -61,12 +60,12 @@
 | 🔧 **Phím tắt tùy chỉnh** | Ctrl+Space hoặc tuỳ ý |
 | 🚀 **Auto-start** | Khởi động cùng Windows |
 | 🔄 **Tự động cập nhật** | Thông báo khi có phiên bản mới |
+| 📋 **Smart Paste** | Ctrl+Shift+V sửa lỗi mojibake tiếng Việt |
+| 🛡️ **Chạy quyền Admin** | Gõ tiếng Việt trong ứng dụng yêu cầu quyền Admin |
 
 ---
 
 ## 📥 Tải về & Cài đặt
-
-### Windows
 
 **Yêu cầu:** Windows 10/11 (64-bit), WebView2 Runtime
 
@@ -74,27 +73,6 @@
 2. Giải nén vào thư mục bất kỳ
 3. Chạy `FKey.exe`
 4. App chạy trong system tray (khay hệ thống)
-
-### Linux (Beta)
-
-**Yêu cầu:** Linux với X11 (Ubuntu, Fedora, Arch...), xdotool
-
-```bash
-# 1. Tải về
-wget https://github.com/miken90/fkey/releases/download/vX.X.X-linux/FKey-X.X.X-linux-x86_64.tar.gz
-
-# 2. Giải nén
-tar -xzvf FKey-X.X.X-linux-x86_64.tar.gz
-cd FKey-X.X.X-linux-x86_64
-
-# 3. Cài đặt
-./install.sh
-
-# 4. Chạy
-fkey
-```
-
-> ⚠️ **Lưu ý:** Bản Linux đang ở giai đoạn beta, chỉ hỗ trợ X11 (chưa hỗ trợ Wayland)
 
 ---
 
@@ -106,31 +84,22 @@ fkey
 
 ---
 
-## 🔧 Dành cho Developer
-
-Xem chi tiết tại [DEVELOPMENT.md](docs/DEVELOPMENT.md)
+## 🔧 Tech Stack & Build
 
 ### Tech Stack
 
-| Layer | Windows | Linux |
-|-------|---------|-------|
-| **Core Engine** | Rust (shared) | Rust (shared) |
-| **App** | Go + Wails v3 + WebView2 | Go + GTK3 + X11 |
-| **Keyboard** | Win32 Hook | X11 + xdotool |
-| **Config** | Registry | TOML file |
+| Layer | Technology |
+|-------|-----------|
+| **Core Engine** | Rust |
+| **App** | Go + Wails v3 + WebView2 |
+| **Keyboard** | Win32 Low-level Hook |
+| **Config** | Windows Registry |
 
 ### Build từ source
 
-**Windows:**
 ```powershell
 cd core && cargo build --release
-cd platforms/windows-wails && .\build.ps1 -Release
-```
-
-**Linux:**
-```bash
-cd core && cargo build --release
-cd platforms/linux && make build
+cd platforms\windows-wails && .\build.ps1 -Release
 ```
 
 ---
