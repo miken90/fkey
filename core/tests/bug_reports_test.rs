@@ -1898,7 +1898,7 @@ fn bug_would_backspace_count() {
     assert_eq!(r.backspace, 0, "w+o: no backspace (appending ơ)");
 
     // u → passthrough
-    let r = e.on_key(keys::U, false, false);
+    let _r = e.on_key(keys::U, false, false);
     // u might pass through or transform - just verify no crash
 
     // l → triggers foreign word revert
@@ -1920,4 +1920,24 @@ fn bug_would_backspace_count() {
 fn bug_would_full_word() {
     // Full "would " typing test
     telex_auto_restore(&[("would ", "would ")]);
+}
+
+// =============================================================================
+// BUG: "sess" → "sess." instead of "ses."
+// In auto restore mode, typing "sess." should give "ses." (ss reverts sắc mark)
+// "sess" is a rare word so user likely wants to cancel mark, not type "sess"
+// But "sass", "bass", "boss", "miss" etc. should still restore to English
+// =============================================================================
+
+#[test]
+fn bug_sess_auto_restore() {
+    // Test: sess + space → ses (ss reverts sắc mark)
+    // But sass should still restore to sass (common English word)
+    telex_auto_restore(&[
+        ("sess ", "ses "),
+        ("sess.", "ses."),
+        ("sass ", "sass "), // common word, should restore
+        ("sass.", "sass."),
+        ("hiss ", "his "), // hiss → his (exception)
+    ]);
 }

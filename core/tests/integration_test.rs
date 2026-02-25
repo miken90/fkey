@@ -1492,7 +1492,7 @@ fn telex_doc_in_sentence() {
 }
 
 // ============================================================
-// SKIP W SHORTCUT: User preference for w→ư at word start
+// SKIP W SHORTCUT: User preference for w→ư (unified toggle)
 // ============================================================
 
 /// When skip_w_shortcut is enabled, standalone "w" should NOT convert to "ư"
@@ -1507,34 +1507,27 @@ fn skip_w_shortcut_standalone_w_stays_w() {
     assert_eq!(r.action, Action::None as u8, "w should pass through");
 }
 
-/// When skip_w_shortcut is enabled, "hw" should still produce "hư"
-/// (only word-start w is skipped, not w after consonants)
+/// When skip_w_shortcut is enabled, "hw" should NOT produce "hư"
+/// (w→ư is skipped everywhere, not just at word start)
 #[test]
-fn skip_w_shortcut_hw_still_produces_hu() {
+fn skip_w_shortcut_hw_stays_hw() {
     let mut e = Engine::new();
     e.set_method(0); // Telex
     e.set_skip_w_shortcut(true);
 
-    // "h" + "w" should produce "hư" (w after consonant is NOT skipped)
-    e.on_key(keys::H, false, false);
-    let r = e.on_key(keys::W, false, false);
-    assert_eq!(r.action, Action::Send as u8, "hw should produce ư");
-    assert_eq!(r.chars[0], 'ư' as u32);
+    let result = type_word(&mut e, "hw");
+    assert_eq!(result, "hw", "hw should stay hw with skip enabled");
 }
 
-/// When skip_w_shortcut is enabled, "nhw" should produce "như"
+/// When skip_w_shortcut is enabled, "nhw" should NOT produce "như"
 #[test]
-fn skip_w_shortcut_nhw_produces_nhu() {
+fn skip_w_shortcut_nhw_stays_nhw() {
     let mut e = Engine::new();
     e.set_method(0); // Telex
     e.set_skip_w_shortcut(true);
 
-    // "nh" + "w" should produce "như"
-    e.on_key(keys::N, false, false);
-    e.on_key(keys::H, false, false);
-    let r = e.on_key(keys::W, false, false);
-    assert_eq!(r.action, Action::Send as u8, "nhw should produce ư");
-    assert_eq!(r.chars[0], 'ư' as u32);
+    let result = type_word(&mut e, "nhw");
+    assert_eq!(result, "nhw", "nhw should stay nhw with skip enabled");
 }
 
 /// When skip_w_shortcut is DISABLED (default), standalone "w" converts to "ư"
@@ -1562,29 +1555,26 @@ fn skip_w_shortcut_vni_mode_unaffected() {
     assert_eq!(r.action, Action::None as u8, "VNI: w should pass through");
 }
 
-/// Full word test: "như" with skip_w_shortcut enabled
+/// Full word test: "như" with skip_w_shortcut enabled should NOT convert
 #[test]
-fn skip_w_shortcut_full_word_nhu() {
+fn skip_w_shortcut_full_word_nhw_stays() {
     let mut e = Engine::new();
     e.set_method(0); // Telex
     e.set_skip_w_shortcut(true);
 
     let result = type_word(&mut e, "nhw");
-    assert_eq!(
-        result, "như",
-        "nhw should produce như even with skip enabled"
-    );
+    assert_eq!(result, "nhw", "nhw should stay nhw with skip enabled");
 }
 
-/// Full word test: "tư" with skip_w_shortcut enabled
+/// Full word test: "tw" with skip_w_shortcut enabled should NOT convert
 #[test]
-fn skip_w_shortcut_full_word_tu() {
+fn skip_w_shortcut_full_word_tw_stays() {
     let mut e = Engine::new();
     e.set_method(0); // Telex
     e.set_skip_w_shortcut(true);
 
     let result = type_word(&mut e, "tw");
-    assert_eq!(result, "tư", "tw should produce tư even with skip enabled");
+    assert_eq!(result, "tw", "tw should stay tw with skip enabled");
 }
 
 /// Full word test: "được" with skip_w_shortcut enabled
@@ -1611,18 +1601,15 @@ fn skip_w_shortcut_uppercase_w_stays_w() {
     assert_eq!(r.action, Action::None as u8, "W should pass through");
 }
 
-/// Uppercase W after consonant still converts
+/// Uppercase W after consonant is also skipped
 #[test]
-fn skip_w_shortcut_uppercase_hw_produces_hu() {
+fn skip_w_shortcut_uppercase_hw_stays_hw() {
     let mut e = Engine::new();
     e.set_method(0); // Telex
     e.set_skip_w_shortcut(true);
 
-    // "H" + "W" should produce "HƯ"
-    e.on_key(keys::H, true, false); // H
-    let r = e.on_key(keys::W, true, false); // W
-    assert_eq!(r.action, Action::Send as u8, "HW should produce Ư");
-    assert_eq!(r.chars[0], 'Ư' as u32);
+    let result = type_word(&mut e, "HW");
+    assert_eq!(result, "HW", "HW should stay HW with skip enabled");
 }
 
 /// Complex test: Multiple words with skip_w_shortcut
@@ -1637,12 +1624,12 @@ fn skip_w_shortcut_multiple_words() {
     assert_eq!(r1.action, Action::None as u8);
     e.clear();
 
-    // Word 2: "như" → converts "w" after "nh"
+    // Word 2: "nhw" → stays "nhw" (w→ư skipped everywhere)
     let result2 = type_word(&mut e, "nhw");
-    assert_eq!(result2, "như");
+    assert_eq!(result2, "nhw");
     e.clear();
 
-    // Word 3: "uw" → "ư" (u at start, then w as horn)
+    // Word 3: "uw" → "ư" (horn modifier still works)
     let result3 = type_word(&mut e, "uw");
     assert_eq!(result3, "ư");
 }
@@ -1797,6 +1784,38 @@ fn backspace_after_space_stroke_word() {
     // "ddi " + backspace + "s" → "đí"
     let result = type_word(&mut e, "ddi <s");
     assert_eq!(result, "đí", "Stroke should be preserved after restore");
+}
+
+/// Restore plain word then apply stroke: di + SPACE + DELETE + d → đi
+/// Bug: 'd' was clearing the restored buffer because stroke wasn't recognized as modifier
+#[test]
+fn backspace_after_space_restore_apply_stroke() {
+    let mut e = Engine::new();
+    // "di " + backspace + "d" → "đi" (dd triggers stroke on initial d)
+    let result = type_word(&mut e, "di <d");
+    assert_eq!(
+        result, "đi",
+        "di + space + backspace + d should produce đi (stroke modifier)"
+    );
+}
+
+/// Restore plain word then apply stroke: do + SPACE + DELETE + d → đo
+#[test]
+fn backspace_after_space_restore_apply_stroke_do() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "do <d");
+    assert_eq!(result, "đo", "do + space + backspace + d should produce đo");
+}
+
+/// Restore plain word then apply stroke: dua + SPACE + DELETE + d → đua
+#[test]
+fn backspace_after_space_restore_apply_stroke_dua() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "dua <d");
+    assert_eq!(
+        result, "đua",
+        "dua + space + backspace + d should produce đua"
+    );
 }
 
 // ============================================================
@@ -3693,5 +3712,92 @@ fn test_chooose_auto_restore() {
     assert_eq!(
         result, "choose ",
         "chooose should auto-restore to choose, not collapse further to chose"
+    );
+}
+
+// Test case: sur<upervisor → supervisor (double u from backspace + retype)
+// The < represents backspace, so: sur + backspace + upervisor = suupervisor → supervisor
+#[test]
+fn test_suupervisor_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "sur<upervisor ");
+    assert_eq!(
+        result, "supervisor ",
+        "sur<upervisor should auto-restore to supervisor (collapse double u)"
+    );
+}
+
+// Test case: us<user → uẻ but expected user
+// The < represents backspace, so: us + backspace + user
+// After "us" → "ú", backspace removes it, then typing "user" should give "user"
+// Bug: currently gives "uẻ" because raw_input still has stale entries
+#[test]
+fn test_user_backspace_retype_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "us<user ");
+    assert_eq!(result, "user ", "us<user should auto-restore to user");
+}
+
+// Test case: user<ser → uẻ but expected user
+// Type "user", backspace deletes 'r', then type "ser" to complete "user"
+#[test]
+fn test_user_backspace_ser_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "user<ser ");
+    assert_eq!(result, "user ", "user<ser should auto-restore to user");
+}
+
+// Test case: per<erfec → peerfec but expected perfec (no space, mid-word)
+// The < represents backspace, so: per + backspace + erfec
+// After "per" → "pẻ", backspace removes "ẻ", then typing "erfec"
+// Bug: raw_input only pops 'r' modifier but not 'e' base, causing double 'e'
+#[test]
+fn test_perfec_backspace_retype_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "per<erfec");
+    assert_eq!(
+        result, "perfec",
+        "per<erfec should give perfec (no double e)"
+    );
+}
+
+// Test case: data<<ata (delayed circumflex pattern with double backspace)
+// "data" → "dât", then << deletes "ât", then "ata" should restore to "data"
+#[test]
+fn test_data_double_backspace_ata_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "data<<ata ");
+    assert_eq!(result, "data ", "data<<ata should auto-restore to data");
+}
+
+// Test case: perfec<<<<rfec (4 backspaces after auto-restore, then retype)
+// After "perfec" auto-restores, 4 backspaces should leave "pe", then "rfec" → "perfec"
+// Bug: raw_input was incorrectly popping 'f' (letter) as stale mark key
+#[test]
+fn test_perfec_4backspace_rfec_auto_restore() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "perfec<<<<rfec");
+    assert_eq!(
+        result, "perfec",
+        "perfec<<<<rfec should give perfec (raw_input sync after auto-restore)"
+    );
+}
+
+// Test case: abc + space + ook + space
+// Fixed: "abc ôk " (circumflex from intentional double vowel is preserved)
+#[test]
+fn test_abc_space_ook_space() {
+    let mut e = Engine::new();
+    e.set_english_auto_restore(true);
+    let result = type_word(&mut e, "abc ook ");
+    assert_eq!(
+        result, "abc ôk ",
+        "abc ook should give 'abc ôk ' (circumflex from double vowel preserved)"
     );
 }

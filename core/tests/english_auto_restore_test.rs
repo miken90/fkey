@@ -103,9 +103,10 @@ fn pattern2_oo_vowel_pair() {
 #[test]
 fn pattern2_ee_vowel_pair() {
     telex_auto_restore(&[
-        // With space - restore to English (invalid VN ending with -êp)
+        // "keep" is in English dictionary - restore to English
         ("keep ", "keep "),
-        ("teep ", "teep "),
+        // "teep" is NOT in dictionary - keep circumflex from intentional double vowel
+        ("teep ", "têp "),
         // Without space - keep Vietnamese transform (word not complete)
         ("keep", "kêp"),  // k + e + e(circumflex) + p → kêp
         ("keeps", "kếp"), // k + e + e + p + s(sắc) → kếp
