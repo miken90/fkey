@@ -9,9 +9,9 @@ This project is developed in **WSL** and builds for **Windows only**.
 | **Windows** | WSL | Windows PowerShell | Windows |
 
 ### Path Conventions
-- WSL paths: `/mnt/d/WORKSPACES/PERSONAL/fkey/...`
-- Windows paths: `D:\WORKSPACES\PERSONAL\fkey\...`
-- **Windows builds (PowerShell)**: Use Windows-style paths (`D:\...`)
+- WSL paths: `/mnt/c/WORKSPACES/2026/gonhanh.org/...`
+- Windows paths: `C:\WORKSPACES\2026\gonhanh.org\...`
+- **Windows builds (PowerShell)**: Use Windows-style paths (`C:\...`)
 
 ---
 
@@ -33,53 +33,35 @@ This project is developed in **WSL** and builds for **Windows only**.
 
 ```bash
 # Rust: full test suite
-powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\core'; cargo test 2>&1"
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo test 2>&1"
 
 # Rust: specific test
-powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\core'; cargo test <test_name> 2>&1"
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo test <test_name> 2>&1"
 
 # Rust: build release DLL
-powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\core'; cargo build --release 2>&1"
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo build --release 2>&1"
 
 # Go: run tests
-powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\platforms\windows-wails'; go test ./... 2>&1"
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; go test ./... 2>&1"
 
 # Go: build (dev)
-powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\platforms\windows-wails'; .\build.ps1 2>&1"
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 2>&1"
 
 # Go: build (release)
-powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\platforms\windows-wails'; .\build.ps1 -Release 2>&1"
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 -Release 2>&1"
 ```
-
-### ⚠️ Version Management (IMPORTANT)
-
-**Before building, ALWAYS verify version is correct:**
-
-1. Check current git tag: `git describe --tags --abbrev=0`
-2. Verify `winres.json` matches the tag version in these fields:
-   - `RT_MANIFEST.#1.0409.identity.version` (e.g., "2.0.9.0")
-   - `RT_VERSION.#1.0409.fixed.file_version` (e.g., "2.0.9.0")
-   - `RT_VERSION.#1.0409.fixed.product_version` (e.g., "2.0.9.0")
-   - `RT_VERSION.#1.0409.info.0409.FileVersion` (e.g., "2.0.9")
-   - `RT_VERSION.#1.0409.info.0409.ProductVersion` (e.g., "2.0.9")
-
-3. If mismatched, update `winres.json` before building
 
 ---
 
 ## GitHub Release
 
-Use the `release-github` skill:
+Load the `release-github` skill. It triggers automatically when user says "release X.Y.Z":
 
-```
-/release-github 2.0.0
+```bash
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org'; .\.claude\skills\release-github\scripts\github-release.ps1 -Version 'X.Y.Z' 2>&1"
 ```
 
-Or manually:
-```powershell
-cd D:\WORKSPACES\PERSONAL\fkey
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0"
-```
+The script handles everything: version bump, release build, ZIP, tag, and GitHub publish.
 
 <!-- bv-agent-instructions-v1 -->
 

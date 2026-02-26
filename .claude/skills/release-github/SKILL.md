@@ -1,209 +1,57 @@
 ---
 name: release-github
 description: >-
-  Build and upload releases to GitHub Releases using standardized build scripts.
-  Automates version tagging, portable package creation, and release publishing.
-  Use when releasing new versions or creating distribution packages.
+  Build and publish FKey releases to GitHub. Automates version bump, release build,
+  ZIP packaging, and GitHub release creation. Trigger: "release X.Y.Z"
 license: MIT
-version: 3.0.0
+version: 4.0.0
 ---
 
 # GitHub Release Skill
 
-Automate building and publishing releases to GitHub using project's standardized build pipeline.
+## Auto-Trigger
 
-## When to Use This Skill
+This skill triggers automatically when the user says:
+- "release X.Y.Z"
+- "release version X.Y.Z"
+- "publish X.Y.Z"
 
-Use this skill when:
-- Releasing a new version of FKey
-- Creating portable distribution packages
-- Publishing release to GitHub with auto-generated notes
-- Tagging versions with semantic versioning
+**Agent action**: Run the release script directly — do NOT ask for confirmation:
 
-## Usage
-
-```
-/release-github <version>
-```
-
-Example:
-```
-/release-github 2.0.0
+```bash
+powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org'; .\.claude\skills\release-github\scripts\github-release.ps1 -Version 'X.Y.Z' 2>&1"
 ```
 
 ## What It Does
 
-1. **Build Portable Package** - Uses `platforms/windows-wails/build.ps1`
-   - Builds Rust core DLL (if needed)
-   - Builds Go/Wails executable with version injection
-   - Applies UPX compression (if available)
-   - Optionally signs binaries
-   - Creates portable ZIP (~5MB)
-
-2. **Generate Release Notes** - Auto-generates from commits since last tag
-
-3. **Update VERSION File** - Updates `VERSION` in repo root for auto-updater
-   - Auto-updater fetches from `raw.githubusercontent.com` (no rate limit)
-
-4. **Create GitHub Release** - Uses `gh` CLI to:
-   - Create version tag (e.g., `v2.0.0`)
-   - Upload portable ZIP
-   - Publish release notes
+1. **Version bump** — Updates `VERSION` file and `winres.json` (all 5 version fields)
+2. **Release build** — Rust DLL + Go exe with `-s -w -H=windowsgui -X main.Version=X.Y.Z`
+3. **ZIP package** — Single `FKey.exe` (~4.4 MB portable ZIP)
+4. **Release notes** — Auto-generated from commits since last tag (conventional commits)
+5. **GitHub release** — Tag `vX.Y.Z`, upload ZIP, publish notes via `gh` CLI
 
 ## Prerequisites
 
-- `gh` CLI installed and authenticated (`gh auth login`)
-- Rust toolchain (`cargo`)
-- Go 1.21+ (`go`)
-- PowerShell 5.1+
-- Write access to repository
-- Optional: UPX for compression (`winget install upx`)
-- Optional: Windows SDK for signing (`signtool.exe`)
-
-## Parameters
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| version | Yes | Semantic version (e.g., 2.0.0) |
+- `gh` CLI authenticated (`gh auth login`)
+- Rust toolchain, Go 1.25+, PowerShell, `go-winres`
 
 ## Flags
 
 | Flag | Description |
 |------|-------------|
-| `-SkipBuild` | Skip build step (use existing ZIP) |
+| `-SkipBuild` | Skip build, use existing ZIP |
 | `-Draft` | Create as draft release |
-| `-Sign` | Sign binaries with code signing certificate |
+| `-Sign` | Sign binary with code signing cert |
+| `-DryRun` | Preview release notes, no changes |
 
 ## Output
 
-- Local: `platforms/windows-wails/build/bin/FKey-v{version}-portable.zip`
-- GitHub: `https://github.com/{owner}/{repo}/releases/tag/v{version}`
+- Local: `platforms/windows-wails/build/bin/FKey-vX.Y.Z-portable.zip`
+- GitHub: `https://github.com/miken90/fkey/releases/tag/vX.Y.Z`
 
-## Build Process
+## Important Notes
 
-Uses `platforms/windows-wails/build.ps1`:
-
-### ⚠️ Pre-Build Checklist (IMPORTANT)
-
-**Before building, ALWAYS verify version:**
-
-1. **Check git tag**: `git describe --tags --abbrev=0`
-2. **Verify `winres.json`** matches tag version:
-   - `RT_MANIFEST.#1.0409.identity.version` → "X.Y.Z.0"
-   - `RT_VERSION.#1.0409.fixed.file_version` → "X.Y.Z.0"
-   - `RT_VERSION.#1.0409.fixed.product_version` → "X.Y.Z.0"
-   - `RT_VERSION.#1.0409.info.0409.FileVersion` → "X.Y.Z"
-   - `RT_VERSION.#1.0409.info.0409.ProductVersion` → "X.Y.Z"
-3. **Update `winres.json`** if mismatched before building
-
-### Build Steps
-
-1. Build Rust core DLL (`cargo build --release`) if needed
-2. Build Go executable with ldflags:
-   - `-s -w` - Strip symbols
-   - `-H=windowsgui` - Windows GUI app
-   - `-X main.Version={version}` - Inject version
-3. Apply UPX compression (optional, ~4.8MB result)
-4. Sign binaries (optional)
-5. Create ZIP package
-
-## Release Notes Format
-
-Auto-categorizes commits using conventional commit prefixes:
-
-```markdown
-## What's Changed
-
-### ✨ New Features
-
-- Feature description 1
-- Feature description 2
-
-### 🐛 Bug Fixes
-
-- Bug fix description
-
-### ⚡ Improvements
-
-- Improvement/refactor description
-
----
-
-## 📦 Download
-
-| Platform | File | Size |
-|----------|------|------|
-| Windows (Portable) | [FKey-v2.0.0-portable.zip](...) | ~5 MB |
-
-### Installation
-
-1. Download và giải nén `FKey-v2.0.0-portable.zip`
-2. Chạy `FKey.exe`
-3. Ứng dụng chạy ở khay hệ thống (system tray)
-
-**Full Changelog**: [compare link]
-```
-
-### Commit Prefixes
-
-**Platform prefixes** (required for multi-platform projects):
-
-| Prefix | Included in Windows Release |
-|--------|----------------------------|
-| `[win]` | ✅ Yes |
-| `[core]` | ✅ Yes |
-| `[all]` | ✅ Yes |
-| `[linux]` | ❌ No (filtered out) |
-
-**Type prefixes** (after platform prefix):
-
-| Prefix | Section |
-|--------|---------|
-| `feat:`, `feature:`, `add:`, `new:` | ✨ New Features |
-| `fix:`, `bug:`, `hotfix:` | 🐛 Bug Fixes |
-| `refactor:`, `perf:`, `chore:`, `docs:`, `test:`, `ci:`, `build:` | ⚡ Improvements |
-| (other) | ⚡ Improvements |
-
-**Example commits:**
-```bash
-[win] feat: add Smart Paste for mojibake fix
-[win] fix: auto-update batch file path
-[core] fix: tone placement algorithm
-[linux] feat: GTK3 system tray  # ← filtered out for Windows releases
-```
-
-## Manual Execution
-
-```powershell
-# Full release
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0"
-
-# Draft release
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0" -Draft
-
-# Skip build (use existing ZIP)
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0" -SkipBuild
-
-# With signing
-.\.claude\skills\release-github\scripts\github-release.ps1 -Version "2.0.0" -Sign
-```
-
-## Direct Build Script
-
-If you only need to build without releasing:
-
-```powershell
-cd platforms/windows-wails
-.\build.ps1 -Release -Version "2.0.0"
-
-# With signing
-.\build.ps1 -Release -Version "2.0.0" -Sign
-```
-
-## Integration
-
-This skill integrates with:
-- `platforms/windows-wails/build.ps1` - Go/Wails build process
-- `gh` CLI - GitHub release creation
-- Git tags - Version management
-- Semantic versioning - Version numbering
+- `build.ps1` auto-updates `winres.json` version fields when `-Version` is passed
+- Release script uses **hashtable splatting** to pass `-Release` switch to `build.ps1`
+- VERSION file is committed + pushed automatically by the script
+- Only pushes to `origin` (miken90), never upstream
