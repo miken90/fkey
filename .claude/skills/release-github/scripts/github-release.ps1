@@ -79,9 +79,10 @@ elseif (-not $SkipBuild) {
 
     Push-Location $WailsDir
     try {
-        $buildArgs = @("-Release", "-Version", $Version)
+        # Use hashtable splatting — array splatting doesn't pass [switch] params correctly
+        $buildArgs = @{ Release = $true; Version = $Version }
         if ($Sign) {
-            $buildArgs += "-Sign"
+            $buildArgs["Sign"] = $true
         }
         & $BuildScript @buildArgs
         if ($LASTEXITCODE -ne 0) { throw "Build failed" }
