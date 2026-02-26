@@ -75,6 +75,10 @@ var (
 	// Paste profile: uses clipboard + Ctrl+V for apps that don't render KEYEVENTF_UNICODE
 	// Warp terminal doesn't display Unicode input but handles paste correctly
 	ProfilePaste = AppProfile{Method: MethodPaste, Coalesce: false}
+	// Passthrough profile: skip IME processing entirely, let all keys pass through.
+	// Used for remote desktop apps (Parsec, etc.) that only forward physical keystrokes
+	// and ignore SendInput-injected events. User should run FKey on the remote PC instead.
+	ProfilePassthrough = AppProfile{Method: MethodPassthrough, Coalesce: false}
 )
 
 // appProfiles maps process names to their injection profiles
@@ -133,10 +137,10 @@ var appProfiles = map[string]AppProfile{
 	// Known issue: https://github.com/warpdotdev/warp/issues/6759
 	"warp": ProfilePaste,
 
-	// Parsec remote desktop - uses paste mode because it only forwards VK codes,
-	// not KEYEVENTF_UNICODE events. Clipboard sharing syncs paste content to remote host.
-	"parsecd": ProfilePaste,
-	"parsec":  ProfilePaste,
+	// Parsec remote desktop - passthrough mode because it only forwards physical keystrokes,
+	// not SendInput-injected events. User should run FKey on the remote PC instead.
+	"parsecd": ProfilePassthrough,
+	"parsec":  ProfilePassthrough,
 }
 
 // GetAppProfile returns the injection profile for a process name

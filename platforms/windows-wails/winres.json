@@ -14,7 +14,7 @@
                                    "0409":  {
                                                 "identity":  {
                                                                  "name":  "FKey",
-                                                                 "version":  "2.3.1.0"
+                                                                 "version":  "2.3.2.0"
                                                              },
                                                 "description":  "Vietnamese Input Method for Windows",
                                                 "minimum-os":  "win7",
@@ -38,19 +38,19 @@
                        "#1":  {
                                   "0409":  {
                                                "fixed":  {
-                                                             "file_version":  "2.3.1.0",
-                                                             "product_version":  "2.3.1.0"
+                                                             "file_version":  "2.3.2.0",
+                                                             "product_version":  "2.3.2.0"
                                                          },
                                                "info":  {
                                                             "0409":  {
                                                                          "CompanyName":  "FKey Team",
                                                                          "FileDescription":  "Vietnamese Input Method for Windows",
-                                                                         "FileVersion":  "2.3.1",
+                                                                         "FileVersion":  "2.3.2",
                                                                          "InternalName":  "FKey",
                                                                          "LegalCopyright":  "© 2026 FKey Team",
                                                                          "OriginalFilename":  "FKey.exe",
                                                                          "ProductName":  "FKey",
-                                                                         "ProductVersion":  "2.3.1"
+                                                                         "ProductVersion":  "2.3.2"
                                                                      }
                                                         }
                                            }

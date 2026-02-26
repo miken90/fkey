@@ -184,17 +184,17 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 
 	hookStruct := (*KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
 
-	// Skip our own injected keys
+	// Skip our own injected keys (prevents processing loop)
 	if hookStruct.DwExtraInfo == InjectedKeyMarker {
 		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
 		return ret
 	}
 
-	// Skip injected keys from other sources
-	if (hookStruct.Flags & LLKHF_INJECTED) != 0 {
-		ret, _, _ := procCallNextHookEx.Call(h.hookID, uintptr(nCode), wParam, lParam)
-		return ret
-	}
+	// NOTE: We intentionally do NOT skip other injected keys (LLKHF_INJECTED).
+	// Remote desktop apps (Parsec, AnyDesk, RDP, etc.) forward keystrokes
+	// via SendInput which sets LLKHF_INJECTED. Skipping those would prevent
+	// FKey from processing Vietnamese input on the remote machine.
+	// The InjectedKeyMarker check above is sufficient to prevent self-loops.
 
 	// Only skip physical keys if already processing AND it's an injected event
 	// This fixes the bug where physical KEYUP slips through during slow-mode injection

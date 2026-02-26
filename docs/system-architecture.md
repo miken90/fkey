@@ -229,6 +229,7 @@ The app detector selects the optimal injection method per application:
 | **Slow** | Per-character with 5ms key + 20/15ms pre/post delay | Electron apps, browsers |
 | **Atomic** | Single `SendInput` call with all inputs | Discord (prevents flicker) |
 | **Paste** | Clipboard + `Ctrl+V` | Warp terminal, apps that don't support SendInput |
+| **Passthrough** | Skip IME processing, let keys pass through | Remote desktop apps (Parsec) |
 
 ### App Profiles
 
@@ -264,6 +265,16 @@ The keyboard hook callback (`WH_KEYBOARD_LL`) must return quickly — Windows si
 2. **Panic Recovery** (`keyboard_hook.go`): `hookCallback` wraps its body in `defer recover()` so that panics from FFI calls, `unsafe.Pointer` operations, or Win32 API calls under memory pressure don't crash the process — the key simply passes through.
 
 3. **goSafe() Helper** (`keyboard_hook.go`): Goroutines spawned from the hook callback (SmartPaste, FormatHotkey handlers) use `goSafe()` which wraps the function in a goroutine with its own `defer recover()`, preventing unrecovered panics from killing the process.
+
+---
+
+## Remote Desktop Compatibility
+
+FKey supports Vietnamese input through remote desktop applications (Parsec, AnyDesk, RDP, etc.) with a two-part strategy:
+
+1. **Remote side — process injected keys** (`keyboard_hook.go`): The hook only skips keys marked with FKey's own `InjectedKeyMarker` (`0x464B4559`). Keys injected by remote desktop hosts (which have `LLKHF_INJECTED` flag but not FKey's marker) are processed normally. This allows FKey on the remote PC to handle keystrokes forwarded by the remote desktop app.
+
+2. **Local side — passthrough mode** (`ime_loop.go`, `app_detector.go`): When a remote desktop client (e.g., Parsec) is the foreground app, FKey skips IME processing entirely (`MethodPassthrough`). Physical keystrokes pass through unmodified so the remote desktop app can forward them. This prevents conflicts when FKey runs on both machines.
 
 ---
 

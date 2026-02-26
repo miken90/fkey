@@ -18,10 +18,11 @@ const (
 type InjectionMethod int
 
 const (
-	MethodFast   InjectionMethod = iota // Separate calls with small delay (most apps)
-	MethodSlow                          // Per-character with delays (Electron, browsers)
-	MethodAtomic                        // Single atomic SendInput (Discord - no flicker)
-	MethodPaste                         // Clipboard + Ctrl+V (Warp terminal workaround)
+	MethodFast        InjectionMethod = iota // Separate calls with small delay (most apps)
+	MethodSlow                              // Per-character with delays (Electron, browsers)
+	MethodAtomic                            // Single atomic SendInput (Discord - no flicker)
+	MethodPaste                             // Clipboard + Ctrl+V (Warp terminal workaround)
+	MethodPassthrough                       // Skip IME processing entirely (remote desktop apps like Parsec)
 )
 
 // Delay settings (milliseconds)

@@ -191,6 +191,14 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		InvalidateSmartProfileCache()
 	}
 
+	// Check if app requires passthrough (remote desktop apps like Parsec).
+	// These apps only forward physical keystrokes, not SendInput-injected events.
+	// Skip engine processing entirely so keys pass through to the remote.
+	profile := GetSmartAppProfile(GetCurrentProcessName())
+	if profile.Method == MethodPassthrough {
+		return false
+	}
+
 	// Translate Windows VK to macOS keycode for Rust engine
 	macKeycode := TranslateToMacKeycode(keyCode)
 	if macKeycode == 0xFFFF {
@@ -218,9 +226,6 @@ func (l *ImeLoop) processKey(keyCode uint16, shift, capsLock bool) bool {
 		// Send replacement text
 		text := result.GetText()
 		backspaces := int(result.Backspace)
-		
-		// Get app profile - uses smart detection for CLI apps in terminals
-		profile := GetSmartAppProfile(GetCurrentProcessName())
 		
 		// Use coalescing if profile says so AND this is a diacritic replacement
 		if profile.Coalesce && backspaces > 0 {
