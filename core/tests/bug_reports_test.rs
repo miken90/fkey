@@ -3,6 +3,8 @@
 
 mod common;
 use common::{telex, telex_auto_restore, vni};
+use gonhanh_core::data::keys;
+use gonhanh_core::engine::shortcut::Shortcut;
 use gonhanh_core::engine::Engine;
 use gonhanh_core::utils::type_word;
 
@@ -1939,5 +1941,260 @@ fn bug_sess_auto_restore() {
         ("sass ", "sass "), // common word, should restore
         ("sass.", "sass."),
         ("hiss ", "his "), // hiss → his (exception)
+    ]);
+}
+
+// =============================================================================
+// BUG: "dataad" → "đata", expected "datad"
+// After circumflex revert (dât → data), buffer [D,A,T,A] falsely matches
+// has_circumflex_trigger_pattern in try_stroke, causing final 'd' to apply
+// stroke on initial 'd'.
+// Fix: Skip circumflex trigger pattern when had_circumflex_revert is true.
+// =============================================================================
+
+#[test]
+fn bug_dataad_false_stroke_after_circumflex_revert() {
+    telex(&[
+        ("dataad", "datad"), // aa revert + d should NOT stroke
+        ("dduotoj", "đuột"), // legitimate stroke still works
+    ]);
+}
+
+// =============================================================================
+// BUG: "duow" + space + backspace + "c" → "duơc", expected "dươc"
+// After committing "duơ" with space and restoring via backspace,
+// pending_u_horn_pos is lost. Typing final consonant should apply horn to 'u'.
+// =============================================================================
+
+#[test]
+fn bug_duow_restore_horn() {
+    // "duow " commits "duơ ", backspace restores "duơ", then "c" should produce "dươc"
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "duow <c");
+    println!("'duow <c' -> '{}' (expected: 'dươc')", result);
+    assert_eq!(
+        result, "dươc",
+        "'duow' + space + backspace + 'c' should produce 'dươc'"
+    );
+}
+
+// =============================================================================
+// BUG: "ddu." + backspace + "f" → "đuf", expected "đù"
+// After committing "đu" with period and deleting period via backspace,
+// the buffer should be restored so "f" applies huyền to "u".
+// =============================================================================
+
+#[test]
+fn bug_ddu_break_backspace_tone() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "ddu.<f");
+    println!("'ddu.<f' -> '{}' (expected: 'đù')", result);
+    assert_eq!(
+        result, "đù",
+        "'ddu' + '.' + backspace + 'f' should produce 'đù'"
+    );
+}
+
+// =============================================================================
+// BUG: "dduow." + backspace + "c" → "đuơc", expected "đươc"
+// After committing "đươ" with period and deleting period via backspace,
+// the buffer should be restored with pending_u_horn_pos so "c" completes "đươc".
+// =============================================================================
+
+#[test]
+fn bug_dduow_break_backspace_final() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "dduow.<c");
+    println!("'dduow.<c' -> '{}' (expected: 'đươc')", result);
+    assert_eq!(
+        result, "đươc",
+        "'dduow' + '.' + backspace + 'c' should produce 'đươc'"
+    );
+}
+
+// =============================================================================
+// BUG: "duow;;" + backspace×2 + "c" → "dưc", expected "dươc"
+// When multiple break chars follow a word, each should count as one "space"
+// for backspace-after-break restore. Without this, the second backspace
+// deletes from the restored buffer instead of undoing the second break char.
+// =============================================================================
+
+#[test]
+fn bug_duow_double_break_backspace_horn() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "duow;;<<c");
+    println!("'duow;;<<c' -> '{}' (expected: 'dươc')", result);
+    assert_eq!(
+        result, "dươc",
+        "'duow' + ';;' + backspace×2 + 'c' should produce 'dươc'"
+    );
+}
+
+// =============================================================================
+// BUG: "dduowc" + space + ";" + backspace×2 + "j" → "đươcj", expected "được"
+// After committing "đươc" with space, break key ";" counts as another
+// separator. Both backspaces undo separators, restoring "đươc", then "j"
+// applies nặng mark → "được".
+// =============================================================================
+
+#[test]
+fn bug_dduowc_restore_backspace_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "dduowc ;<<j");
+    println!("'dduowc ;<<j' -> '{}' (expected: 'được')", result);
+    assert_eq!(
+        result, "được",
+        "'dduowc' + space + ';' + backspace×2 + 'j' should produce 'được'"
+    );
+}
+
+// =============================================================================
+// BUG: "dươc vẫn " + backspace×5 + "j" → "dươcj", expected "dược"
+// Multi-word chained restore: after restoring "vẫn" and deleting it fully,
+// the next backspace should restore the previous word "dươc" from history.
+// =============================================================================
+
+#[test]
+fn bug_multiword_chained_restore_mark() {
+    let mut e = Engine::new();
+    let result = type_word(&mut e, "duowc vaaxn <<<<<j");
+    println!("'duowc vaaxn <<<<<j' -> '{}' (expected: 'dược')", result);
+    assert_eq!(
+        result, "dược",
+        "'duowc' + space + 'vaaxn' + space + bs×5 + 'j' should produce 'dược'"
+    );
+}
+
+// =============================================================================
+// Issue #363: Shortcut √√ → ✅ không hoạt động khi bấm dấu cách
+// https://github.com/khaphanspace/gonhanh.org/issues/363
+// Sequence: User cài đặt gõ tắt √√ → ✅
+//   1. Bấm Option+V → √ (on_key_with_char, key=V, ch='√')
+//   2. Bấm Option+V → √√
+//   3. Bấm Space → expected: ✅
+//   Actual: không thay thế
+// =============================================================================
+
+#[test]
+fn issue363_sqrt_sqrt_space_replaces_checkmark() {
+    // Exact user flow: Option+V, Option+V, Space
+    let mut e = Engine::new();
+    e.shortcuts_mut().add(Shortcut::new("√√", "✅"));
+
+    // Step 1: Option+V → √
+    let r1 = e.on_key_with_char(keys::V, false, false, false, Some('√'));
+    assert_eq!(r1.action, 0, "First √ should pass through");
+
+    // Step 2: Option+V → √√
+    let r2 = e.on_key_with_char(keys::V, false, false, false, Some('√'));
+    assert_eq!(
+        r2.action, 0,
+        "Second √ should pass through (word boundary shortcut)"
+    );
+
+    // Step 3: Space → should trigger √√ → ✅
+    let r3 = e.on_key(keys::SPACE, false, false);
+    assert_eq!(r3.action, 1, "Space after √√ should trigger shortcut → ✅");
+    assert_eq!(r3.backspace, 2, "Should backspace 2 chars (√√)");
+
+    let output: String = (0..r3.count as usize)
+        .filter_map(|i| char::from_u32(r3.chars[i]))
+        .collect();
+    assert_eq!(output, "✅ ", "Should output ✅ followed by space");
+}
+
+#[test]
+fn issue363_sqrt_sqrt_enter_replaces_checkmark() {
+    // Same flow but with Enter instead of Space
+    let mut e = Engine::new();
+    e.shortcuts_mut().add(Shortcut::new("√√", "✅"));
+
+    e.on_key_with_char(keys::V, false, false, false, Some('√'));
+    e.on_key_with_char(keys::V, false, false, false, Some('√'));
+
+    let r = e.on_key(keys::RETURN, false, false);
+    assert_eq!(r.action, 1, "Enter after √√ should trigger shortcut");
+    assert_eq!(r.backspace, 2, "Should backspace 2 chars (√√)");
+
+    let output: String = (0..r.count as usize)
+        .filter_map(|i| char::from_u32(r.chars[i]))
+        .collect();
+    assert_eq!(
+        output, "✅",
+        "Should output ✅ (no trailing space for Enter)"
+    );
+}
+
+// NOTE: prefix + word boundary shortcut (≈ç√√ + space) not supported —
+// word boundary uses exact match, not suffix. This is expected behavior.
+
+#[test]
+fn issue363_ctrl_true_still_accumulates_shortcut() {
+    // Platform passes ctrl=true for Option+key to bypass Telex/VNI transforms,
+    // but on_key_with_char should still accumulate ch for shortcut matching.
+    let mut e = Engine::new();
+    e.shortcuts_mut().add(Shortcut::new("√√", "✅"));
+
+    // Simulate platform calling with ctrl=true (Option+V on macOS)
+    let r1 = e.on_key_with_char(keys::V, false, /*ctrl=*/ true, false, Some('√'));
+    assert_eq!(r1.action, 0, "First √ should accumulate, not trigger");
+
+    let r2 = e.on_key_with_char(keys::V, false, /*ctrl=*/ true, false, Some('√'));
+    assert_eq!(
+        r2.action, 0,
+        "Second √ accumulates (word boundary, needs space)"
+    );
+
+    // Space triggers word boundary shortcut
+    let r3 = e.on_key(keys::SPACE, false, false);
+    assert_eq!(
+        r3.action, 1,
+        "Space should trigger √√ → ✅ even with ctrl=true"
+    );
+    assert_eq!(r3.backspace, 2, "Should backspace 2 chars (√√)");
+
+    let output: String = (0..r3.count as usize)
+        .filter_map(|i| char::from_u32(r3.chars[i]))
+        .collect();
+    assert_eq!(output, "✅ ");
+}
+
+#[test]
+fn issue363_ctrl_true_immediate_shortcut() {
+    // Immediate shortcut should also work with ctrl=true
+    let mut e = Engine::new();
+    e.shortcuts_mut().add(Shortcut::immediate("√√", "✅"));
+
+    let r1 = e.on_key_with_char(keys::V, false, /*ctrl=*/ true, false, Some('√'));
+    assert_eq!(r1.action, 0, "First √ accumulates");
+
+    let r2 = e.on_key_with_char(keys::V, false, /*ctrl=*/ true, false, Some('√'));
+    assert_eq!(r2.action, 1, "Second √ triggers immediate shortcut");
+
+    let output: String = (0..r2.count as usize)
+        .filter_map(|i| char::from_u32(r2.chars[i]))
+        .collect();
+    assert_eq!(output, "✅");
+}
+
+// =============================================================================
+// BUG: "dayddr" -> "đảy", expected "daydr"
+// After a stroke revert (dayd → đay → dayd via ddd-style revert), the user has
+// explicitly rejected đ. A subsequent tone-mark key must NOT resurrect the
+// stroke via the delayed-stroke pattern (dods → đó) in try_mark.
+// =============================================================================
+
+#[test]
+fn bug_dayddr_expect_daydr() {
+    telex(&[
+        // All tone-mark keys after stroke revert must stay literal
+        ("dayddr", "daydr"),
+        ("daydds", "dayds"),
+        ("dayddf", "daydf"),
+        ("dayddx", "daydx"),
+        ("dayddj", "daydj"),
+        // Delayed stroke without revert still works
+        ("dods", "đó"),
+        ("dodf", "đò"),
     ]);
 }

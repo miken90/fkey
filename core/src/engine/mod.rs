@@ -67,14 +67,16 @@ impl Result {
     }
 
     pub fn send(backspace: u8, chars: &[char]) -> Self {
+        // Cap at u8::MAX (255) to prevent count overflow — MAX is 256 but count is u8
+        let n = chars.len().min(u8::MAX as usize);
         let mut result = Self {
             chars: [0; MAX],
             action: Action::Send as u8,
             backspace,
-            count: chars.len().min(MAX) as u8,
+            count: n as u8,
             flags: 0,
         };
-        for (i, &c) in chars.iter().take(MAX).enumerate() {
+        for (i, &c) in chars.iter().take(n).enumerate() {
             result.chars[i] = c as u32;
         }
         result
@@ -569,12 +571,16 @@ impl Engine {
             return self.on_key_ext(key, caps, ctrl, shift);
         };
 
-        // Ctrl/Cmd bypasses everything
+        // Issue #363: When ctrl=true but ch is provided (Option+key on macOS),
+        // skip Vietnamese transforms but still accumulate for shortcut matching.
+        // Platform passes ctrl=true to bypass Telex/VNI, but shortcuts like √√→✅
+        // need the character to be accumulated in shortcut_prefix.
         if ctrl {
-            self.clear();
+            self.buf.clear();
+            self.raw_input.clear();
             self.word_history.clear();
             self.spaces_after_commit = 0;
-            return Result::none();
+            // Fall through to shortcut accumulation below
         }
 
         // Accumulate character for suffix matching
@@ -674,9 +680,39 @@ impl Engine {
                 return Result::none();
             }
 
+            // Backspace: pop the last accumulated char so the prefix stays in sync
+            // with the on-screen text. Without this, correcting a typo (e.g.
+            // "#hcn" -> Backspace -> "#hcm") falls through to the unknown-key
+            // branch below which clears the whole prefix, so the shortcut never
+            // matches on the following Space.
+            if key == keys::DELETE {
+                self.shortcut_prefix.pop();
+                return Result::none();
+            }
+
             // Break keys (punctuation): check for immediate shortcuts like "->"
             if keys::is_break_ext(key, shift) {
                 if let Some(ch) = break_key_to_char(key, shift) {
+                    // Word shortcuts must also fire on punctuation, not only on
+                    // Space/Enter. Match the accumulated prefix BEFORE the break
+                    // char is appended (e.g. "#hcm" then ","). key_char=None so the
+                    // break char is not appended — the platform types it after the
+                    // replacement. Mirrors the enabled-mode word-boundary behavior.
+                    if !self.shortcut_prefix.is_empty() {
+                        let input_method = self.current_input_method();
+                        if let Some(m) = self.shortcuts.try_match_for_method(
+                            &self.shortcut_prefix,
+                            None,
+                            true, // word boundary
+                            input_method,
+                        ) {
+                            let output: Vec<char> = m.output.chars().collect();
+                            let backspace_count = m.backspace_count as u8;
+                            self.shortcut_prefix.clear();
+                            return Result::send(backspace_count, &output);
+                        }
+                    }
+
                     self.shortcut_prefix.push(ch);
 
                     let input_method = self.current_input_method();
@@ -807,6 +843,16 @@ impl Engine {
             let continuing_prefix = self.buf.is_empty() && !self.shortcut_prefix.is_empty();
 
             if at_true_start || continuing_prefix {
+                // Track additional break chars for backspace-after-break restore
+                // When user types multiple break chars after a word (e.g., "duow;;"),
+                // each break char should count as one "space" for restore purposes.
+                // Without this, only the first break increments sac, so "duow;;" + <<
+                // only needs 1 backspace to restore, and the 2nd backspace deletes
+                // from the restored buffer instead of undoing the 2nd break char.
+                if continuing_prefix && self.spaces_after_commit > 0 {
+                    self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
+                }
+
                 // Reset has_non_letter_prefix when starting a new shortcut at true start
                 // This ensures shortcuts like "->" work after DELETE cleared the buffer
                 if at_true_start {
@@ -882,9 +928,33 @@ impl Engine {
             }
 
             let restore_result = self.try_auto_restore_on_break();
+
+            // Push buffer to history before clearing (like SPACE handler)
+            // This enables backspace-after-break to restore the word
+            // Example: "ddu." → backspace → "đu" restored → "f" → "đù"
+            if !self.buf.is_empty() {
+                // If auto-restore happened, repopulate buffer with plain chars first
+                if restore_result.action != 0 {
+                    self.buf.clear();
+                    for &(key, caps, _) in &self.raw_input {
+                        self.buf.push(Char::new(key, caps));
+                    }
+                }
+                self.word_history.push(self.buf.clone());
+                self.spaces_after_commit = 1; // Break char counts as 1 space for restore
+            } else if self.spaces_after_commit > 0 && break_key_to_char(key, shift).is_some() {
+                // Buffer is empty but we recently committed a word (via space or break),
+                // AND this break key produces a visible character (punctuation like ; , .).
+                // Increment counter so backspace can undo all separators before restoring.
+                // Navigation keys (TAB, RETURN, arrows) still clear history since they
+                // indicate the user has moved away from the word.
+                self.spaces_after_commit = self.spaces_after_commit.saturating_add(1);
+            } else {
+                self.word_history.clear();
+                self.spaces_after_commit = 0;
+            }
+
             self.clear();
-            self.word_history.clear();
-            self.spaces_after_commit = 0;
 
             // Issue #130: After clearing buffer, store break char as potential shortcut prefix
             // This allows shortcuts like "->" to work after "abc->" (where "-" clears "abc")
@@ -907,6 +977,15 @@ impl Engine {
                         // Restore raw_input from buffer (for ESC restore to work)
                         self.restore_raw_input_from_buffer(&restored_buf);
                         self.buf = restored_buf;
+                        // Re-detect pending_u_horn_pos for "uơ" pattern at end of buffer
+                        // This state is lost on clear() but needed for correct horn placement
+                        // Example: "duơ" restored → type "c" → should become "dươc"
+                        self.re_detect_pending_u_horn();
+                        // Rebuild last_transform so a repeated modifier key still toggles
+                        // the diacritic off, exactly as it would before the word was
+                        // committed. Example: "sow" → "sơ" → Space → Backspace → "w"
+                        // must revert to "sow", not absorb the "w".
+                        self.re_detect_last_transform();
                         // Mark that buffer was restored - if user types new letter,
                         // clear buffer first (they want fresh word, not append)
                         self.restored_pending_clear = true;
@@ -1000,6 +1079,16 @@ impl Engine {
             // If buffer still has chars, user might think they cleared everything
             // but actually didn't - let them start fresh on next letter input
             if self.buf.is_empty() {
+                // Chain-restore: when a restored buffer is fully deleted via continuous
+                // backspaces and word_history has more entries, enable restoring the
+                // previous word on the next backspace. The `restored_pending_clear` flag
+                // ensures this only happens in continuous backspace sequences — if the
+                // user typed any letter (which clears the flag), the chain breaks.
+                // Example: "dươc vẫn " → bs restores "vẫn" → bs×3 deletes it →
+                //          bs restores "dươc" → "j" applies mark → "được"
+                if self.restored_pending_clear && self.word_history.len > 0 {
+                    self.spaces_after_commit = 1;
+                }
                 self.restored_pending_clear = false;
                 // Restore pending_capitalize if user deleted the auto-capitalized letter
                 // This allows: ". B" → delete B → ". " → type again → auto-capitalizes
@@ -1032,7 +1121,7 @@ impl Engine {
                 // Vietnamese: clear only on consonant that's not a modifier
                 keys::is_consonant(key) && !is_modifier
             };
-            if should_clear {
+            if should_clear && self.pending_u_horn_pos.is_none() {
                 self.clear();
             }
             // Reset flags regardless - user is now actively typing
@@ -1575,8 +1664,12 @@ impl Engine {
         // 3. There must be a non-extending final (t, m, p) between them
         let has_circumflex_trigger_pattern = {
             let first_is_d = buffer_keys.first() == Some(&keys::D);
+            // After circumflex revert (e.g., "dât" → "data"), buffer has [D,A,T,A]
+            // which falsely matches D + V1 + C + V2 pattern. The duplicate vowels are
+            // from the revert, not intentional Vietnamese input, so skip detection.
+            let after_revert = self.had_circumflex_revert;
 
-            if first_is_d {
+            if first_is_d && !after_revert {
                 let vowel_positions: Vec<(usize, u16)> = buffer_keys
                     .iter()
                     .enumerate()
@@ -1902,52 +1995,6 @@ impl Engine {
                     if any_vowel_has_tone {
                         // Skip circumflex, let the vowel append as raw letter
                         return None;
-                    }
-
-                    // Issue #318: Block circumflex when raw_input shows
-                    // V1(different) + tone_modifier + V2(trigger) + V2(current) pattern.
-                    // User typed a different vowel, applied tone, then double vowel.
-                    // "mufaa" → raw=[M,U,F,A,A]: A+F+U → block → "mùaa"
-                    // "tuasat" → raw=[T,U,A,S,A]: [-2]=S ≠ trigger → allow → "tuất"
-                    // Note: raw_input already includes current key (pushed before process())
-                    {
-                        let raw_len = self.raw_input.len();
-                        if raw_len >= 4 {
-                            let (prev_key, _, _) = self.raw_input[raw_len - 2];
-                            let (tone_key, _, _) = self.raw_input[raw_len - 3];
-                            let (diff_vowel, _, _) = self.raw_input[raw_len - 4];
-
-                            // Allow if the diphthong forms a valid V2 circumflex (iê, uê, yê, uô)
-                            let is_valid_v2 = matches!(
-                                (diff_vowel, key),
-                                (keys::I, keys::E)
-                                    | (keys::U, keys::E)
-                                    | (keys::Y, keys::E)
-                                    | (keys::U, keys::O)
-                            );
-
-                            // Skip if "diff_vowel" is part of gi/qu initial (not a real vowel)
-                            // "gifoo" → raw=[G,I,F,O,O]: I is part of gi-initial → allow
-                            // "qufaa" → raw=[Q,U,F,A,A]: U is part of qu-initial → allow
-                            let is_initial_vowel = raw_len >= 5
-                                && ((diff_vowel == keys::I
-                                    && self.raw_input[raw_len - 5].0 == keys::G)
-                                    || (diff_vowel == keys::U
-                                        && self.raw_input[raw_len - 5].0 == keys::Q));
-
-                            if prev_key == key
-                                && matches!(
-                                    tone_key,
-                                    keys::S | keys::F | keys::R | keys::X | keys::J
-                                )
-                                && keys::is_vowel(diff_vowel)
-                                && diff_vowel != key
-                                && !is_valid_v2
-                                && !is_initial_vowel
-                            {
-                                return None;
-                            }
-                        }
                     }
 
                     // Check if buffer has multiple vowel types and any has a mark
@@ -2714,7 +2761,10 @@ impl Engine {
         // Telex: Check for delayed stroke pattern (d + vowels + d)
         // When buffer is "dod" and mark key is typed, apply stroke to initial 'd'
         // This enables "dods" → "đó" while preventing "de" + "d" → "đe"
+        // Skip if stroke was reverted (ddd → dd): user explicitly rejected đ,
+        // so a mark key must not resurrect the stroke (e.g., "dayddr" stays "daydr")
         let had_delayed_stroke = self.method == 0
+            && !self.stroke_reverted
             && self.buf.len() >= 2
             && self
                 .buf
@@ -2988,6 +3038,28 @@ impl Engine {
                 if vowel_key == keys::I && final_keys == [keys::N, keys::G] {
                     return None;
                 }
+            }
+        }
+
+        // Checked-tone rule (issue #403): a syllable ending in a stop consonant
+        // (p, t, c, ch, k) can only carry sắc or nặng. huyền/hỏi/ngã on a
+        // stop-final syllable is phonologically impossible ("ỏt", "òc", "ãch"),
+        // so reject the mark and let the key fall through as a literal letter.
+        if !self.free_tone_enabled && matches!(mark_val, mark::HUYEN | mark::HOI | mark::NGA) {
+            let syllable = syllable::parse(&buffer_keys);
+            let is_stop_final = match syllable.final_c.len() {
+                1 => matches!(
+                    buffer_keys[syllable.final_c[0]],
+                    keys::P | keys::T | keys::C | keys::K
+                ),
+                2 => {
+                    buffer_keys[syllable.final_c[0]] == keys::C
+                        && buffer_keys[syllable.final_c[1]] == keys::H
+                }
+                _ => false,
+            };
+            if is_stop_final {
+                return None;
             }
         }
 
@@ -4403,6 +4475,98 @@ impl Engine {
         self.shortcut_prefix.clear();
     }
 
+    /// Re-detect pending_u_horn_pos by scanning buffer for "u(no tone) + o(horn)" pattern
+    /// Used after restoring buffer from word history where this state was lost on clear()
+    fn re_detect_pending_u_horn(&mut self) {
+        self.pending_u_horn_pos = None;
+        let len = self.buf.len();
+        if len < 2 {
+            return;
+        }
+        // Check last two chars for u + ơ pattern (no final consonant after)
+        if let (Some(c1), Some(c2)) = (self.buf.get(len - 2), self.buf.get(len - 1)) {
+            if c1.key == keys::U
+                && c1.tone == tone::NONE
+                && c2.key == keys::O
+                && c2.tone == tone::HORN
+            {
+                self.pending_u_horn_pos = Some(len - 2);
+            }
+        }
+    }
+
+    /// Reconstruct `last_transform` after a committed word is restored into the
+    /// buffer for further editing.
+    ///
+    /// The toggle/revert logic (`try_tone`, `try_mark`, `try_stroke`) decides
+    /// whether a repeated modifier key reverts a diacritic by inspecting
+    /// `last_transform`. That state is per-keystroke and is dropped when a word is
+    /// committed with Space, so a restored word would otherwise ignore the next
+    /// toggle key — e.g. restored "sơ" + "w" stayed "sơ" instead of reverting to
+    /// "sow". (Tone-mark keys s/f/r/x/j had a separate vowel-at-end revert path and
+    /// were unaffected, so the gap was tone-only.)
+    ///
+    /// We rebuild it from the diacritics on the final buffer character, mapping
+    /// each diacritic back to the modifier key that produces it in the current
+    /// method, so editing a restored word behaves like editing it before commit.
+    fn re_detect_last_transform(&mut self) {
+        use crate::data::chars::{mark, tone};
+
+        self.last_transform = None;
+        let is_vni = self.method == 1;
+
+        // These arms are the inverse of the forward key maps in input/telex.rs and
+        // input/vni.rs — keep them in sync if a method's bindings ever change.
+        //
+        // A tone mark (sắc/huyền/hỏi/ngã/nặng) is always the last diacritic applied
+        // to a syllable and may sit on a non-final vowel ("bía" marks 'í', not the
+        // trailing 'a'), so scan the whole buffer for it. A repeated mark key then
+        // reverts it after restore, re-arming whitelist auto-restore ("biass"→"bias").
+        if let Some(&c) = self.buf.iter().rev().find(|c| c.mark != mark::NONE) {
+            let key = if is_vni {
+                match c.mark {
+                    mark::HUYEN => keys::N2,
+                    mark::HOI => keys::N3,
+                    mark::NGA => keys::N4,
+                    mark::NANG => keys::N5,
+                    _ => keys::N1, // SAC
+                }
+            } else {
+                match c.mark {
+                    mark::HUYEN => keys::F,
+                    mark::HOI => keys::R,
+                    mark::NGA => keys::X,
+                    mark::NANG => keys::J,
+                    _ => keys::S, // SAC
+                }
+            };
+            self.last_transform = Some(Transform::Mark(key, c.mark));
+            return;
+        }
+
+        // A vowel tone (circumflex/horn/breve) only counts as the last transform when
+        // it is on the FINAL character. A trailing consonant means a later keystroke
+        // (the consonant) was the actual last action, so leave last_transform cleared —
+        // matching continuous typing where "tuân" + 'a' appends instead of reverting.
+        let Some(&c) = self.buf.last() else { return };
+        if c.tone != tone::NONE {
+            let key = if is_vni {
+                match c.tone {
+                    tone::CIRCUMFLEX => keys::N6,
+                    // HORN on 'a' is breve (key 8); on o/u it is horn (key 7).
+                    _ if c.key == keys::A => keys::N8,
+                    _ => keys::N7,
+                }
+            } else {
+                match c.tone {
+                    tone::CIRCUMFLEX => c.key, // a/e/o double themselves: aa→â
+                    _ => keys::W,              // horn & breve both use 'w'
+                }
+            };
+            self.last_transform = Some(Transform::Tone(key, c.tone));
+        }
+    }
+
     /// Clear everything including word history
     /// Used when cursor position changes (mouse click, arrow keys, etc.)
     /// to prevent accidental restore from stale history
@@ -4468,6 +4632,9 @@ impl Engine {
         if !self.buf.is_empty() {
             self.restored_pending_clear = true;
             self.restored_is_ascii = is_ascii;
+            // Rebuild last_transform so a repeated modifier key toggles the
+            // diacritic off, matching pre-commit editing behavior.
+            self.re_detect_last_transform();
         }
     }
 
@@ -4699,10 +4866,14 @@ impl Engine {
                         if is_double_ss || is_double_ff {
                             let original_lower = stored.to_lowercase();
                             if english_dict::is_english_word(&original_lower) {
-                                // Check if buffer should be kept (in keep list or valid Vietnamese)
+                                // Check if buffer should be kept (in keep list, valid Vietnamese, or valid English word)
+                                // e.g., "buss" → buffer "bus" is valid English → keep "bus"
+                                // e.g., "mass" → buffer "mas" is NOT valid English → restore "mass"
                                 let buffer_str = self.get_buffer_string().to_lowercase();
-                                if dictionary::should_keep(&buffer_str) {
-                                    // Buffer is in keep list → don't restore
+                                if dictionary::should_keep(&buffer_str)
+                                    || english_dict::is_english_word(&buffer_str)
+                                {
+                                    // Buffer is in keep list or is a valid English word → don't restore
                                 } else {
                                     return self.build_raw_chars_exact();
                                 }
@@ -4840,6 +5011,16 @@ impl Engine {
             if validation::is_valid_with_tones(&buffer_keys, &buffer_tones) {
                 return None;
             }
+        }
+
+        // Issue #367: Keep buffer when circumflex was reverted and no marks remain.
+        // When user types "totoo" (t-o-t-o-o), circumflex fires on 4th 'o' (tôt),
+        // then 5th 'o' reverts it → buffer="toto" (clean, no marks). The user explicitly
+        // typed double vowel to revert, so keep buffer content.
+        // Without this, auto-restore would output raw "totoo" (extra vowel from revert).
+        // Applies to: TOTO, MAMA, TETE, SATA, PAPA, etc.
+        if self.had_circumflex_revert && !has_marks_or_tones && !has_stroke {
+            return None;
         }
 
         // UNIFIED LOGIC: Restore ONLY when BOTH conditions are met:
@@ -5401,8 +5582,17 @@ impl Engine {
                     )
             });
 
-            if has_telex_double && english_dict::is_english_word(&raw_str) {
-                return true; // Telex double + Not in VN dict + IS in EN dict → invalid VN
+            if has_telex_double {
+                // If buffer IS a valid English word, keep it regardless of raw spelling
+                // e.g., "bussiness" → buffer "business" (in dict) → not invalid
+                let buffer_str_lower = self.get_buffer_string().to_lowercase();
+                if english_dict::is_english_word(&buffer_str_lower) {
+                    return false; // Buffer is valid English → keep it
+                }
+                // Raw is English word but buffer isn't → invalid VN (trigger restore)
+                if english_dict::is_english_word(&raw_str) {
+                    return true; // Telex double + Not in VN dict + IS in EN dict → invalid VN
+                }
             }
         }
 
@@ -5486,6 +5676,29 @@ impl Engine {
 
             if is_consonant_final && constants::OPEN_DIPHTHONGS.contains(&vowel_pair) {
                 return true;
+            }
+        }
+
+        // Check 5b: Invalid circumflex diphthong WITHOUT final = INVALID Vietnamese
+        // In Vietnamese, circumflex on V2 is only valid for: iê, yê, uê, uô
+        // Other V1 + circumflex-V2 (e.g., uâ, oâ) are invalid when standalone (no final)
+        // BUT with finals they can be valid: uân (tuân, luận), uất (tuất)
+        // Only flag as invalid when there's no final consonant
+        if syllable.vowel.len() == 2 && syllable.final_c.is_empty() {
+            let v1_key = buffer_keys[syllable.vowel[0]];
+            let v2_key = buffer_keys[syllable.vowel[1]];
+            let v2_tone = buffer_tones[syllable.vowel[1]];
+            if v2_tone == tone::CIRCUMFLEX {
+                let is_valid_v2_circumflex = matches!(
+                    (v1_key, v2_key),
+                    (keys::I, keys::E)
+                        | (keys::Y, keys::E)
+                        | (keys::U, keys::E)
+                        | (keys::U, keys::O)
+                );
+                if !is_valid_v2_circumflex {
+                    return true;
+                }
             }
         }
 
@@ -5649,44 +5862,44 @@ impl Engine {
         has_vowel
     }
 
-    /// Build raw chars from raw_input EXACTLY as typed (no collapsing)
-    /// Used for whitelist-based restore where we want the exact English word.
-    fn build_raw_chars_exact(&self) -> Option<Vec<char>> {
-        // If telex_double_raw is stored (original input before modification), use it
-        // plus any subsequent chars typed after the revert
-        // Example: "daddy" → telex_double_raw="dadd", subsequent="y" → "daddy"
-        if let Some(ref raw_str) = self.telex_double_raw {
-            if !raw_str.is_empty() && self.telex_double_raw_len > 0 {
-                let mut result: Vec<char> = raw_str.chars().collect();
-                // Append subsequent chars from raw_input
-                // For stroke revert (dd): raw_input was modified (1 char removed)
-                //   → subsequent_start = stored_len - 1
-                // For mark revert (ss): raw_input was NOT modified (deferred pop)
-                //   → subsequent_start = stored_len
-                // Detect by comparing current length with stored length
+    /// Build raw chars from telex_double_raw (if stored) + subsequent raw_input,
+    /// or fall back to converting all of raw_input to chars.
+    ///
+    /// telex_double_raw stores the original input before a mark/stroke revert modified
+    /// raw_input. Subsequent chars typed after the revert are appended from raw_input.
+    fn collect_raw_chars(&self) -> Vec<char> {
+        if let Some(ref base_raw) = self.telex_double_raw {
+            if !base_raw.is_empty() && self.telex_double_raw_len > 0 {
+                let mut result: Vec<char> = base_raw.chars().collect();
+                // For stroke revert (dd): raw_input had 1 char removed → start 1 earlier
+                // For mark revert (ss): raw_input unchanged → start at stored len
                 let subsequent_start = if self.raw_input.len() < self.telex_double_raw_len {
-                    // raw_input was modified (1 char removed)
                     self.telex_double_raw_len.saturating_sub(1)
                 } else {
-                    // raw_input was NOT modified
                     self.telex_double_raw_len
                 };
-                for i in subsequent_start..self.raw_input.len() {
-                    if let Some(&(key, caps, shift)) = self.raw_input.get(i) {
-                        if let Some(ch) = utils::key_to_char_ext(key, caps, shift) {
-                            result.push(ch);
-                        }
+                // Clamp to raw_input length to avoid out-of-bounds slice when
+                // raw_input has been shortened further (e.g. backspace) after
+                // telex_double_raw was stored.
+                let subsequent_start = subsequent_start.min(self.raw_input.len());
+                for &(key, caps, shift) in &self.raw_input[subsequent_start..] {
+                    if let Some(ch) = utils::key_to_char_ext(key, caps, shift) {
+                        result.push(ch);
                     }
                 }
-                return Some(result);
+                return result;
             }
         }
-        // Fallback to current raw_input
-        let chars: Vec<char> = self
-            .raw_input
+        self.raw_input
             .iter()
             .filter_map(|&(key, caps, shift)| utils::key_to_char_ext(key, caps, shift))
-            .collect();
+            .collect()
+    }
+
+    /// Build raw chars from raw_input EXACTLY as typed (no collapsing).
+    /// Used for whitelist-based restore where we want the exact English word.
+    fn build_raw_chars_exact(&self) -> Option<Vec<char>> {
+        let chars = self.collect_raw_chars();
         if chars.is_empty() {
             None
         } else {
@@ -5709,11 +5922,7 @@ impl Engine {
             // e.g., "dissable" → "disable", "usser" → "user"
             self.buf.to_string_preserve_case().chars().collect()
         } else {
-            let mut chars: Vec<char> = self
-                .raw_input
-                .iter()
-                .filter_map(|&(key, caps, shift)| utils::key_to_char_ext(key, caps, shift))
-                .collect();
+            let mut chars: Vec<char> = self.collect_raw_chars();
 
             // Collapse vowel patterns for English restore (Telex circumflex patterns)
             // Only collapse when double/triple vowel is IMMEDIATELY followed by tone modifier at END
@@ -5746,15 +5955,21 @@ impl Engine {
                     && tone_modifiers.contains(&last)
             };
 
-            // 1. Triple vowel → always collapse to double: "saaas" → "saas"
+            // 1. Triple vowel → collapse to double when NOT at end: "saaas" → "saas"
+            // Only collapse when there are chars after the triple (i+3 < len),
+            // preserving triple vowels at word end for exact raw restore
+            // ("mufaaa" keeps all 3 a's since user typed them intentionally)
+            let mut had_triple_vowel_collapse = false;
             let mut i = 0;
             while i + 2 < chars.len() {
                 let c = chars[i].to_ascii_lowercase();
                 if matches!(c, 'a' | 'e' | 'o')
                     && chars[i].eq_ignore_ascii_case(&chars[i + 1])
                     && chars[i + 1].eq_ignore_ascii_case(&chars[i + 2])
+                    && i + 3 < chars.len()
                 {
                     chars.remove(i + 1);
+                    had_triple_vowel_collapse = true;
                     continue;
                 }
                 i += 1;
@@ -5909,67 +6124,123 @@ impl Engine {
                 }
             }
 
-            // Partial restore: tone + double vowel at end
-            // Pattern: C + V + tone_modifier + V + V (same vowel)
-            // Example: "tafoo" = t + a + f + o + o → restore to "tàoo"
-            // - Keep the tone on first vowel (from 'f' = huyền)
-            // - Keep double vowel at end (not collapsed to circumflex)
-            if chars.len() == 5 && self.method == 0 {
-                // Telex only
-                let c0 = chars[0].to_ascii_lowercase();
-                let c1 = chars[1].to_ascii_lowercase();
-                let c2 = chars[2].to_ascii_lowercase();
-                let c3 = chars[3].to_ascii_lowercase();
-                let c4 = chars[4].to_ascii_lowercase();
-
-                // Check pattern: consonant + vowel + tone_modifier + vowel + vowel (same)
-                let is_consonant_0 = !matches!(c0, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
-                let is_vowel_1 = matches!(c1, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
-                let is_tone_2 = matches!(c2, 's' | 'f' | 'r' | 'x' | 'j');
-                let is_circumflex_vowel_34 = matches!(c3, 'a' | 'e' | 'o') && c3 == c4;
-
-                if is_consonant_0 && is_vowel_1 && is_tone_2 && is_circumflex_vowel_34 {
-                    // Build: C + (V with tone) + V + V
-                    let toned_vowel = match (c1, c2) {
-                        ('a', 's') => 'á',
-                        ('a', 'f') => 'à',
-                        ('a', 'r') => 'ả',
-                        ('a', 'x') => 'ã',
-                        ('a', 'j') => 'ạ',
-                        ('e', 's') => 'é',
-                        ('e', 'f') => 'è',
-                        ('e', 'r') => 'ẻ',
-                        ('e', 'x') => 'ẽ',
-                        ('e', 'j') => 'ẹ',
-                        ('i', 's') => 'í',
-                        ('i', 'f') => 'ì',
-                        ('i', 'r') => 'ỉ',
-                        ('i', 'x') => 'ĩ',
-                        ('i', 'j') => 'ị',
-                        ('o', 's') => 'ó',
-                        ('o', 'f') => 'ò',
-                        ('o', 'r') => 'ỏ',
-                        ('o', 'x') => 'õ',
-                        ('o', 'j') => 'ọ',
-                        ('u', 's') => 'ú',
-                        ('u', 'f') => 'ù',
-                        ('u', 'r') => 'ủ',
-                        ('u', 'x') => 'ũ',
-                        ('u', 'j') => 'ụ',
-                        ('y', 's') => 'ý',
-                        ('y', 'f') => 'ỳ',
-                        ('y', 'r') => 'ỷ',
-                        ('y', 'x') => 'ỹ',
-                        ('y', 'j') => 'ỵ',
-                        _ => c1,
+            // Partial restore: Telex tone modifier + doubled/tripled vowel patterns.
+            // Applies the tone mark to the correct vowel and collapses extra vowels.
+            // Works with any consonant cluster length (ch, tr, ng, ngh, etc.)
+            //
+            // Tail patterns (after consonant prefix):
+            //   A: V+tone+V+V    - "mufaa"→"muàa", "chufaa"→"chuàa"
+            //   B: V1+V2+tone+V2 - "muafa"→"muàa", "chaofo"→"chàoo"
+            // Triple vowel → strip last char, then reuse A/B:
+            //   V+tone+VVV       - "mufaaa"→"mùaa"  (pattern A, from_triple=true)
+            //   V1+V2+tone+V2V2  - "muafaa"→"muàa"  (pattern B)
+            if self.method == 0 && !had_triple_vowel_collapse && chars.len() >= 5 {
+                let is_vowel = |c: char| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+                let is_tone = |c: char| matches!(c, 's' | 'f' | 'r' | 'x' | 'j');
+                let apply_t = |v: char, t: char| -> char {
+                    let tones: &[char] = match v {
+                        'a' => &['á', 'à', 'ả', 'ã', 'ạ'],
+                        'e' => &['é', 'è', 'ẻ', 'ẽ', 'ẹ'],
+                        'i' => &['í', 'ì', 'ỉ', 'ĩ', 'ị'],
+                        'o' => &['ó', 'ò', 'ỏ', 'õ', 'ọ'],
+                        'u' => &['ú', 'ù', 'ủ', 'ũ', 'ụ'],
+                        'y' => &['ý', 'ỳ', 'ỷ', 'ỹ', 'ỵ'],
+                        _ => return v,
                     };
-                    // Preserve case
-                    let toned_vowel = if chars[1].is_uppercase() {
-                        toned_vowel.to_uppercase().next().unwrap_or(toned_vowel)
+                    let idx = match t {
+                        's' => 0,
+                        'f' => 1,
+                        'r' => 2,
+                        'x' => 3,
+                        'j' => 4,
+                        _ => return v,
+                    };
+                    tones[idx]
+                };
+                let pcase = |toned: char, orig: char| -> char {
+                    if orig.is_uppercase() {
+                        toned.to_uppercase().next().unwrap_or(toned)
                     } else {
-                        toned_vowel
+                        toned
+                    }
+                };
+
+                // Split into leading consonants + vowel tail
+                let cons_end = chars
+                    .iter()
+                    .position(|c| is_vowel(c.to_ascii_lowercase()))
+                    .unwrap_or(chars.len());
+
+                if cons_end > 0 && cons_end < chars.len() {
+                    let cons = &chars[..cons_end];
+                    let tail = &chars[cons_end..];
+                    let tail_lc: Vec<char> = tail.iter().map(|c| c.to_ascii_lowercase()).collect();
+
+                    // Normalize triple-vowel tail (len 5) → len 4 by stripping last char
+                    let (vtail, from_triple) = if tail_lc.len() == 5 {
+                        if is_vowel(tail_lc[0])
+                            && is_tone(tail_lc[1])
+                            && matches!(tail_lc[2], 'a' | 'e' | 'o')
+                            && tail_lc[2] == tail_lc[3]
+                            && tail_lc[3] == tail_lc[4]
+                        {
+                            (&tail[..4], true) // V+tone+VVV: tone targets first vowel
+                        } else if is_vowel(tail_lc[0])
+                            && matches!(tail_lc[1], 'a' | 'e' | 'o')
+                            && is_tone(tail_lc[2])
+                            && tail_lc[1] == tail_lc[3]
+                            && tail_lc[3] == tail_lc[4]
+                        {
+                            (&tail[..4], false) // V1+V2+tone+V2V2: maps to pattern B
+                        } else {
+                            (tail, false)
+                        }
+                    } else {
+                        (tail, false)
                     };
-                    return Some(vec![chars[0], toned_vowel, chars[3], chars[4]]);
+
+                    if vtail.len() == 4 {
+                        let vl: Vec<char> = vtail.iter().map(|c| c.to_ascii_lowercase()).collect();
+
+                        // True when the buffer mark lands on the second vowel
+                        let mark_on_later_vowel = {
+                            let bv: Vec<_> =
+                                self.buf.iter().filter(|c| keys::is_vowel(c.key)).collect();
+                            bv.len() >= 2 && bv.iter().skip(1).any(|c| c.mark > 0)
+                        };
+
+                        // Pattern A: V + tone + V + V (doubled vowel after tone key)
+                        if is_vowel(vl[0])
+                            && is_tone(vl[1])
+                            && matches!(vl[2], 'a' | 'e' | 'o')
+                            && vl[2] == vl[3]
+                        {
+                            let mut result = cons.to_vec();
+                            if !from_triple && mark_on_later_vowel {
+                                result.push(vtail[0]);
+                                result.push(pcase(apply_t(vl[2], vl[1]), vtail[2]));
+                            } else {
+                                result.push(pcase(apply_t(vl[0], vl[1]), vtail[0]));
+                                result.push(vtail[2]);
+                            }
+                            result.push(vtail[3]);
+                            return Some(result);
+                        }
+
+                        // Pattern B: V1 + V2 + tone + V2 (diphthong + tone key)
+                        if is_vowel(vl[0]) && is_vowel(vl[1]) && is_tone(vl[2]) && vl[1] == vl[3] {
+                            let mut result = cons.to_vec();
+                            if mark_on_later_vowel {
+                                result.push(vtail[0]);
+                                result.push(pcase(apply_t(vl[1], vl[2]), vtail[1]));
+                            } else {
+                                result.push(pcase(apply_t(vl[0], vl[2]), vtail[0]));
+                                result.push(vtail[1]);
+                            }
+                            result.push(vtail[3]);
+                            return Some(result);
+                        }
+                    }
                 }
             }
 

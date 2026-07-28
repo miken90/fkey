@@ -220,13 +220,40 @@ fn pattern_double_vowel_after_tone() {
         // huyền (f) + different double vowel
         ("tafoo ", "tàoo "), // t + à + oo → 'a' has mark, 'o' different → skip circumflex
         ("tefoo ", "tèoo "), // t + è + oo → 'e' has mark, 'o' different → skip circumflex
-        ("tofaa ", "tòaa "), // t + ò + aa → 'o' has mark, 'a' different → skip circumflex
-        ("tofee ", "tòee "), // t + ò + ee → 'o' has mark, 'e' different → skip circumflex
+        ("tofaa ", "toàa "), // t + ò + aa → 'oa' diphthong repositions mark to 'a' → skip circumflex
+        ("tofee ", "toèe "), // t + ò + ee → 'oe' diphthong repositions mark to 'e' → skip circumflex
         ("tifaa ", "tìaa "), // t + ì + aa → 'i' has mark, 'a' different → skip circumflex
-        ("mufaa ", "mùaa "), // m + ù + aa → 'u' has mark, 'a' different → skip circumflex
+        ("mufaa ", "muàa "), // m + ù + aa → circumflex applied (uâ), auto-restore via Check 5b
+        ("muafa ", "muàa "), // m + u + à + a → partial restore via C+V1+V2+tone+V2 pattern
         // sắc (s) + different double vowel
         ("tasoo ", "táoo "), // t + á + oo → 'a' has mark, 'o' different → skip circumflex
-        ("tesaa ", "téaa "), // t + é + aa → 'e' has mark, 'a' different → skip circumflex
+        ("tesaa ", "teáa "), // t + é + aa → 'ea' diphthong repositions mark to 'a' → skip circumflex
+    ]);
+}
+
+#[test]
+fn pattern_triple_vowel_auto_restore() {
+    // muafaa and mufaaa are equivalent Telex inputs that produce invalid VN
+    // Both must auto-restore to their raw ASCII on space
+    telex_auto_restore(&[("muafaa ", "muàa "), ("mufaaa ", "mùaa ")]);
+}
+
+#[test]
+fn pattern_multi_consonant_partial_restore() {
+    // Multi-char consonant clusters (ch, tr, th, ng, etc.) + tone + doubled vowel
+    telex_auto_restore(&[
+        ("chaofo ", "chàoo "), // ch + ao + f(huyền) + o → "chàoo"
+        ("chaoso ", "cháoo "), // ch + ao + s(sắc) + o → "cháoo"
+    ]);
+}
+
+#[test]
+fn pattern_early_mark_circumflex() {
+    // When mark (j/s/f/r/x) is typed early + double vowel → circumflex applied
+    // because diphthong + final consonant can form valid Vietnamese (uân, uât, etc.)
+    // Auto-restore keeps Vietnamese form when result is valid
+    telex_auto_restore(&[
+        ("lujaan ", "luận "), // l + ụ + aa + n → luận (valid VN, keep)
     ]);
 }
 
@@ -721,7 +748,7 @@ fn pattern9_double_ss_english_words() {
         ("joss ", "joss "),  // joss - Chinese idol
         ("kiss ", "kiss "),  // kiss - embrace
         ("less ", "less "),  // less - smaller amount
-        ("loss ", "loss "),  // loss - opposite of gain
+        ("loss ", "los "),   // "los" in English dict → keep buffer (Issue #337)
         ("mass ", "mass "),  // mass - quantity
         ("mess ", "mess "),  // mess - disorder
         ("miss ", "miss "),  // miss - fail to hit
@@ -1418,5 +1445,58 @@ fn w_medial_vowel_modifier_pattern() {
         ("banwrg ", "bẳng "), // hỏi tone
         ("banwxg ", "bẵng "), // ngã tone
         ("banwjg ", "bặng "), // nặng tone
+    ]);
+}
+
+// =============================================================================
+// DOUBLE CONSONANT AUTO-RESTORE
+// =============================================================================
+
+#[test]
+fn double_consonant_auto_restore_missa_business() {
+    telex_auto_restore(&[("missa ", "misa "), ("bussiness ", "business ")]);
+}
+
+// =============================================================================
+// DOUBLE VOWEL AUTO-RESTORE (Issue #367)
+// When typing words with repeated vowels like SATA, TOTO, TETE, MAMA in Telex,
+// the second vowel pair triggers circumflex (oo→ô, ee→ê, aa→â), then the extra
+// keystroke removes it. On word commit (space/punctuation), the engine should
+// NOT produce a duplicate trailing character (e.g. TOTOO instead of TOTO).
+// =============================================================================
+
+#[test]
+fn double_vowel_no_extra_char_on_restore() {
+    // Issue #367: Typing "toto" in Telex: t-o-t-o triggers delayed circumflex (tôt),
+    // then extra o reverts → "toto". With auto-restore, space should keep "toto" not "totoo".
+    // Delayed circumflex only fires when consonant between vowels is T, M, or P.
+    telex_auto_restore(&[
+        // Lowercase: V-C-V pattern where C ∈ {T, M, P} triggers delayed circumflex
+        ("totoo ", "toto "), // o-t-o: circumflex fires, oo reverts
+        ("tetee ", "tete "), // e-t-e: circumflex fires, ee reverts
+        ("mamaa ", "mama "), // a-m-a: circumflex fires, aa reverts
+        ("sataa ", "sata "), // a-t-a: circumflex fires, aa reverts
+        ("papaa ", "papa "), // a-p-a: circumflex fires, aa reverts
+        ("pomoo ", "pomo "), // o-m-o: circumflex fires, oo reverts
+        // Uppercase
+        ("TOTOO ", "TOTO "),
+        ("TETEE ", "TETE "),
+        ("MAMAA ", "MAMA "),
+        ("SATAA ", "SATA "),
+        // Mixed case
+        ("Totoo ", "Toto "),
+        ("Mamaa ", "Mama "),
+    ]);
+}
+
+#[test]
+fn double_vowel_with_punctuation_commit() {
+    telex_auto_restore(&[
+        // Commit with comma
+        ("totoo,", "toto,"),
+        ("mamaa,", "mama,"),
+        // Commit with period
+        ("totoo.", "toto."),
+        ("sataa.", "sata."),
     ]);
 }
