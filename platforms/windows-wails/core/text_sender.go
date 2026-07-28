@@ -4,6 +4,7 @@ package core
 // Port of TextSender.cs from .NET implementation
 
 import (
+	"log"
 	"time"
 	"unsafe"
 )
@@ -44,6 +45,14 @@ const (
 	// (sync + restore) must stay well under the ~300ms LowLevelHooksTimeout.
 	WSLgClipboardSyncDelay = 90 // wait for Windows clipboard format list to reach the WSLg guest
 	WSLgPasteRestoreDelay  = 40 // wait for guest to consume paste before restoring clipboard
+
+	// Clipboard restore is deferred to a background goroutine (see sendPaste/sendPasteShiftV)
+	// because Ctrl+V / Ctrl+Shift+V is delivered asynchronously: the target app reads the
+	// clipboard on its own message loop, which can take longer than the hook's synchronous
+	// budget allows. Restoring too early races the paste and the app ends up reading back
+	// whatever was on the clipboard *before* we set our text (only observable when the
+	// clipboard was non-empty beforehand, since an empty saved value is never restored).
+	ClipboardRestoreDelay = 300
 )
 
 // INPUT structure for SendInput
@@ -130,12 +139,16 @@ func sendPasteShiftV(text string, backspaces int) {
 
 	sendCtrlShiftV()
 
-	// Wait for the guest to consume the paste before restoring the clipboard,
-	// otherwise the restore can race the guest and paste stale content.
-	time.Sleep(WSLgPasteRestoreDelay * time.Millisecond)
-
+	// Restore the previous clipboard content asynchronously. Ctrl+Shift+V is consumed by
+	// the guest's own message loop, not synchronously with SendInput, so restoring inline
+	// (even after a short sleep) can race the guest reading the clipboard and cause it to
+	// paste the stale saved content instead of our text. Deferring this to a goroutine also
+	// keeps sendPasteShiftV itself fast, since it runs inside the low-level keyboard hook.
 	if savedClipboard != "" {
-		SetClipboardText(savedClipboard)
+		goSafe(func() {
+			time.Sleep(ClipboardRestoreDelay * time.Millisecond)
+			SetClipboardText(savedClipboard)
+		})
 	}
 }
 
@@ -186,12 +199,17 @@ func sendPaste(text string, backspaces int) {
 	// Send Ctrl+V
 	sendCtrlV()
 
-	// Small delay before restoring
-	time.Sleep(20 * time.Millisecond)
-
-	// Restore previous clipboard content
+	// Restore the previous clipboard content asynchronously. Ctrl+V is delivered to the
+	// target app's own message loop, not processed synchronously by SendInput, so restoring
+	// inline after a short sleep can race the app's paste and cause it to read back the
+	// stale saved content instead of our text (only observable when the clipboard was
+	// non-empty before, since an empty saved value is never restored). Deferring this to a
+	// goroutine also keeps sendPaste itself fast, since it runs inside the low-level hook.
 	if savedClipboard != "" {
-		SetClipboardText(savedClipboard)
+		goSafe(func() {
+			time.Sleep(ClipboardRestoreDelay * time.Millisecond)
+			SetClipboardText(savedClipboard)
+		})
 	}
 }
 
@@ -244,26 +262,44 @@ func sendCtrlV() {
 }
 
 func sendFast(text string, backspaces int) {
-	// v2.0.1 logic: separate SendInput calls with small delay
-	// This works reliably on most apps including Claude Code terminal
-	if backspaces > 0 {
-		sendBackspaces(backspaces)
-		time.Sleep(FastModeDelay * time.Millisecond)
-	}
-	if len(text) > 0 {
-		sendUnicodeTextBatch(text)
-	}
+	// Previously: separate SendInput calls (backspaces, sleep, text). Under fast typing
+	// this split let the target's message loop fall behind between the two calls, and the
+	// next keystroke's replacement (computed by the Rust engine assuming the prior one had
+	// already landed) could then desync from what was actually on screen — diacritics land
+	// on the wrong char or get dropped. A single atomic SendInput call removes the gap:
+	// Windows guarantees backspace+text events within one call are delivered together and
+	// in order, with no artificial delay for other input to interleave.
+	sendAtomic(text, backspaces)
 }
 
+// sendSlow separates backspaces from text injection with a settling delay for apps that
+// mishandle rapid/batched Unicode input (Electron, browsers, terminals).
+//
+// Bug fix: this used to sleep(postDelay) after the backspaces AND sleep(preDelay) again
+// before the text (35ms combined, stacked back-to-back with no injection in between).
+// That's pure unnecessary hook-thread blocking time — it doesn't make either delay more
+// effective, it just doubles the window during which a fast typist's next physical
+// keystroke can enter the input queue while we're still mid-replacement for the previous
+// one, worsening exactly the fast-typing desync this function exists to avoid. A single
+// delay between the backspace phase and the text phase preserves the same pacing intent
+// apps were tuned against, at roughly half the synchronous cost per replacement.
 func sendSlow(text string, backspaces int, preDelay, postDelay, keyDelay int) {
 	if backspaces > 0 {
 		sendBackspaces(backspaces)
-		time.Sleep(time.Duration(postDelay) * time.Millisecond)
 	}
 	if len(text) > 0 {
-		time.Sleep(time.Duration(preDelay) * time.Millisecond)
+		if backspaces > 0 {
+			time.Sleep(time.Duration(maxInt(preDelay, postDelay)) * time.Millisecond)
+		}
 		sendUnicodeTextSlow(text, keyDelay)
 	}
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // sendAtomic combines backspaces and text into a single SendInput call
@@ -326,11 +362,12 @@ func sendAtomic(text string, backspaces int) {
 	}
 
 	// Single atomic SendInput call
-	procSendInput.Call(
+	sent, _, _ := procSendInput.Call(
 		uintptr(len(inputs)),
 		uintptr(unsafe.Pointer(&inputs[0])),
 		uintptr(inputSize),
 	)
+	checkSendInputResult(sent, len(inputs), "sendAtomic")
 }
 
 func sendBackspaces(count int) {
@@ -356,44 +393,6 @@ func sendBackspaces(count int) {
 				DwExtraInfo: InjectedKeyMarker,
 			},
 		}
-	}
-
-	procSendInput.Call(
-		uintptr(len(inputs)),
-		uintptr(unsafe.Pointer(&inputs[0])),
-		uintptr(inputSize),
-	)
-}
-
-func sendUnicodeTextBatch(text string) {
-	runes := []rune(text)
-	inputs := make([]INPUT, len(runes)*2)
-	idx := 0
-
-	for _, r := range runes {
-		// Key down
-		inputs[idx] = INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         0,
-				WScan:       uint16(r),
-				DwFlags:     KEYEVENTF_UNICODE,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		}
-		idx++
-
-		// Key up
-		inputs[idx] = INPUT{
-			Type: INPUT_KEYBOARD,
-			Ki: KEYBDINPUT{
-				WVk:         0,
-				WScan:       uint16(r),
-				DwFlags:     KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-				DwExtraInfo: InjectedKeyMarker,
-			},
-		}
-		idx++
 	}
 
 	procSendInput.Call(
@@ -442,6 +441,22 @@ func sendUnicodeTextSlow(text string, delayMs int) {
 	}
 }
 
+// checkSendInputResult verifies that SendInput queued every event we asked for.
+// A partial injection (target dropped some events, e.g. under load during fast typing)
+// leaves the on-screen text out of sync with the Rust engine's internal buffer, which
+// would corrupt every subsequent backspace/insert computed from that point on. When we
+// detect this, clear the engine buffer so the next keystroke starts fresh instead of
+// compounding the desync into further misplaced diacritics.
+func checkSendInputResult(sent uintptr, expected int, label string) {
+	if int(sent) == expected {
+		return
+	}
+	log.Printf("[TextSender] %s: SendInput queued %d/%d events, resetting IME buffer to avoid desync", label, sent, expected)
+	if bridge, err := GetBridge(); err == nil && bridge != nil {
+		bridge.Clear()
+	}
+}
+
 // DetectInjectionMethod determines the best method for current foreground app
 func DetectInjectionMethod() InjectionMethod {
 	return GetInjectionMethod()
@@ -468,22 +483,20 @@ func SendTextWithProfile(text string, backspaces int, profile AppProfile) {
 }
 
 func sendFastWithProfile(text string, backspaces int, bsMode BackspaceMode) {
-	if backspaces > 0 {
-		sendBackspacesWithMode(backspaces, bsMode)
-		time.Sleep(FastModeDelay * time.Millisecond)
-	}
-	if len(text) > 0 {
-		sendUnicodeTextBatch(text)
-	}
+	// See sendFast: atomic injection avoids the fast-typing desync caused by splitting
+	// backspaces and text into two SendInput calls with a sleep in between.
+	sendAtomicWithProfile(text, backspaces, bsMode)
 }
 
+// sendSlowWithProfile mirrors sendSlow's single-settling-delay fix; see sendSlow for rationale.
 func sendSlowWithProfile(text string, backspaces int, preDelay, postDelay, keyDelay int, bsMode BackspaceMode) {
 	if backspaces > 0 {
 		sendBackspacesWithMode(backspaces, bsMode)
-		time.Sleep(time.Duration(postDelay) * time.Millisecond)
 	}
 	if len(text) > 0 {
-		time.Sleep(time.Duration(preDelay) * time.Millisecond)
+		if backspaces > 0 {
+			time.Sleep(time.Duration(maxInt(preDelay, postDelay)) * time.Millisecond)
+		}
 		sendUnicodeTextSlow(text, keyDelay)
 	}
 }
@@ -572,11 +585,12 @@ func sendAtomicWithProfile(text string, backspaces int, bsMode BackspaceMode) {
 	}
 
 	// Single atomic SendInput call
-	procSendInput.Call(
+	sent, _, _ := procSendInput.Call(
 		uintptr(len(inputs)),
 		uintptr(unsafe.Pointer(&inputs[0])),
 		uintptr(inputSize),
 	)
+	checkSendInputResult(sent, len(inputs), "sendAtomicWithProfile")
 }
 
 // sendBackspacesWithMode sends backspaces using specified mode

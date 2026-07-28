@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -75,6 +76,58 @@ var (
 // "FKEY" in hex: 0x464B4559
 var InjectedKeyMarker = uintptr(0x464B4559)
 
+// slowKeyThreshold/severeKeyThreshold gate diagnostic logging for how long a single
+// keystroke's synchronous processing (engine call + injection) took inside the hook.
+// This runs on the hook-installing thread and blocks delivery of the NEXT physical
+// keystroke until it returns, so a slow keystroke here directly widens the window
+// during which fast typing can desync the engine's model from what's on screen.
+// Logging is done off a buffered, non-blocking channel so instrumentation itself
+// never adds latency to the hook.
+const (
+	slowKeyThresholdMs   = 20
+	severeKeyThresholdMs = 60
+)
+
+type keyTimingRecord struct {
+	keyCode  uint16
+	duration time.Duration
+}
+
+var keyTimingCh = make(chan keyTimingRecord, 64)
+
+var keyTimingLoggerOnce sync.Once
+
+func startKeyTimingLogger() {
+	keyTimingLoggerOnce.Do(func() {
+		go func() {
+			for rec := range keyTimingCh {
+				level := "slow"
+				if rec.duration.Milliseconds() >= severeKeyThresholdMs {
+					level = "SEVERE"
+				}
+				log.Printf("[Hook] %s key processing: key=0x%X took %v (fast typing may desync if this recurs)",
+					level, rec.keyCode, rec.duration)
+			}
+		}()
+	})
+}
+
+// reportSlowKeyProcessing logs (asynchronously, non-blocking) when a single keystroke's
+// synchronous IME processing exceeds slowKeyThresholdMs, to help diagnose which apps or
+// code paths (process detection, FFI, injection) are eating into the hook's latency
+// budget without adding any synchronous cost to the hook itself.
+func reportSlowKeyProcessing(keyCode uint16, d time.Duration) {
+	if d.Milliseconds() < slowKeyThresholdMs {
+		return
+	}
+	startKeyTimingLogger()
+	select {
+	case keyTimingCh <- keyTimingRecord{keyCode: keyCode, duration: d}:
+	default:
+		// Channel full - drop rather than block the hook.
+	}
+}
+
 // KeyboardHook manages low-level keyboard interception
 type KeyboardHook struct {
 	hookID       uintptr
@@ -90,8 +143,14 @@ type KeyboardHook struct {
 
 	// Track consumed keys to suppress their KEYUP events
 	// This fixes Firefox address bar bug where KEYUP inserts the raw character
+	// Counter (not bool): Vietnamese Telex frequently doubles the same key
+	// (aa→â, dd→đ, ss/ff/rr/xx/jj for tones), so under fast/auto-repeat typing a
+	// second KEYDOWN for the same VK can arrive before the first KEYUP is delivered.
+	// A bool would let one KEYUP clear the flag early and let a raw character leak
+	// through for the other press; a counter suppresses exactly as many KEYUPs as
+	// KEYDOWNs we consumed.
 	consumedMu sync.Mutex
-	consumed   map[uint16]bool
+	consumed   map[uint16]int
 
 	// Callbacks
 	OnKeyPressed func(keyCode uint16, shift, capsLock bool) bool // returns true if handled
@@ -120,7 +179,7 @@ func (ks *KeyboardShortcut) Matches(keyCode uint16, ctrl, alt, shift bool) bool 
 		// Modifier-only: check modifiers match, ignore keyCode
 		return ks.Ctrl == ctrl && ks.Alt == alt && ks.Shift == shift
 	}
-	
+
 	return ks.KeyCode == keyCode &&
 		ks.Ctrl == ctrl &&
 		ks.Alt == alt &&
@@ -131,7 +190,7 @@ func (ks *KeyboardShortcut) Matches(keyCode uint16, ctrl, alt, shift bool) bool 
 func NewKeyboardHook() *KeyboardHook {
 	return &KeyboardHook{
 		HotkeyEnabled: true,
-		consumed:      make(map[uint16]bool),
+		consumed:      make(map[uint16]int),
 	}
 }
 
@@ -211,8 +270,11 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		// First: Check if this KEYUP should be suppressed because we consumed the KEYDOWN
 		// This fixes Firefox address bar bug where KEYUP inserts the raw character
 		h.consumedMu.Lock()
-		if h.consumed[keyCode] {
-			delete(h.consumed, keyCode)
+		if h.consumed[keyCode] > 0 {
+			h.consumed[keyCode]--
+			if h.consumed[keyCode] == 0 {
+				delete(h.consumed, keyCode)
+			}
 			h.consumedMu.Unlock()
 			return 1 // Block KEYUP for consumed keys
 		}
@@ -245,7 +307,7 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 		ctrl := isKeyDown(VK_CONTROL)
 		alt := isKeyDown(VK_MENU)
 		capsLock := isCapsLockOn()
-		
+
 		// If the current keyCode IS a modifier, ensure it's counted as pressed
 		// GetAsyncKeyState may not have updated yet for the key being pressed
 		isShiftKey := keyCode == VK_SHIFT || keyCode == VK_LSHIFT || keyCode == VK_RSHIFT
@@ -351,8 +413,8 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 						}
 					}
 				}
-				}
-				}
+			}
+		}
 
 		// Check for toggle hotkey
 		// For modifier-only shortcuts (like Ctrl+Shift), trigger when the last modifier is pressed
@@ -408,7 +470,9 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 			if h.OnKeyPressed != nil {
 				h.mu.Lock()
 				h.isProcessing = true
+				start := time.Now()
 				handled := h.OnKeyPressed(keyCode, shift, capsLock)
+				reportSlowKeyProcessing(keyCode, time.Since(start))
 				h.isProcessing = false
 				h.mu.Unlock()
 
@@ -416,7 +480,7 @@ func (h *KeyboardHook) hookCallback(nCode int, wParam uintptr, lParam uintptr) u
 					// Track this key as consumed so we suppress its KEYUP too
 					// This fixes Firefox address bar bug where KEYUP inserts raw char
 					h.consumedMu.Lock()
-					h.consumed[keyCode] = true
+					h.consumed[keyCode]++
 					h.consumedMu.Unlock()
 					return 1 // Block the original key
 				}
@@ -472,11 +536,11 @@ func IsRelevantKey(vk uint16) bool {
 
 // MessageBeep sound types
 const (
-	MB_OK          = 0x00000000 // Default beep
-	MB_ICONHAND    = 0x00000010 // Critical stop
-	MB_ICONQUESTION = 0x00000020 // Question
+	MB_OK              = 0x00000000 // Default beep
+	MB_ICONHAND        = 0x00000010 // Critical stop
+	MB_ICONQUESTION    = 0x00000020 // Question
 	MB_ICONEXCLAMATION = 0x00000030 // Exclamation
-	MB_ICONASTERISK = 0x00000040 // Asterisk (info)
+	MB_ICONASTERISK    = 0x00000040 // Asterisk (info)
 )
 
 // PlayBeep plays a Windows system beep sound
