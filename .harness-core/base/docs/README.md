@@ -1,0 +1,66 @@
+# Documentation Map
+
+Start with the smallest current map. Retrieve compatibility, historical, or
+upstream-maintenance material only when the task explicitly needs it.
+
+## Installed Core
+
+- `WORKFLOW.md`: canonical request, planning, judgment, validation, and
+  completion behavior.
+- `product/`: consumer-owned product behavior derived from accepted intent.
+- `plans/`: one evolving Git-native plan for work that needs durable memory.
+- `decisions/`: lasting product and architecture choices.
+- `templates/decision.md`: lasting-decision template.
+- `templates/exec-plan.md`: durable execution-plan template.
+- `templates/application-runbook.md`: optional consumer-owned application
+  operation and proof structure.
+- `templates/harness-improvement.md`: one baseline-to-rerun Harness experiment.
+- `.agents/skills/improve-harness/`: explicit-only workflow for one authorized
+  evidence-backed Harness improvement.
+- `.agents/skills/onboard-repository/`: explicit, read-only-first brownfield
+  repository mapping and improvement proposals.
+- `.agents/skills/audit-onboarding-proposal/`: explicit independent proposal
+  and patch verification.
+
+These files are generic Harness structure. They do not select an application
+stack, replace a consumer README or architecture, fabricate validation
+commands, or require the optional SQLite control-plane lifecycle. The installed
+`harness` binary only maintains this core structure. The skills do not run
+automatically; invoke `$onboard-repository` for requested onboarding and
+`$improve-harness` for an explicitly authorized Harness improvement.
+
+## Optional Advisory Add-on
+
+- `.agents/skills/engineering-wisdom/`: source for an optional, explicit-only
+  review skill covering code clarity, design, testing, refactoring,
+  architecture, and professional practice.
+- `product/installation-profiles.md`: exact activation, invocation,
+  non-activation, and removal behavior.
+
+The add-on is absent from the default core manifest. Even after explicit
+installation it runs only through `$engineering-wisdom`, advises before any
+change, and cannot establish consumer policy without repository-owned
+authority.
+
+## Consumer-Owned Truth
+
+The consumer repository's own README, architecture, code, tests, CI, runtime
+signals, and application behavior remain authoritative. Harness adds navigation
+and working-memory structure around that truth; it does not install upstream
+`repository-harness` product documents over it.
+
+## Source-Repository Indexes
+
+The following material is deliberately outside the default installation:
+
+- [Application-legibility plan](https://github.com/hoangnb24/repository-harness/blob/main/docs/plans/active/application-legibility.md): current consumer-first evidence matrix and next gate.
+- [Control-plane freeze decision](https://github.com/hoangnb24/repository-harness/blob/main/docs/decisions/0022-control-plane-freeze-and-compatibility-runway.md): current compatibility boundary for SQLite and protocol v1.
+- [Optional-consumer ownership decision](https://github.com/hoangnb24/repository-harness/blob/main/docs/decisions/0023-optional-consumer-ownership.md): current ownership split between Harness, Symphony, and consumer applications.
+- [Test suite map](https://github.com/hoangnb24/repository-harness/blob/main/tests/README.md): behavior protected by each current, compatibility, and historical test group.
+- [CLI compatibility index](https://github.com/hoangnb24/repository-harness/blob/main/docs/compatibility/README.md): SQLite lifecycle, orchestration protocol, bootstrap, schemas, and CLI maintenance.
+- [Historical index](https://github.com/hoangnb24/repository-harness/blob/main/docs/provenance/README.md): superseded decisions, story-era evidence, reviews, and migration provenance.
+- [Upstream repository](https://github.com/hoangnb24/repository-harness): Rust implementation, installer, release, and maintenance truth.
+
+Selecting the optional CLI profile installs the compatibility material required
+to operate that surface. Historical and upstream-only material remains in the
+source repository and Git history.
