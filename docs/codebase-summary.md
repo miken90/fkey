@@ -1,6 +1,6 @@
 # FKey Vietnamese IME — Codebase Summary
 
-> **Last updated:** 2026-02-25
+> **Last updated:** 2026-07-28
 
 ## 1. Project Overview
 
@@ -46,6 +46,7 @@ fkey/
 │       ├── main.go                    # App entry, tray menu, init
 │       ├── bindings.go                # Frontend ↔ Go bindings
 │       ├── core/                      # Go wrapper for Rust DLL + Win32
+│       │   ├── smart_paste_test.go    # Mojibake fix unit tests
 │       │   ├── bridge.go              # Rust DLL FFI bridge
 │       │   ├── keyboard_hook.go       # Win32 low-level keyboard hook
 │       │   ├── ime_loop.go            # IME processing pipeline
@@ -160,7 +161,8 @@ fkey/
 | `core/tests/bug_reports_test.rs` | Regression tests from user reports (~1923 lines) |
 | `core/tests/english_auto_restore_test.rs` | English word detection (~1421 lines) |
 | `core/tests/typing_test.rs` | Keystroke-by-keystroke typing simulation |
-| `platforms/windows-wails/tests/fkey_test.go` | Go unit tests (27 tests, ~782 lines) |
+| `platforms/windows-wails/tests/fkey_test.go` | Go unit tests (31 tests, ~780 lines) |
+| `platforms/windows-wails/core/smart_paste_test.go` | Mojibake detection/fix unit tests (3 tests) |
 
 ---
 
@@ -168,13 +170,13 @@ fkey/
 
 | Metric | Value |
 |--------|-------|
-| **Total LOC** (excl. test data) | ~20k |
-| Rust core LOC | ~20k (engine ~8k, data ~12k) |
-| Go platform LOC | ~4k |
-| Rust test LOC | ~15k |
-| Go test LOC | ~800 |
+| Rust core `src/` LOC | ~24.5k (engine/mod.rs ~8.1k, data tables ~14k) |
+| Go platform LOC (excl. tests) | ~6.2k |
+| Rust test LOC | ~19k |
+| Go test LOC | ~900 |
 | Rust test files | 23 |
-| Go test count | 27 |
+| Go test files | 2 (`tests/fkey_test.go`, `core/smart_paste_test.go`) |
+| Go test count | 34 (31 + 3) |
 | Runtime dependencies (Rust) | 0 |
 | Runtime dependencies (Go) | Wails v3, golang.org/x/sys |
 | Final binary size | ~5 MB (single .exe, DLL embedded) |
@@ -239,6 +241,7 @@ All settings stored in Windows Registry at `HKEY_CURRENT_USER\SOFTWARE\FKey`:
 | ShowOSD | DWORD | 0 | OSD on toggle |
 | SmartPaste | DWORD | 1 | Mojibake auto-fix |
 | RunAsAdmin | DWORD | 0 | Admin privileges |
+| FirstRun | DWORD | 1 | First-run onboarding flag (cleared after setup) |
 
 ---
 
