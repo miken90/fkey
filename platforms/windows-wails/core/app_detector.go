@@ -79,6 +79,9 @@ var (
 	// Used for remote desktop apps (Parsec, etc.) that only forward physical keystrokes
 	// and ignore SendInput-injected events. User should run FKey on the remote PC instead.
 	ProfilePassthrough = AppProfile{Method: MethodPassthrough, Coalesce: false}
+	// WSLg profile: clipboard + Ctrl+Shift+V for Linux terminals hosted by msrdc.exe.
+	// KEYEVENTF_UNICODE is dropped by the WSLg RDP channel, so paste-based injection is used.
+	ProfileWSLg = AppProfile{Method: MethodPasteShiftV, Coalesce: false}
 )
 
 // appProfiles maps process names to their injection profiles
@@ -141,6 +144,12 @@ var appProfiles = map[string]AppProfile{
 	// not SendInput-injected events. User should run FKey on the remote PC instead.
 	"parsecd": ProfilePassthrough,
 	"parsec":  ProfilePassthrough,
+
+	// WSLg host - Linux GUI apps (wezterm and other terminals) run inside WSL and are
+	// displayed on Windows via msrdc.exe (WSLg's RDP client). The foreground window
+	// belongs to msrdc, not the Linux app. The RDP channel does not forward
+	// KEYEVENTF_UNICODE, so inject Vietnamese text via clipboard + Ctrl+Shift+V.
+	"msrdc": ProfileWSLg,
 }
 
 // GetAppProfile returns the injection profile for a process name
@@ -317,8 +326,8 @@ var terminalProcesses = map[string]bool{
 // cliAppProfiles maps CLI app names to their specific profiles
 // These are detected as child processes of terminals
 var cliAppProfiles = map[string]AppProfile{
-	"claude":  ProfileSlow,                         // Claude Code CLI - slow mode works best
-	"auggie":  ProfileAugment,                      // Augment CLI - needs Unicode backspace
+	"claude":  ProfileSlow,    // Claude Code CLI - slow mode works best
+	"auggie":  ProfileAugment, // Augment CLI - needs Unicode backspace
 	"augment": ProfileAugment,
 }
 
@@ -499,13 +508,13 @@ func findCLIAppDescendant(terminalPID uint32) (string, *AppProfile) {
 func detectCLIAppInTerminal(terminalPID uint32) (string, *AppProfile) {
 	// First try direct children (fast path)
 	children := getChildProcesses(terminalPID)
-	
+
 	// Collect matching CLI apps from direct children
 	var foundCLIApps []struct {
 		name    string
 		profile AppProfile
 	}
-	
+
 	for _, child := range children {
 		childLower := strings.ToLower(child)
 		if profile, ok := cliAppProfiles[childLower]; ok {
@@ -515,14 +524,14 @@ func detectCLIAppInTerminal(terminalPID uint32) (string, *AppProfile) {
 			}{childLower, profile})
 		}
 	}
-	
+
 	// Prioritize Augment if found among direct children
 	for _, app := range foundCLIApps {
 		if app.name == "auggie" || app.name == "augment" {
 			return app.name, &app.profile
 		}
 	}
-	
+
 	// Return first direct child CLI if any
 	if len(foundCLIApps) > 0 {
 		app := foundCLIApps[0]

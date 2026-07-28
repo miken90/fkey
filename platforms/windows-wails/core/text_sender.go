@@ -19,10 +19,11 @@ type InjectionMethod int
 
 const (
 	MethodFast        InjectionMethod = iota // Separate calls with small delay (most apps)
-	MethodSlow                              // Per-character with delays (Electron, browsers)
-	MethodAtomic                            // Single atomic SendInput (Discord - no flicker)
-	MethodPaste                             // Clipboard + Ctrl+V (Warp terminal workaround)
-	MethodPassthrough                       // Skip IME processing entirely (remote desktop apps like Parsec)
+	MethodSlow                               // Per-character with delays (Electron, browsers)
+	MethodAtomic                             // Single atomic SendInput (Discord - no flicker)
+	MethodPaste                              // Clipboard + Ctrl+V (Warp terminal workaround)
+	MethodPassthrough                        // Skip IME processing entirely (remote desktop apps like Parsec)
+	MethodPasteShiftV                        // Clipboard + Ctrl+Shift+V (WSLg Linux terminals via msrdc.exe)
 )
 
 // Delay settings (milliseconds)
@@ -34,6 +35,15 @@ const (
 	SlowModeKeyDelay  = 5
 	SlowModePreDelay  = 20
 	SlowModePostDelay = 15
+
+	// WSLg (msrdc.exe) - the RDP virtual channel does not forward KEYEVENTF_UNICODE
+	// events to the Linux guest, so text is injected via clipboard + Ctrl+Shift+V.
+	// The Windows clipboard is mirrored to the WSLg guest over the RDP clipboard
+	// channel, which has some latency; wait before pasting and before restoring.
+	// These run synchronously inside the low-level keyboard hook, so the total
+	// (sync + restore) must stay well under the ~300ms LowLevelHooksTimeout.
+	WSLgClipboardSyncDelay = 90 // wait for Windows clipboard format list to reach the WSLg guest
+	WSLgPasteRestoreDelay  = 40 // wait for guest to consume paste before restoring clipboard
 )
 
 // INPUT structure for SendInput
@@ -81,11 +91,71 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 		sendAtomic(text, backspaces)
 	case MethodPaste:
 		sendPaste(text, backspaces)
+	case MethodPasteShiftV:
+		sendPasteShiftV(text, backspaces)
 	}
 }
 
 // Virtual key code for V (Ctrl+V paste)
 const VK_V = 0x56
+
+// sendPasteShiftV injects text via clipboard + Ctrl+Shift+V.
+// Used for WSLg-hosted Linux terminals (wezterm, etc.) shown on Windows via msrdc.exe.
+// The RDP virtual channel forwards VK keystrokes (VK_BACK, Ctrl+Shift+V) that carry real
+// scancodes to the Linux guest, but drops KEYEVENTF_UNICODE events, so normal Unicode
+// injection loses characters. The Windows clipboard is mirrored into the guest, so pasting
+// the composed text is reliable. Ctrl+Shift+V is the standard paste shortcut for Linux
+// terminal emulators (Ctrl+V is a control code there).
+func sendPasteShiftV(text string, backspaces int) {
+	// Delete the raw characters already echoed by the guest.
+	if backspaces > 0 {
+		sendBackspaces(backspaces)
+		time.Sleep(FastModeDelay * time.Millisecond)
+	}
+
+	if len(text) == 0 {
+		return
+	}
+
+	savedClipboard, _ := GetClipboardText()
+
+	if err := SetClipboardText(text); err != nil {
+		// Fallback: try direct Unicode (may drop chars, but better than nothing)
+		sendUnicodeTextSlow(text, SlowModeKeyDelay)
+		return
+	}
+
+	// Wait for the Windows clipboard to propagate to the WSLg guest over RDP.
+	time.Sleep(WSLgClipboardSyncDelay * time.Millisecond)
+
+	sendCtrlShiftV()
+
+	// Wait for the guest to consume the paste before restoring the clipboard,
+	// otherwise the restore can race the guest and paste stale content.
+	time.Sleep(WSLgPasteRestoreDelay * time.Millisecond)
+
+	if savedClipboard != "" {
+		SetClipboardText(savedClipboard)
+	}
+}
+
+// sendCtrlShiftV sends a Ctrl+Shift+V keystroke
+func sendCtrlShiftV() {
+	inputs := [6]INPUT{
+		{Type: INPUT_KEYBOARD, Ki: KEYBDINPUT{WVk: VK_CONTROL, DwFlags: 0, DwExtraInfo: InjectedKeyMarker}},
+		{Type: INPUT_KEYBOARD, Ki: KEYBDINPUT{WVk: VK_SHIFT, DwFlags: 0, DwExtraInfo: InjectedKeyMarker}},
+		{Type: INPUT_KEYBOARD, Ki: KEYBDINPUT{WVk: VK_V, DwFlags: 0, DwExtraInfo: InjectedKeyMarker}},
+		{Type: INPUT_KEYBOARD, Ki: KEYBDINPUT{WVk: VK_V, DwFlags: KEYEVENTF_KEYUP, DwExtraInfo: InjectedKeyMarker}},
+		{Type: INPUT_KEYBOARD, Ki: KEYBDINPUT{WVk: VK_SHIFT, DwFlags: KEYEVENTF_KEYUP, DwExtraInfo: InjectedKeyMarker}},
+		{Type: INPUT_KEYBOARD, Ki: KEYBDINPUT{WVk: VK_CONTROL, DwFlags: KEYEVENTF_KEYUP, DwExtraInfo: InjectedKeyMarker}},
+	}
+
+	procSendInput.Call(
+		6,
+		uintptr(unsafe.Pointer(&inputs[0])),
+		uintptr(inputSize),
+	)
+}
 
 // sendPaste injects text via clipboard + Ctrl+V
 // Used for apps that don't render KEYEVENTF_UNICODE properly (e.g., Warp terminal)
@@ -392,6 +462,8 @@ func SendTextWithProfile(text string, backspaces int, profile AppProfile) {
 		sendAtomicWithProfile(text, backspaces, profile.BackspaceMode)
 	case MethodPaste:
 		sendPaste(text, backspaces)
+	case MethodPasteShiftV:
+		sendPasteShiftV(text, backspaces)
 	}
 }
 
