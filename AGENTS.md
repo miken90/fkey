@@ -9,9 +9,9 @@ This project is developed in **WSL** and builds for **Windows only**.
 | **Windows** | WSL | Windows PowerShell | Windows |
 
 ### Path Conventions
-- WSL paths: `/mnt/c/WORKSPACES/2026/gonhanh.org/...`
-- Windows paths: `C:\WORKSPACES\2026\gonhanh.org\...`
-- **Windows builds (PowerShell)**: Use Windows-style paths (`C:\...`)
+- This repo root (WSL): `/mnt/d/WORKSPACES/PERSONAL/fkey`
+- This repo root (Windows): `D:\WORKSPACES\PERSONAL\fkey`
+- **Windows builds (PowerShell)**: `cd` needs an absolute Windows path (`powershell.exe` starts in its own default dir, so relative paths are unreliable). Derive the Windows path for the current checkout from the WSL cwd with `wslpath -w .` instead of hardcoding it — the commands below use this repo's current location.
 
 ---
 
@@ -33,22 +33,22 @@ This project is developed in **WSL** and builds for **Windows only**.
 
 ```bash
 # Rust: full test suite
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo test 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\core'; cargo test 2>&1"
 
 # Rust: specific test
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo test <test_name> 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\core'; cargo test <test_name> 2>&1"
 
 # Rust: build release DLL
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\core'; cargo build --release 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\core'; cargo build --release 2>&1"
 
 # Go: run tests
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; go test ./... 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\platforms\windows-wails'; go test ./... 2>&1"
 
 # Go: build (dev)
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\platforms\windows-wails'; .\build.ps1 2>&1"
 
 # Go: build (release)
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wails'; .\build.ps1 -Release 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey\platforms\windows-wails'; .\build.ps1 -Release 2>&1"
 ```
 
 ---
@@ -58,7 +58,7 @@ powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org\platforms\windows-wa
 Load the `release-github` skill. It triggers automatically when user says "release X.Y.Z":
 
 ```bash
-powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org'; .\.claude\skills\release-github\scripts\github-release.ps1 -Version 'X.Y.Z' 2>&1"
+powershell.exe -Command "cd 'D:\WORKSPACES\PERSONAL\fkey'; .\.claude\skills\release-github\scripts\github-release.ps1 -Version 'X.Y.Z' 2>&1"
 ```
 
 The script handles everything: version bump, release build, ZIP, tag, and GitHub publish.

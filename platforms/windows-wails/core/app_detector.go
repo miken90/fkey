@@ -81,7 +81,12 @@ var (
 	ProfilePassthrough = AppProfile{Method: MethodPassthrough, Coalesce: false}
 	// WSLg profile: clipboard + Ctrl+Shift+V for Linux terminals hosted by msrdc.exe.
 	// KEYEVENTF_UNICODE is dropped by the WSLg RDP channel, so paste-based injection is used.
-	ProfileWSLg = AppProfile{Method: MethodPasteShiftV, Coalesce: false}
+	// Coalesce is enabled: each paste costs a synchronous clipboard round-trip + RDP sync
+	// delay, so batching a burst of diacritic updates into a single paste (a) removes that
+	// cost from the keyboard-hook thread on every keystroke — the coalescer fires the send
+	// from its own timer goroutine — and (b) collapses same-word tone/mark changes into one
+	// paste, cutting perceived typing lag.
+	ProfileWSLg = AppProfile{Method: MethodPasteShiftV, Coalesce: true, CoalesceMs: 30}
 )
 
 // appProfiles maps process names to their injection profiles

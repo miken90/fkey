@@ -5,6 +5,7 @@ package core
 
 import (
 	"log"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -108,6 +109,66 @@ func SendTextWithMethod(text string, backspaces int, method InjectionMethod) {
 // Virtual key code for V (Ctrl+V paste)
 const VK_V = 0x56
 
+// Clipboard-restore coordination for paste-based injection (sendPaste / sendPasteShiftV).
+//
+// Each composing keystroke overwrites the clipboard with the composed text and then pastes
+// it. The user's real clipboard must be restored afterwards. Restoring per keystroke (one
+// goroutine each, fixed delay) races the target's ASYNCHRONOUS paste consumption — under
+// WSLg the Ctrl+Shift+V travels the RDP channel and the guest reads the clipboard well
+// after our SetClipboardText returns. A restore fired in that gap makes the guest paste the
+// stale saved content instead of the diacritic (only observable with a non-empty clipboard,
+// which is why the bug was intermittent). Overlapping bursts made it worse: each keystroke's
+// restore captured the *previous* keystroke's composed text and its timer could fire mid-paste
+// of a later keystroke.
+//
+// Fix: coordinate a SINGLE debounced restore of the user's ORIGINAL clipboard. The original
+// is captured only at the start of a burst; the timer is reset on every keystroke so it only
+// fires once typing goes idle (no paste can still be in flight); and it restores only if our
+// injected text is still the clipboard owner — verified via the clipboard sequence number, so
+// a fresh user copy (or the guest touching the clipboard) is never clobbered.
+var (
+	pasteRestoreMu     sync.Mutex
+	pasteRestoreTimer  *time.Timer
+	pasteSavedOriginal string
+	pasteOwnClipboard  bool
+	pasteLastSetSeq    uint32
+)
+
+// scheduleClipboardRestore records that we just set our composed text on the clipboard and
+// (re)arms the single debounced restore of the user's original clipboard. savedBefore is the
+// clipboard content captured immediately before this keystroke's SetClipboardText; it is only
+// adopted as the original on the first keystroke of a burst (otherwise it is our own
+// previously-injected text and must not become what we restore).
+func scheduleClipboardRestore(savedBefore string) {
+	pasteRestoreMu.Lock()
+	defer pasteRestoreMu.Unlock()
+
+	if !pasteOwnClipboard {
+		pasteSavedOriginal = savedBefore
+		pasteOwnClipboard = true
+	}
+
+	// Record the sequence number of our just-set clipboard so the deferred restore can tell
+	// whether our text is still there (reads do not bump the sequence number; only writes do).
+	pasteLastSetSeq = GetClipboardSequenceNumber()
+
+	if pasteRestoreTimer != nil {
+		pasteRestoreTimer.Stop()
+	}
+	pasteRestoreTimer = time.AfterFunc(ClipboardRestoreDelay*time.Millisecond, func() {
+		pasteRestoreMu.Lock()
+		defer pasteRestoreMu.Unlock()
+		// Only restore if our injected text is still on the clipboard untouched. If the
+		// sequence number changed, the guest/app or a fresh user copy replaced it and
+		// restoring would clobber legitimate content.
+		if pasteSavedOriginal != "" && GetClipboardSequenceNumber() == pasteLastSetSeq {
+			SetClipboardText(pasteSavedOriginal)
+		}
+		pasteOwnClipboard = false
+		pasteSavedOriginal = ""
+	})
+}
+
 // sendPasteShiftV injects text via clipboard + Ctrl+Shift+V.
 // Used for WSLg-hosted Linux terminals (wezterm, etc.) shown on Windows via msrdc.exe.
 // The RDP virtual channel forwards VK keystrokes (VK_BACK, Ctrl+Shift+V) that carry real
@@ -139,17 +200,10 @@ func sendPasteShiftV(text string, backspaces int) {
 
 	sendCtrlShiftV()
 
-	// Restore the previous clipboard content asynchronously. Ctrl+Shift+V is consumed by
-	// the guest's own message loop, not synchronously with SendInput, so restoring inline
-	// (even after a short sleep) can race the guest reading the clipboard and cause it to
-	// paste the stale saved content instead of our text. Deferring this to a goroutine also
-	// keeps sendPasteShiftV itself fast, since it runs inside the low-level keyboard hook.
-	if savedClipboard != "" {
-		goSafe(func() {
-			time.Sleep(ClipboardRestoreDelay * time.Millisecond)
-			SetClipboardText(savedClipboard)
-		})
-	}
+	// Restore the user's original clipboard via a single debounced, sequence-guarded restore
+	// (see scheduleClipboardRestore) so a stale restore can never clobber the clipboard while
+	// the guest is still consuming this or a later paste.
+	scheduleClipboardRestore(savedClipboard)
 }
 
 // sendCtrlShiftV sends a Ctrl+Shift+V keystroke
@@ -199,18 +253,10 @@ func sendPaste(text string, backspaces int) {
 	// Send Ctrl+V
 	sendCtrlV()
 
-	// Restore the previous clipboard content asynchronously. Ctrl+V is delivered to the
-	// target app's own message loop, not processed synchronously by SendInput, so restoring
-	// inline after a short sleep can race the app's paste and cause it to read back the
-	// stale saved content instead of our text (only observable when the clipboard was
-	// non-empty before, since an empty saved value is never restored). Deferring this to a
-	// goroutine also keeps sendPaste itself fast, since it runs inside the low-level hook.
-	if savedClipboard != "" {
-		goSafe(func() {
-			time.Sleep(ClipboardRestoreDelay * time.Millisecond)
-			SetClipboardText(savedClipboard)
-		})
-	}
+	// Restore the user's original clipboard via a single debounced, sequence-guarded restore
+	// (see scheduleClipboardRestore) so a stale restore can never clobber the clipboard while
+	// the app is still consuming this or a later paste.
+	scheduleClipboardRestore(savedClipboard)
 }
 
 // sendCtrlV sends Ctrl+V keystroke
