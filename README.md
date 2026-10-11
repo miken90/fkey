@@ -84,6 +84,17 @@
 
 ---
 
+## 🧩 Hub mode (`--hub`)
+
+`FKey.exe --hub` is an opt-in mode for the my-utilities tray hub. FKey creates a small named channel (`Local\FKeyIME.Hub.v1.*`) that publishes the V/E state and accepts Toggle and Reload requests, and hides its own tray icon. Without `--hub` nothing changes.
+
+- The hub owns autostart in this mode, so FKey does not rewrite its Run value or scheduled task, and its own update check is off.
+- Settings are edited in the hub; it writes FKey's registry values and `settings\formatting.json`, then signals Reload. FKey applies them without a restart and keeps its current on/off state.
+- If the channel cannot be created (a name already exists) or FKey runs elevated (`RunAsAdmin`), FKey keeps its tray and behaves as usual.
+- The release zip ships `hub-contract.json` next to `FKey.exe` so the hub can check that it knows this build's channel and settings schema.
+
+---
+
 ## 🔧 Tech Stack & Build
 
 ### Tech Stack

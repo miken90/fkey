@@ -89,12 +89,33 @@ func DefaultSettings() *Settings {
 // SettingsService manages application settings via Registry
 type SettingsService struct {
 	settings *Settings
+	// keyPath/runKeyPath default to the real keys; tests point them elsewhere.
+	keyPath    string
+	runKeyPath string
+	hubManaged bool
 }
 
 // NewSettingsService creates a new settings service
 func NewSettingsService() *SettingsService {
 	return &SettingsService{
-		settings: DefaultSettings(),
+		settings:   DefaultSettings(),
+		keyPath:    RegistryKeyPath,
+		runKeyPath: AutoStartKeyPath,
+	}
+}
+
+// SetHubManaged marks autostart as owned by the hub (--hub mode).
+func (s *SettingsService) SetHubManaged(v bool) {
+	s.hubManaged = v
+}
+
+// AllSettingKeys lists the value names Load reads, in a fixed order.
+func AllSettingKeys() []string {
+	return []string{
+		KeyInputMethod, KeyModernTone, KeyEnabled, KeyFirstRun, KeyAutoStart,
+		KeySkipWShortcut, KeyEscRestore, KeyFreeTone, KeyEnglishAutoRestore,
+		KeyAutoCapitalize, KeyToggleHotkey, KeyCoalescingApps, KeyShowOSD,
+		KeySmartPaste, KeyRunAsAdmin,
 	}
 }
 
@@ -106,7 +127,7 @@ func (s *SettingsService) Settings() *Settings {
 // Load reads settings from Registry (tries FKey first, then legacy GoNhanh for migration)
 func (s *SettingsService) Load() error {
 	// Try new FKey key first
-	key, err := registry.OpenKey(registry.CURRENT_USER, RegistryKeyPath, registry.QUERY_VALUE)
+	key, err := registry.OpenKey(registry.CURRENT_USER, s.keyPath, registry.QUERY_VALUE)
 	if err != nil {
 		// Try legacy GoNhanh key for migration
 		key, err = registry.OpenKey(registry.CURRENT_USER, LegacyRegistryPath, registry.QUERY_VALUE)
@@ -118,6 +139,27 @@ func (s *SettingsService) Load() error {
 	}
 	defer key.Close()
 
+	s.loadFrom(key)
+	return nil
+}
+
+// Reload re-reads the registry values after the hub wrote them. It keeps the
+// in-memory Enabled (the hub writes everything except Enabled; Enabled is owned
+// by the running toggle) and never writes.
+func (s *SettingsService) Reload() error {
+	key, err := registry.OpenKey(registry.CURRENT_USER, s.keyPath, registry.QUERY_VALUE)
+	if err != nil {
+		return fmt.Errorf("failed to open registry key: %w", err)
+	}
+	defer key.Close()
+
+	enabled := s.settings.Enabled
+	s.loadFrom(key)
+	s.settings.Enabled = enabled
+	return nil
+}
+
+func (s *SettingsService) loadFrom(key registry.Key) {
 	s.settings.InputMethod = readDWORD(key, KeyInputMethod, 0)
 	s.settings.ModernTone = readDWORD(key, KeyModernTone, 1) == 1
 	s.settings.Enabled = readDWORD(key, KeyEnabled, 1) == 1
@@ -133,13 +175,11 @@ func (s *SettingsService) Load() error {
 	s.settings.ShowOSD = readDWORD(key, KeyShowOSD, 0) == 1
 	s.settings.SmartPaste = readDWORD(key, KeySmartPaste, 1) == 1
 	s.settings.RunAsAdmin = readDWORD(key, KeyRunAsAdmin, 0) == 1
-
-	return nil
 }
 
 // Save writes settings to Registry
 func (s *SettingsService) Save() error {
-	key, _, err := registry.CreateKey(registry.CURRENT_USER, RegistryKeyPath, registry.SET_VALUE)
+	key, _, err := registry.CreateKey(registry.CURRENT_USER, s.keyPath, registry.SET_VALUE)
 	if err != nil {
 		return fmt.Errorf("failed to create registry key: %w", err)
 	}
@@ -167,9 +207,26 @@ func (s *SettingsService) Save() error {
 	return nil
 }
 
+// SaveEnabled persists only the Enabled value. Unlike Save it never touches
+// autostart, so it is safe to call after every toggle.
+func (s *SettingsService) SaveEnabled() error {
+	key, _, err := registry.CreateKey(registry.CURRENT_USER, s.keyPath, registry.SET_VALUE)
+	if err != nil {
+		return fmt.Errorf("failed to create registry key: %w", err)
+	}
+	defer key.Close()
+	writeDWORD(key, KeyEnabled, boolToDWORD(s.settings.Enabled))
+	return nil
+}
+
 // updateAutoStart updates Windows startup entry (registry or Task Scheduler)
 func (s *SettingsService) updateAutoStart() {
-	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE|registry.QUERY_VALUE)
+	// The hub owns autostart in --hub mode; rewriting the Run value would undo
+	// its takeover.
+	if s.hubManaged {
+		return
+	}
+	key, err := registry.OpenKey(registry.CURRENT_USER, s.runKeyPath, registry.SET_VALUE|registry.QUERY_VALUE)
 	if err == nil {
 		key.DeleteValue("GoNhanh")
 		key.Close()
@@ -188,7 +245,7 @@ func (s *SettingsService) updateAutoStart() {
 }
 
 func (s *SettingsService) createRegistryAutoStart() {
-	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE)
+	key, err := registry.OpenKey(registry.CURRENT_USER, s.runKeyPath, registry.SET_VALUE)
 	if err != nil {
 		return
 	}
@@ -205,7 +262,7 @@ func (s *SettingsService) createRegistryAutoStart() {
 }
 
 func (s *SettingsService) removeRegistryAutoStart() {
-	key, err := registry.OpenKey(registry.CURRENT_USER, AutoStartKeyPath, registry.SET_VALUE)
+	key, err := registry.OpenKey(registry.CURRENT_USER, s.runKeyPath, registry.SET_VALUE)
 	if err != nil {
 		return
 	}

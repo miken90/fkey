@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -72,20 +73,16 @@ var (
 	updaterSvc        *services.UpdaterService
 	formattingSvc     *services.FormattingService
 	wantQuit          bool // Flag to allow quit via tray menu
+	hubChannel        *core.HubChannel
+	appStarted        atomic.Bool // true once Wails Run() has set up the main thread
 )
 
 func main() {
 	core.StartupTraceBegin()
 
-	relaunch := false
-	for _, arg := range os.Args[1:] {
-		if arg == "--relaunch" {
-			relaunch = true
-			break
-		}
-	}
+	launch := core.ParseLaunchArgs(os.Args[1:])
 
-	if err := core.AcquireMutex(relaunch); err != nil {
+	if err := core.AcquireMutex(launch.Relaunch); err != nil {
 		showMessageBox("FKey", err.Error(), MB_OK|MB_ICONWARNING)
 		os.Exit(1)
 	}
@@ -126,13 +123,17 @@ func main() {
 	settings := settingsSvc.Settings()
 	core.StartupTraceStage("settings-load")
 
+	// An elevated FKey is unsupported in hub mode for now; it keeps its tray.
+	hubMode := core.HubModeEnabled(launch.Hub, settings.RunAsAdmin, services.IsElevated())
+	settingsSvc.SetHubManaged(hubMode)
+
 	if settings.RunAsAdmin && !services.IsElevated() {
 		log.Printf("RunAsAdmin enabled but not elevated, re-launching...")
 		core.ElevateAndRelaunch()
 		return
 	}
 
-	if settings.AutoStart && settings.RunAsAdmin && services.IsElevated() {
+	if !hubMode && settings.AutoStart && settings.RunAsAdmin && services.IsElevated() {
 		// Off the boot path: this shells out to schtasks.exe, which has no
 		// business blocking typing-readiness. Only affects RunAsAdmin users.
 		go func() {
@@ -167,21 +168,18 @@ func main() {
 	// globalMenu) exists yet. updateUI is marshaled onto the Wails main
 	// thread and nil-guarded for exactly that reason; PlayBeep is a plain
 	// Win32 call with no GUI-thread affinity, safe to run directly here.
-	globalImeLoop.OnEnabledChanged = func(enabled bool) {
-		core.PlayBeep(enabled)
-
-		if globalApp == nil {
-			// Hotkey pressed before application.New() returned - nothing to
-			// marshal UI work onto yet (dispatching now would panic inside
-			// Wails: "initMainLoop was not called"). Safe to skip; the tray
-			// icon/menu will simply reflect the new state once updateUI
-			// runs from the next toggle after Wails finishes starting.
-			return
-		}
-		application.InvokeAsync(func() {
-			updateUI(enabled)
-		})
-	}
+	// Before Run() has set up the main thread there is nothing to marshal
+	// onto (InvokeAsync would panic), so only beep; updateUI runs once at start
+	// through the startup publish.
+	globalImeLoop.OnEnabledChanged = core.NewEnabledChangedHandler(
+		core.PlayBeep,
+		func(f func()) {
+			if appStarted.Load() {
+				application.InvokeAsync(f)
+			}
+		},
+		updateUI,
+	)
 
 	// Start the keyboard/mouse hooks on their own dedicated, pumping OS
 	// thread NOW - before Wails initializes - so typing works while the
@@ -223,34 +221,69 @@ func main() {
 	})
 	core.StartupTraceStage("wails-new")
 
-	// Create system tray
-	globalTray = globalApp.SystemTray.New()
-	if settings.Enabled {
-		globalTray.SetIcon(iconOn)
-		globalTray.SetTooltip("FKey - Tiếng Việt (Bật)")
-	} else {
-		globalTray.SetIcon(iconOff)
-		globalTray.SetTooltip("FKey - Tiếng Việt (Tắt)")
+	// Hub mode: publish state through the channel and hide the tray. If the
+	// channel cannot be created, keep the tray (fail-safe).
+	if hubMode {
+		ch, err := core.CreateHubChannel(core.HubChannelPrefix)
+		if err != nil {
+			log.Printf("hub channel unavailable, keeping tray: %v", err)
+		} else {
+			hubChannel = ch
+			defer ch.Close()
+		}
 	}
 
-	// Settings window created on-demand (lazy-load for RAM optimization)
-	// globalSettingsWin starts as nil - created when user opens settings
+	if hubChannel == nil {
+		// Create system tray
+		globalTray = globalApp.SystemTray.New()
+		if settings.Enabled {
+			globalTray.SetIcon(iconOn)
+			globalTray.SetTooltip("FKey - Tiếng Việt (Bật)")
+		} else {
+			globalTray.SetIcon(iconOff)
+			globalTray.SetTooltip("FKey - Tiếng Việt (Tắt)")
+		}
 
-	// Create tray menu
-	globalMenu = createTrayMenu(settings.Enabled)
-	globalTray.SetMenu(globalMenu)
+		// Settings window created on-demand (lazy-load for RAM optimization)
+		// globalSettingsWin starts as nil - created when user opens settings
 
-	// Left-click toggles IME
-	globalTray.OnClick(func() {
-		toggleIME()
-	})
-	core.StartupTraceStage("tray-ready")
+		// Create tray menu
+		globalMenu = createTrayMenu(settings.Enabled)
+		globalTray.SetMenu(globalMenu)
+
+		// Left-click toggles IME
+		globalTray.OnClick(func() {
+			toggleIME()
+		})
+		core.StartupTraceStage("tray-ready")
+	}
+	if hubChannel != nil {
+		hubChannel.Publish(settings.Enabled)
+		// The request loop starts only after Run() has set up the main thread,
+		// because InvokeAsync panics before that. Toggle runs on the same thread
+		// as a tray click and fires OnEnabledChanged (beep + updateUI). A request
+		// signalled earlier stays pending in the auto-reset event.
+		globalApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
+			appStarted.Store(true)
+			go hubChannel.RunRequestLoop(
+				func() { application.InvokeAsync(func() { globalImeLoop.Toggle() }) },
+				func() { application.InvokeAsync(reloadSettings) },
+			)
+		})
+	} else {
+		globalApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
+			appStarted.Store(true)
+		})
+	}
 
 	// Initialize updater service
 	updaterSvc = services.NewUpdaterService(Version)
 
-	// Check for updates in background (non-blocking)
-	go checkForUpdatesBackground()
+	// Check for updates in background (non-blocking). Off in hub mode: the
+	// updater's relaunch would drop --hub; the hub's catalog owns updates.
+	if core.ShouldCheckUpdates(hubMode) {
+		go checkForUpdatesBackground()
+	}
 
 	log.Printf("FKey started. IME: %s, Method: %d",
 		map[bool]string{true: "ON", false: "OFF"}[settings.Enabled],
@@ -329,13 +362,20 @@ func showSettingsWindow() {
 
 // showTooltipNotification shows a brief tooltip notification
 func showTooltipNotification(title, message string) {
+	// No tray in hub mode: the OSD is a tray tooltip, so it shows nothing there.
+	if globalTray == nil {
+		return
+	}
 	// Update the tooltip temporarily to show language change
 	// The tooltip will be shown when user hovers over the tray icon
 	globalTray.SetTooltip(message)
-	
+
 	// Restore normal tooltip after a delay
 	go func() {
 		time.Sleep(2 * time.Second)
+		if globalTray == nil {
+			return
+		}
 		if settingsSvc.Settings().Enabled {
 			globalTray.SetTooltip("FKey - Tiếng Việt (Bật)")
 		} else {
@@ -344,13 +384,36 @@ func showTooltipNotification(title, message string) {
 	}()
 }
 
+// updateUI runs on the Wails main thread (posted by the enabled-changed
+// handler, or called at startup). Order: hub state, persisted Enabled, frontend
+// event, OSD, then the tray part (absent in hub mode).
 func updateUI(enabled bool) {
-	// Defense in depth: by construction this only runs inside
-	// application.InvokeAsync callbacks queued after globalApp was set (see
-	// OnEnabledChanged in main()), so tray/menu/settings are guaranteed
-	// ready by the time this executes. Guard anyway in case that invariant
-	// ever changes (e.g. a future direct call site).
-	if globalApp == nil || globalTray == nil || settingsSvc == nil {
+	if hubChannel != nil {
+		hubChannel.Publish(enabled)
+	}
+
+	// Hotkey toggles bypass toggleIME, so persist Enabled here; SaveEnabled
+	// writes one DWORD and never touches autostart.
+	if settingsSvc != nil && settingsSvc.Settings().Enabled != enabled {
+		settingsSvc.Settings().Enabled = enabled
+		if err := settingsSvc.SaveEnabled(); err != nil {
+			log.Printf("persist Enabled: %v", err)
+		}
+	}
+
+	if globalApp == nil {
+		return
+	}
+
+	// Emit event to frontend so Settings UI can update status indicator
+	globalApp.Event.Emit("ime:status-changed", enabled)
+
+	// Show OSD popup if enabled
+	if settingsSvc != nil && settingsSvc.Settings().ShowOSD {
+		go showOSDPopup(enabled)
+	}
+
+	if globalTray == nil || settingsSvc == nil {
 		return
 	}
 
@@ -363,17 +426,27 @@ func updateUI(enabled bool) {
 		globalTray.SetTooltip("FKey - Tiếng Việt (Tắt)")
 	}
 
-	// Emit event to frontend so Settings UI can update status indicator
-	globalApp.Event.Emit("ime:status-changed", enabled)
-
-	// Show OSD popup if enabled
-	if settingsSvc.Settings().ShowOSD {
-		go showOSDPopup(enabled)
-	}
-
 	// Rebuild menu with new state
 	globalMenu = createTrayMenu(enabled)
 	globalTray.SetMenu(globalMenu)
+}
+
+// reloadSettings applies settings the hub wrote. Runs on the main thread (InvokeAsync).
+// It never calls Save(), so the hub-owned Run value is never touched. Known
+// limit: a hotkey toggle in the microseconds between IsEnabled() and
+// UpdateSettings can be undone; the tray Telex/VNI handler has the same
+// unsynchronised pattern. It never runs on the hook thread.
+func reloadSettings() {
+	if err := settingsSvc.Reload(); err != nil {
+		log.Printf("hub reload: %v", err)
+		return
+	}
+	settingsSvc.Settings().Enabled = globalImeLoop.IsEnabled()
+	if formattingSvc != nil {
+		_ = formattingSvc.Load()
+	}
+	globalImeLoop.ClearShortcuts()
+	applySettings(globalImeLoop, settingsSvc.Settings())
 }
 
 func applySettings(loop *core.ImeLoop, settings *services.Settings) {

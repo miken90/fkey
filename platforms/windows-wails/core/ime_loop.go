@@ -152,6 +152,9 @@ func (l *ImeLoop) SetEnabled(enabled bool) {
 	}
 }
 
+// IsEnabled returns the current enabled state (read on the main thread by the hub reload).
+func (l *ImeLoop) IsEnabled() bool { return l.settings.Enabled }
+
 // Toggle toggles IME enabled state
 func (l *ImeLoop) Toggle() bool {
 	newState := !l.settings.Enabled
