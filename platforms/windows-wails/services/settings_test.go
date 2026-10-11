@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"sort"
 	"testing"
 
@@ -118,8 +119,23 @@ func TestHubManagedSkipsAutoStart(t *testing.T) {
 	}
 }
 
-func TestAllSettingKeysCoversLoad(t *testing.T) {
-	if n := len(AllSettingKeys()); n != 15 {
-		t.Errorf("AllSettingKeys has %d names, want 15", n)
+func TestAllSettingKeysMatchesSavedValues(t *testing.T) {
+	s := newTestSettingsService(t)
+	s.SetHubManaged(true)
+	if err := s.Save(); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	snap := snapshotKey(t, s.keyPath)
+	var got []string
+	for k := range snap {
+		got = append(got, k)
+	}
+	sort.Strings(got)
+
+	want := append([]string(nil), AllSettingKeys()...)
+	sort.Strings(want)
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("saved value names %v != AllSettingKeys() %v", got, want)
 	}
 }

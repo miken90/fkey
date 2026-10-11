@@ -90,7 +90,8 @@
 
 - The hub owns autostart in this mode, so FKey does not rewrite its Run value or scheduled task, and its own update check is off.
 - Settings are edited in the hub; it writes FKey's registry values and `settings\formatting.json`, then signals Reload. FKey applies them without a restart and keeps its current on/off state.
-- If the channel cannot be created (a name already exists) or FKey runs elevated (`RunAsAdmin`), FKey keeps its tray and behaves as usual.
+- Elevated / `RunAsAdmin`: hub mode is off; FKey keeps its tray and behaves as usual.
+- Channel cannot be created: FKey keeps its tray, but the update check stays off and FKey leaves autostart to the hub.
 - The release zip ships `hub-contract.json` next to `FKey.exe` so the hub can check that it knows this build's channel and settings schema.
 
 ---

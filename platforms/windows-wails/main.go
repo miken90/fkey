@@ -259,22 +259,26 @@ func main() {
 	}
 	if hubChannel != nil {
 		hubChannel.Publish(settings.Enabled)
-		// The request loop starts only after Run() has set up the main thread,
-		// because InvokeAsync panics before that. Toggle runs on the same thread
-		// as a tray click and fires OnEnabledChanged (beep + updateUI). A request
-		// signalled earlier stays pending in the auto-reset event.
-		globalApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
-			appStarted.Store(true)
+	}
+	// The request loop starts only after Run() has set up the main thread,
+	// because InvokeAsync panics before that. Toggle runs on the same thread
+	// as a tray click and fires OnEnabledChanged (beep + updateUI). A request
+	// signalled earlier stays pending in the auto-reset event.
+	globalApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
+		appStarted.Store(true)
+		// A hotkey toggle before Run() only beeped; bring the tray, hub state and stored Enabled up to date once.
+		application.InvokeAsync(func() {
+			if e := globalImeLoop.IsEnabled(); e != settingsSvc.Settings().Enabled {
+				updateUI(e)
+			}
+		})
+		if hubChannel != nil {
 			go hubChannel.RunRequestLoop(
 				func() { application.InvokeAsync(func() { globalImeLoop.Toggle() }) },
 				func() { application.InvokeAsync(reloadSettings) },
 			)
-		})
-	} else {
-		globalApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(*application.ApplicationEvent) {
-			appStarted.Store(true)
-		})
-	}
+		}
+	})
 
 	// Initialize updater service
 	updaterSvc = services.NewUpdaterService(Version)
