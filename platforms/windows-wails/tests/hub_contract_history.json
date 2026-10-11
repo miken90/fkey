@@ -1,0 +1,19 @@
+{
+  "1": [
+    "InputMethod",
+    "ModernTone",
+    "Enabled",
+    "FirstRun",
+    "AutoStart",
+    "SkipWShortcut",
+    "EscRestore",
+    "FreeTone",
+    "EnglishAutoRestore",
+    "AutoCapitalize",
+    "ToggleHotkey",
+    "CoalescingApps",
+    "ShowOSD",
+    "SmartPaste",
+    "RunAsAdmin"
+  ]
+}

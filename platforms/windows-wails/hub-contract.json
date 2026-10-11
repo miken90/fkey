@@ -1,0 +1,39 @@
+{
+  "contract": 1,
+  "module": "fkey",
+  "hubFlag": "--hub",
+  "channel": {
+    "prefix": "Local\\FKeyIME.Hub.v1.",
+    "version": 1,
+    "events": [
+      "Changed",
+      "Toggle",
+      "Reload"
+    ]
+  },
+  "settings": {
+    "schemaVersion": 1,
+    "stores": [
+      "registry:HKCU\\SOFTWARE\\FKey",
+      "registry-values:HKCU\\SOFTWARE\\FKey\\Shortcuts",
+      "json:settings\\formatting.json"
+    ],
+    "keys": [
+      "InputMethod",
+      "ModernTone",
+      "Enabled",
+      "FirstRun",
+      "AutoStart",
+      "SkipWShortcut",
+      "EscRestore",
+      "FreeTone",
+      "EnglishAutoRestore",
+      "AutoCapitalize",
+      "ToggleHotkey",
+      "CoalescingApps",
+      "ShowOSD",
+      "SmartPaste",
+      "RunAsAdmin"
+    ]
+  }
+}

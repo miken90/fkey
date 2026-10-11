@@ -55,3 +55,4 @@ powershell.exe -Command "cd 'C:\WORKSPACES\2026\gonhanh.org'; .\.claude\skills\r
 - Release script uses **hashtable splatting** to pass `-Release` switch to `build.ps1`
 - VERSION file is committed + pushed automatically by the script
 - Only pushes to `origin` (miken90), never upstream
+- If any registry value, shortcut format, formatting.json key or channel name changed: bump `settings.schemaVersion` / channel version in `platforms/windows-wails/hub-contract.json`, add the history entry in `platforms/windows-wails/tests/hub_contract_history.json`, and tell the hub owner (my-utilities) before releasing.

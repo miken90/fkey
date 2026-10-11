@@ -98,7 +98,7 @@ else {
     Write-Host ""
 }
 
-# Step 2: Create ZIP package (single exe only)
+# Step 2: Create ZIP package (exe + hub-contract.json)
 if ($DryRun) {
     Write-Host "[2/4] Skipping ZIP creation (--DryRun)" -ForegroundColor Gray
     Write-Host ""
@@ -112,15 +112,25 @@ else {
         throw "Executable not found: $ExePath"
     }
 
-    # Create ZIP with single EXE (DLL is embedded)
+    # Create ZIP with the EXE (DLL is embedded) and the hub contract
     if (Test-Path $ZipPath) {
         Remove-Item $ZipPath -Force
     }
 
-    Compress-Archive -Path $ExePath -DestinationPath $ZipPath -CompressionLevel Optimal
+    # hub-contract.json tells the my-utilities hub which channel and settings
+    # schema this exe speaks; exeSha256 ties the file to this exact build.
+    $ContractSource = Join-Path $WailsDir "hub-contract.json"
+    $ContractPath = Join-Path $OutputDir "hub-contract.json"
+    $Contract = Get-Content $ContractSource -Raw | ConvertFrom-Json
+    $ExeHash = (Get-FileHash -Algorithm SHA256 -Path $ExePath).Hash.ToLower()
+    $Contract | Add-Member -NotePropertyName version -NotePropertyValue $Version -Force
+    $Contract | Add-Member -NotePropertyName exeSha256 -NotePropertyValue $ExeHash -Force
+    [System.IO.File]::WriteAllText($ContractPath, ($Contract | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
+
+    Compress-Archive -Path $ExePath, $ContractPath -DestinationPath $ZipPath -CompressionLevel Optimal
 
     $ZipSize = [math]::Round((Get-Item $ZipPath).Length / 1MB, 2)
-    Write-Host "[OK] Package ready: $ZipName ($ZipSize MB) - Single exe!" -ForegroundColor Green
+    Write-Host "[OK] Package ready: $ZipName ($ZipSize MB) - exe + hub-contract.json" -ForegroundColor Green
     Write-Host ""
 }
 
